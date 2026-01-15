@@ -5,7 +5,7 @@ import {
 import { MatrixUtil, VectorUtil } from "../../util/math";
 
 export const kalman_filter: KalmanFilterConfig = {
-  state_vector: VectorUtil.fromArray([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]), // [x, y, vx, vy, cos, sin, angular_velocity_rad_s]
+  state_vector: VectorUtil.fromArray([2.0, 5.0, 0.0, 0.0, 1.0, 0.0, 0.0]), // [x, y, vx, vy, cos, sin, angular_velocity_rad_s]
   time_step_initial: 0.1,
   state_transition_matrix: MatrixUtil.buildMatrixFromDiagonal([
     1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
