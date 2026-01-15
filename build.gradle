@@ -220,20 +220,6 @@ def applyBackend(expectedNumOfPis) {
   }
 }
 
-def installPythonDependencies() {
-  project.exec {
-    commandLine "make", "prep-project"
-  }
-}
-
-tasks.register("installPythonDependencies") {
-    group = "build"
-    description = "Install Python dependencies"
-    doLast {
-        installPythonDependencies()
-    }
-}
-
 buildDynamically("./config.ini")
 
 tasks.register("applyBackend") {
@@ -252,7 +238,6 @@ tasks.register("generateConfig") {
     }
 }
 
-tasks.build.dependsOn(tasks.installPythonDependencies)
 tasks.build.dependsOn(tasks.generateConfig)
 tasks.build.dependsOn(tasks.generateProto)
 
