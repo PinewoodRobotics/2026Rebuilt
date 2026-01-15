@@ -5,7 +5,6 @@ import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.units.Units;
@@ -38,8 +37,11 @@ public class ContinuousAimCommand extends Command {
 
     @Override
     public void execute() {
-        Translation2d selfTranslation = selfGlobalPoseSupplier.get().getTranslation();
-        Translation2d targetTranslation = targetGlobalPoseSupplier.get().toTranslation2d();
+        Pose2d selfPose = selfGlobalPoseSupplier.get();
+        Translation3d targetGlobal = targetGlobalPoseSupplier.get();
+
+        Translation2d selfTranslation = selfPose.getTranslation();
+        Translation2d targetTranslation = targetGlobal.toTranslation2d();
 
         Translation2d target = LocalMath.fromGlobalToRelative(selfTranslation, targetTranslation);
         Translation2d velocity = currentRobotVelocitySupplier.get();
@@ -49,9 +51,41 @@ public class ContinuousAimCommand extends Command {
         Angle newAngle = Angle.ofRelativeUnits(aimPoint.getAngle().getRadians(), Units.Radians);
 
         turretSubsystem.setTurretPosition(newAngle);
+
+        logEverything(selfPose, targetGlobal, target, velocity, aimPoint, newAngle);
     }
 
-    private void logEverything() {
+    private void logEverything(
+            Pose2d selfPose,
+            Translation3d targetGlobal,
+            Translation2d targetRelative,
+            Translation2d robotVelocity,
+            Translation2d aimPoint,
+            Angle commandedAngle) {
+        // Raw inputs
+        Logger.recordOutput("Turret/AimCommand/SelfPose", selfPose);
+        Logger.recordOutput("Turret/AimCommand/TargetGlobal", targetGlobal);
+        Logger.recordOutput("Turret/AimCommand/RobotVelocity", robotVelocity);
+
+        // Derived math
+        Logger.recordOutput("Turret/AimCommand/TargetRelative", targetRelative);
+        Logger.recordOutput("Turret/AimCommand/TargetDistanceMeters", targetRelative.getNorm());
+        Logger.recordOutput("Turret/AimCommand/AimPoint", aimPoint);
+        Logger.recordOutput("Turret/AimCommand/AimDistanceMeters", aimPoint.getNorm());
+
+        // Commanded angle
+        double goalRad = commandedAngle.in(Units.Radians);
+        Logger.recordOutput("Turret/AimCommand/GoalAngleRad", goalRad);
+        Logger.recordOutput("Turret/AimCommand/GoalAngleDeg", commandedAngle.in(Units.Degrees));
+
+        // Turret feedback vs goal
+        double currentRad = turretSubsystem.getTurretPosition().in(Units.Radians);
+        double errorRad = Math.IEEEremainder(goalRad - currentRad, 2.0 * Math.PI); // wrap to [-pi, pi]
+        Logger.recordOutput("Turret/AimCommand/CurrentAngleRad", currentRad);
+        Logger.recordOutput("Turret/AimCommand/ErrorRad", errorRad);
+        Logger.recordOutput("Turret/AimCommand/ErrorDeg", Math.toDegrees(errorRad));
+
+        // Timing (kept for compatibility with existing dashboards)
         Logger.recordOutput("Turret/TimeLeftToReachPosition", turretSubsystem.getAimTimeLeftMs());
     }
 }
