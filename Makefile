@@ -14,12 +14,13 @@ THRIFT_GEN_DIR = $(GEN_DIR)/thrift
 THRIFT_TS_SCHEMA_GEN_DIR = $(THRIFT_GEN_DIR)/ts_schema
 PROTO_PY_GEN_DIR = $(PROTO_GEN_DIR)/python
 
-prep-project:
-	if [ ! -d ".venv" ]; then \
-		python3 -m venv .venv; \
-	fi
-
+initialize:
+	python3 -m venv .venv
 	.venv/bin/pip install -r requirements.txt
+	make test
+
+test:
+	PYTHONPATH=src pytest
 
 generate-proto-python:
 	mkdir -p $(PROTO_PY_GEN_DIR)
