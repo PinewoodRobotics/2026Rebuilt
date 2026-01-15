@@ -203,3 +203,6 @@ target/
 *.pyc
 
 src/main/deploy/config
+
+*.db
+.coverage
