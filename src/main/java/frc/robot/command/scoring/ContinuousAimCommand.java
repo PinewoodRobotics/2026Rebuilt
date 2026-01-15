@@ -2,6 +2,8 @@ package frc.robot.command.scoring;
 
 import java.util.function.Supplier;
 
+import org.littletonrobotics.junction.Logger;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -10,7 +12,7 @@ import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystem.TurretSubsystem;
-import frc.robot.util.CustomMath;
+import frc.robot.util.LocalMath;
 
 public class ContinuousAimCommand extends Command {
     private final TurretSubsystem turretSubsystem;
@@ -39,7 +41,7 @@ public class ContinuousAimCommand extends Command {
         Translation2d selfTranslation = selfGlobalPoseSupplier.get().getTranslation();
         Translation2d targetTranslation = targetGlobalPoseSupplier.get().toTranslation2d();
 
-        Translation2d target = CustomMath.fromGlobalToRelative(selfTranslation, targetTranslation);
+        Translation2d target = LocalMath.fromGlobalToRelative(selfTranslation, targetTranslation);
         Translation2d velocity = currentRobotVelocitySupplier.get();
 
         Translation2d aimPoint = target.minus(velocity);
@@ -47,5 +49,9 @@ public class ContinuousAimCommand extends Command {
         Angle newAngle = Angle.ofRelativeUnits(aimPoint.getAngle().getRadians(), Units.Radians);
 
         turretSubsystem.setTurretPosition(newAngle);
+    }
+
+    private void logEverything() {
+        Logger.recordOutput("Turret/TimeLeftToReachPosition", turretSubsystem.getAimTimeLeftMs());
     }
 }

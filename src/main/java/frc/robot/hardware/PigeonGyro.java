@@ -6,7 +6,7 @@ import com.ctre.phoenix6.hardware.Pigeon2;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.util.CustomMath;
+import frc.robot.util.LocalMath;
 import proto.sensor.GeneralSensorDataOuterClass.GeneralSensorData;
 import proto.sensor.GeneralSensorDataOuterClass.SensorName;
 import proto.sensor.Imu.ImuData;
@@ -52,7 +52,7 @@ public class PigeonGyro extends SubsystemBase implements IGyroscopeLike, IDataCl
 
   @Override
   public double[] getYPR() {
-    double yawAdj = CustomMath.wrapTo180(pigeon.getYaw().getValueAsDouble() + yawSoftOffsetDeg);
+    double yawAdj = LocalMath.wrapTo180(pigeon.getYaw().getValueAsDouble() + yawSoftOffsetDeg);
     return new double[] {
         yawAdj,
         pigeon.getPitch().getValueAsDouble(),
@@ -128,7 +128,7 @@ public class PigeonGyro extends SubsystemBase implements IGyroscopeLike, IDataCl
   }
 
   public Rotation2d getNoncontinuousAngle() {
-    return Rotation2d.fromDegrees(CustomMath.wrapTo180(pigeon.getYaw().getValueAsDouble()));
+    return Rotation2d.fromDegrees(LocalMath.wrapTo180(pigeon.getYaw().getValueAsDouble()));
   }
 
   @Override

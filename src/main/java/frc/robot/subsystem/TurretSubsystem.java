@@ -78,7 +78,7 @@ public class TurretSubsystem extends SubsystemBase {
         closedLoopController.setReference(lastAimTargetRad, ControlType.kMAXMotionPositionControl);
     }
 
-    public int getAimTimeLeftSec() {
+    public int getAimTimeLeftMs() {
         double maxVelRadPerSec = TurretConstants.kTurretMaxVelocity.in(Units.RadiansPerSecond);
         if (lastAimTargetRad == null || maxVelRadPerSec <= 0.0) {
             return 0;
@@ -87,7 +87,8 @@ public class TurretSubsystem extends SubsystemBase {
         double currentPositionRad = getTurretPosition().in(Units.Radians);
         double distanceRad = Math.abs(lastAimTargetRad - currentPositionRad);
         double timeLeftSec = distanceRad / maxVelRadPerSec;
-        return (int) Math.ceil(Math.max(0.0, timeLeftSec));
+        double timeLeftMs = Math.max(0.0, timeLeftSec) * 1000.0;
+        return (int) Math.ceil(timeLeftMs);
     }
 
     public Angle getTurretPosition() {
@@ -100,7 +101,7 @@ public class TurretSubsystem extends SubsystemBase {
         // Log turret position in both radians and degrees
         Logger.recordOutput("Turret/PositionRadians", getTurretPosition().in(Units.Radians));
         Logger.recordOutput("Turret/PositionDegrees", getTurretPosition().in(Units.Degrees));
-        Logger.recordOutput("Turret/AimTimeLeftSec", getAimTimeLeftSec());
+        Logger.recordOutput("Turret/AimTimeLeftMs", getAimTimeLeftMs());
 
         // Attempt to log velocity if available, otherwise log 0 or a placeholder
         double velocityRadPerSec = 0.0;

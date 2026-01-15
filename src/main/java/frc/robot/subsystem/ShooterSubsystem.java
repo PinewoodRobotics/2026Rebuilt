@@ -26,6 +26,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final RelativeEncoder relativeEncoder;
 
     private static ShooterSubsystem instance;
+    private LinearVelocity lastShooterVelocitySetpoint = null;
 
     public static ShooterSubsystem GetInstance() {
         if (instance == null) {
@@ -78,8 +79,54 @@ public class ShooterSubsystem extends SubsystemBase {
      * @return the time in ms it will take to reach the velocity
      **/
     public int setShooterVelocity(LinearVelocity velocity) {
+        lastShooterVelocitySetpoint = velocity;
         closedLoopController.setReference(velocity.in(Units.MetersPerSecond), ControlType.kMAXMotionVelocityControl);
-        return 0;
+        return timeLeftToReachVelocity();
+    }
+
+    /**
+     * Re-issues the most recently commanded shooter velocity setpoint (if any).
+     *
+     * @return the time in ms it will take to reach the last setpoint (0 if none)
+     */
+    public int setShooterVelocity() {
+        if (lastShooterVelocitySetpoint == null) {
+            return 0;
+        }
+
+        closedLoopController.setReference(lastShooterVelocitySetpoint.in(Units.MetersPerSecond),
+                ControlType.kMAXMotionVelocityControl);
+        return timeLeftToReachVelocity();
+    }
+
+    /**
+     * Estimates the time (in milliseconds) to reach the provided shooter velocity.
+     * Returns 0 if target velocity is already achieved or if acceleration is
+     * non-positive.
+     */
+    public int timeLeftToReachVelocity(LinearVelocity velocity) {
+        double currentVelocityMps = getCurrentShooterVelocity().in(Units.MetersPerSecond);
+        double targetVelocityMps = velocity.in(Units.MetersPerSecond);
+        double acceleration = ShooterConstants.kShooterMaxAcceleration.in(Units.MetersPerSecondPerSecond);
+
+        double velocityDelta = Math.max(0, Math.abs(targetVelocityMps - currentVelocityMps));
+        if (acceleration <= 0)
+            return 0;
+
+        double seconds = velocityDelta / acceleration;
+        return (int) Math.ceil(seconds * 1000.0);
+    }
+
+    /**
+     * Estimates the time (in milliseconds) to reach the most recently commanded
+     * shooter velocity setpoint. Returns 0 if no setpoint has been commanded yet.
+     */
+    public int timeLeftToReachVelocity() {
+        if (lastShooterVelocitySetpoint == null) {
+            return 0;
+        }
+
+        return timeLeftToReachVelocity(lastShooterVelocitySetpoint);
     }
 
     /**
