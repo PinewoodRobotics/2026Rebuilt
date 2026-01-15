@@ -5,7 +5,7 @@ const lidar_configs: {
   [k: string]: LidarConfig;
 } = {
   "lidar-1": {
-    pi_to_run_on: "jetson1",
+    pi_to_run_on: "tripli",
     port: "/dev/ttyUSB0",
     baudrate: 2000000,
     is_2d: false,

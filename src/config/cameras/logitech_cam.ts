@@ -5,9 +5,9 @@ import {
 import { MatrixUtil, VectorUtil } from "../util/math";
 
 const logitech_cam: CameraParameters = {
-  pi_to_run_on: "jetson1",
+  pi_to_run_on: "nathan-hale",
   name: "front_left",
-  camera_path: "/dev/video0",
+  camera_path: "/dev/usb_cam2",
   flags: 0,
   width: 640,
   height: 480,
@@ -21,14 +21,14 @@ const logitech_cam: CameraParameters = {
     -0.44180630590282977, 0.23535469092748917, -0.0020750769021071484,
     -7.455571357241929e-5, -0.08061071367847858,
   ]),
-  exposure_time: 150,
+  exposure_time: 400,
   camera_type: CameraType.ULTRAWIDE_100,
-  brightness: 200,
+  brightness: 50,
   video_options: {
-    send_feed: false,
-    overlay_tags: true,
+    send_feed: true,
+    overlay_tags: false,
     publication_topic: "camera/logitech/video",
-    compression_quality: 30,
+    compression_quality: 90,
     do_compression: true,
   },
 };
