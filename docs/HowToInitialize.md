@@ -150,13 +150,6 @@ make --version
 
 # Setting Up Workspace
 
-## Clone the repository
-
-```bash
-git clone https://github.com/PinewoodRobotics/command-robot-base.git
-cd command-robot-base
-```
-
 ## Initialize the submodules
 
 ```bash
