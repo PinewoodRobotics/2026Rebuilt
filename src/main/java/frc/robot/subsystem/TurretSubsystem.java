@@ -1,6 +1,9 @@
 package frc.robot.subsystem;
 
+import org.littletonrobotics.junction.Logger;
+
 import com.revrobotics.AbsoluteEncoder;
+import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
@@ -11,20 +14,38 @@ import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import com.revrobotics.spark.config.SparkMaxConfig;
 
 import frc.robot.constant.TurretConstants;
 
-public class TurretSubsystem {
+public class TurretSubsystem extends SubsystemBase {
     private final SparkMax m_turretMotor;
     private final SparkClosedLoopController closedLoopController;
     private final AbsoluteEncoder absoluteEncoder;
+    private final RelativeEncoder relativeEncoder;
+    /**
+     * Last commanded turret setpoint (radians). Used to compute a live countdown
+     * from remaining angular error and {@link TurretConstants#kTurretMaxVelocity}.
+     */
+    private Double lastAimTargetRad = null;
+
+    private static TurretSubsystem instance;
+
+    public static TurretSubsystem GetInstance() {
+        if (instance == null) {
+            instance = new TurretSubsystem(TurretConstants.kTurretCanId, TurretConstants.kTurretMotorType);
+        }
+
+        return instance;
+    }
 
     public TurretSubsystem(int canId, MotorType motorType) {
         this.m_turretMotor = new SparkMax(canId, motorType);
         this.closedLoopController = m_turretMotor.getClosedLoopController();
         this.absoluteEncoder = m_turretMotor.getAbsoluteEncoder();
+        this.relativeEncoder = m_turretMotor.getEncoder();
 
         SparkMaxConfig config = new SparkMaxConfig();
         config
@@ -32,8 +53,9 @@ public class TurretSubsystem {
                 .smartCurrentLimit(TurretConstants.kTurretCurrentLimit);
 
         double factor = (2 * Math.PI) / TurretConstants.kTurretMotorRotationsPerRotation;
-        config.encoder.positionConversionFactor(factor / 60).velocityConversionFactor(factor / 60);
-        config.absoluteEncoder.positionConversionFactor(factor / 60).velocityConversionFactor(factor / 60);
+        // Position is radians; velocity is rad/s (Spark reports RPM by default).
+        config.encoder.positionConversionFactor(factor).velocityConversionFactor(factor / 60.0);
+        config.absoluteEncoder.positionConversionFactor(factor).velocityConversionFactor(factor / 60.0);
 
         config.closedLoop
                 .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
@@ -43,14 +65,62 @@ public class TurretSubsystem {
                 .positionWrappingMinInput(-Math.PI)
                 .positionWrappingMaxInput(Math.PI);
 
+        // These limits are enforced when using kMAXMotionPositionControl.
+        config.closedLoop.maxMotion
+                .maxVelocity(TurretConstants.kTurretMaxVelocity.in(Units.RadiansPerSecond))
+                .maxAcceleration(TurretConstants.kTurretMaxAcceleration.in(Units.RadiansPerSecondPerSecond));
+
         m_turretMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     }
 
     public void setTurretPosition(Angle position) {
-        closedLoopController.setReference(position.in(Units.Radians), ControlType.kPosition);
+        lastAimTargetRad = position.in(Units.Radians);
+        closedLoopController.setReference(lastAimTargetRad, ControlType.kMAXMotionPositionControl);
+    }
+
+    public int getAimTimeLeftSec() {
+        double maxVelRadPerSec = TurretConstants.kTurretMaxVelocity.in(Units.RadiansPerSecond);
+        if (lastAimTargetRad == null || maxVelRadPerSec <= 0.0) {
+            return 0;
+        }
+
+        double currentPositionRad = getTurretPosition().in(Units.Radians);
+        double distanceRad = Math.abs(lastAimTargetRad - currentPositionRad);
+        double timeLeftSec = distanceRad / maxVelRadPerSec;
+        return (int) Math.ceil(Math.max(0.0, timeLeftSec));
     }
 
     public Angle getTurretPosition() {
-        return Angle.ofRelativeUnits(absoluteEncoder.getPosition(), Units.Radians);
+        // Use the same sensor the controller uses (primary encoder).
+        return Angle.ofRelativeUnits(relativeEncoder.getPosition(), Units.Radians);
+    }
+
+    @Override
+    public void periodic() {
+        // Log turret position in both radians and degrees
+        Logger.recordOutput("Turret/PositionRadians", getTurretPosition().in(Units.Radians));
+        Logger.recordOutput("Turret/PositionDegrees", getTurretPosition().in(Units.Degrees));
+        Logger.recordOutput("Turret/AimTimeLeftSec", getAimTimeLeftSec());
+
+        // Attempt to log velocity if available, otherwise log 0 or a placeholder
+        double velocityRadPerSec = 0.0;
+        double velocityDegPerSec = 0.0;
+        if (absoluteEncoder != null) {
+            velocityRadPerSec = absoluteEncoder.getVelocity();
+            velocityDegPerSec = Math.toDegrees(velocityRadPerSec);
+        }
+        Logger.recordOutput("Turret/VelocityRadiansPerSec", velocityRadPerSec);
+        Logger.recordOutput("Turret/VelocityDegreesPerSec", velocityDegPerSec);
+
+        // Log raw encoder readings for diagnostic purposes
+        if (absoluteEncoder != null) {
+            Logger.recordOutput("Turret/RawAbsoluteEncoderPosition", absoluteEncoder.getPosition());
+            Logger.recordOutput("Turret/RawAbsoluteEncoderVelocity", absoluteEncoder.getVelocity());
+        }
+        if (m_turretMotor != null) {
+            Logger.recordOutput("Turret/AppliedOutput", m_turretMotor.getAppliedOutput());
+            Logger.recordOutput("Turret/BusVoltage", m_turretMotor.getBusVoltage());
+            Logger.recordOutput("Turret/OutputCurrent", m_turretMotor.getOutputCurrent());
+        }
     }
 }
