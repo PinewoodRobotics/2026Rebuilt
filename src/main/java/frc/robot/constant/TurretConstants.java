@@ -2,6 +2,9 @@ package frc.robot.constant;
 
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularAcceleration;
@@ -31,4 +34,6 @@ public class TurretConstants {
 	public static final Angle kTurretTheta = Angle.ofRelativeUnits(45.0, Units.Degrees);
 
 	public static final int kTurretOffByMs = 200;
+
+	public static final Translation2d turretPositionInRobot = new Translation2d(0, 1);
 }

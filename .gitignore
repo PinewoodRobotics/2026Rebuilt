@@ -206,3 +206,5 @@ src/main/deploy/config
 
 *.db
 .coverage
+*.lock
+*.bin
