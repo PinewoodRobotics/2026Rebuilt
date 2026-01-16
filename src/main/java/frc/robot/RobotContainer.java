@@ -4,14 +4,13 @@ import java.util.function.Supplier;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
 
+import frc.robot.command.SwerveMoveTeleop;
+import frc.robot.subystem.SwerveSubsystem;
 import pwrup.frc.core.controller.FlightModule;
 import pwrup.frc.core.controller.FlightStick;
 import pwrup.frc.core.controller.LogitechController;
 import pwrup.frc.core.controller.OperatorPanel;
-
-import edu.wpi.first.wpilibj2.command.Command;
 
 public class RobotContainer {
 
@@ -22,13 +21,26 @@ public class RobotContainer {
   final FlightModule m_flightModule = new FlightModule(
     m_leftFlightStick,
     m_rightFlightStick);
+  SwerveMoveTeleop m_moveCommand;
   private Boolean isNonFieldRelative = false;
 
   public RobotContainer() {
-    configureBindings();
+    setSwerveCommands();
   }
 
-  private void configureBindings() {
+  private void setSwerveCommands() {
+    SwerveSubsystem swerveSubsystem = SwerveSubsystem.GetInstance();
+
+    // Create and set the default teleop drive command
+    this.m_moveCommand = new SwerveMoveTeleop(swerveSubsystem, m_flightModule);
+    swerveSubsystem.setDefaultCommand(m_moveCommand);
+
+    // Right Flight Stick B5: Reset gyro to 0 degrees
+    m_rightFlightStick
+        .B5()
+        .onTrue(swerveSubsystem.runOnce(() -> {
+          swerveSubsystem.resetGyro(0);
+        }));
   }
 
   public Command getAutonomousCommand() {

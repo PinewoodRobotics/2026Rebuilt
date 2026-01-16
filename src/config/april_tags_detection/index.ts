@@ -17,14 +17,10 @@ export const april_tag_detection_config: AprilDetectionConfig = {
   send_stats: true,
   stats_topic: "apriltag/stats",
   pi_name_to_special_detector_config: {
-    // this section is for special detectors. This means that if you want to use a non-standard detector, say GPU based
-    // that only works on a specific Pi, you can add it here with the Pi name as the key.
-    /*
     jetson1: {
       type: SpecialDetectorType.GPU_CUDA,
       py_lib_searchpath:
         "/opt/blitz/B.L.I.T.Z/build/release/2.35/aarch64/cpp/cuda-tags-lib/",
     },
-    */
   },
 };

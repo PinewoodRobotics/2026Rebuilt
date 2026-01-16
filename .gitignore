@@ -203,3 +203,5 @@ target/
 *.pyc
 
 src/main/deploy/config
+
+.gradle-tmp/

@@ -23,6 +23,8 @@ repositories {
 
 def ROBOT_MAIN_CLASS = "frc.robot.Main"
 
+def EXPECTED_NUM_OF_PIS = 2;
+
 // Define deploy target and artifacts
 deploy {
     targets {
@@ -254,6 +256,8 @@ tasks.register("generateConfig") {
         generateConfig()
     }
 }
+
+generateConfig()
 
 tasks.build.dependsOn(tasks.installPythonDependencies)
 tasks.build.dependsOn(tasks.generateConfig)
