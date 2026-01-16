@@ -205,3 +205,6 @@ target/
 src/main/deploy/config
 
 .gradle-tmp/
+
+*.db
+.coverage

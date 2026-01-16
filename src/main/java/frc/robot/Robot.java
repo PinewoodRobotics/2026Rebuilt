@@ -14,34 +14,26 @@ import autobahn.client.AutobahnClient;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.constant.PiConstants;
 import frc.robot.constant.TopicConstants;
-import frc.robot.util.OptionalAutobahn;
 import frc.robot.util.RPC;
 import lombok.Getter;
+import pwrup.frc.core.online.raspberrypi.OptionalAutobahn;
 import pwrup.frc.core.online.raspberrypi.PrintPiLogs;
 
 public class Robot extends LoggedRobot {
 
-  @Getter // created the "getCommunicationClient"
+  @Getter
   private final OptionalAutobahn communicationClient = new OptionalAutobahn();
-  @Getter // created the "getOnlineStatus"
+  @Getter
   private boolean onlineStatus;
 
   private RobotContainer m_robotContainer;
 
   public Robot() {
-    // Start advantage kit logging. This is required for the robot to log data to
-    // the dashboard.
     Logger.addDataReceiver(new NT4Publisher());
-    // Actually start the logger. This is a pattern where you first set the data
-    // receivers, then start the logger.
     Logger.start();
 
-    RPC.SetClient(communicationClient); // set the communication client to the RPC service.
-    // after this, you should be able to use the RPC service to call methods on the
-    // backend. See the RPC class for more details.
+    RPC.SetClient(communicationClient);
     PrintPiLogs.ToSystemOut(communicationClient, TopicConstants.kPiTechnicalLogTopic);
-    // print the pi technical log to the system out. otherwise there will not be any
-    // logs printed to the dashboard.
   }
 
   @Override
@@ -54,7 +46,6 @@ public class Robot extends LoggedRobot {
   public void robotPeriodic() {
     CommandScheduler.getInstance().run();
 
-    // Expose Autobahn connection status to AdvantageKit/NT for visibility.
     Logger.recordOutput("Autobahn/Connected", communicationClient.isConnected() && onlineStatus);
   }
 
@@ -92,15 +83,6 @@ public class Robot extends LoggedRobot {
 
   @Override
   public void testPeriodic() {
-  }
-
-  private String readFromFile(File path) {
-    try {
-      return Files.readString(Paths.get(path.getAbsolutePath()));
-    } catch (IOException e) {
-      e.printStackTrace();
-      return null;
-    }
   }
 
   /**
@@ -142,5 +124,14 @@ public class Robot extends LoggedRobot {
         System.out.println("ERROR: Failed to restart Pis");
       }
     }).start();
+  }
+
+  private String readFromFile(File path) {
+    try {
+      return Files.readString(Paths.get(path.getAbsolutePath()));
+    } catch (IOException e) {
+      e.printStackTrace();
+      return null;
+    }
   }
 }

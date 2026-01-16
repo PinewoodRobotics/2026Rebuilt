@@ -5,9 +5,9 @@ import {
 import { MatrixUtil, VectorUtil } from "../util/math";
 
 const front_right: CameraParameters = {
-  pi_to_run_on: "tripli",
+  pi_to_run_on: "tynan",
   name: "front_right",
-  camera_path: "/dev/usb_bottom_left_cam",
+  camera_path: "/dev/usb_cam2",
   flags: 0,
   width: 800,
   height: 600,
@@ -21,8 +21,8 @@ const front_right: CameraParameters = {
     0.03841168751857183, -0.03836398867353221, 0.00011911539228647425,
     -0.00047135490659979865, -0.011145047269650642,
   ]),
-  exposure_time: 20,
-  camera_type: 0 as CameraType,
+  exposure_time: 10,
+  camera_type: CameraType.OV2311,
   video_options: {
     send_feed: false,
     do_compression: true,
