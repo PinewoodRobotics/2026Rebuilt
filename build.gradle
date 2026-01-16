@@ -23,7 +23,7 @@ repositories {
 
 def ROBOT_MAIN_CLASS = "frc.robot.Main"
 
-def EXPECTED_NUM_OF_PIS = 2;
+def EXPECTED_NUM_OF_PIS = 0;
 
 // Define deploy target and artifacts
 deploy {
