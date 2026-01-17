@@ -148,9 +148,13 @@ brew install make
 make --version
 ```
 
-# Setting Up Workspace
+# Setting Up Workspace (inside the project directory)
+
+1) Open up the terminal and make sure to go into the project directory. EG: `cd ~/Documents/robotics/2026-robot`. Using cd will allow you to go into the directory of the project. Then, in the same terminal, run the following commands.
 
 ## Initialize the submodules
+
+This should pull all the github submodules into the project.
 
 ```bash
 git submodule update --init --recursive
@@ -158,11 +162,15 @@ git submodule update --init --recursive
 
 ## Install the dependencies
 
+This should install all the node dependencies for the project. Essentially this is for the config file.
+
 ```bash
 npm install
 ```
 
 ## Setup Python Virtual Environment
+
+This should create a virtual environment for the python dependencies.
 
 ```bash
 python3 -m venv .venv
@@ -171,11 +179,15 @@ source .venv/bin/activate
 
 ## Install the dependencies
 
+This should install all the python dependencies for the project.
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ## Generate Files
+
+This should generate the files for the project.
 
 ```bash
 make generate
@@ -184,6 +196,8 @@ npm run generate-thrift
 
 ## Build the project
 
+This should build the project.
+
 ```bash
 ./gradlew build
 ```
@@ -191,3 +205,4 @@ npm run generate-thrift
 ## Notes and Help:
 
 - make sure that each of the following steps succeed without errors. If you get errors, work on each one accordingly before moving on to the next step.
+- Tell AI to look at this file and show it the error you are getting. Follow it's output and try to fix. 
