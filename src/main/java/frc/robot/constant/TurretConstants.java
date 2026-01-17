@@ -35,5 +35,10 @@ public class TurretConstants {
 
 	public static final int kTurretOffByMs = 200;
 
+	public static final double kTurretMaxVoltage = 12.0;
+	public static final double kTurretMinVoltage = -12.0;
+
 	public static final Translation2d turretPositionInRobot = new Translation2d(0, 1);
+
+	public static final double feedForwardFactor = 1.0;
 }
