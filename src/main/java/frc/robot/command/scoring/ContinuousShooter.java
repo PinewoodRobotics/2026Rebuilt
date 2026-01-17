@@ -76,7 +76,7 @@ public class ContinuousShooter extends Command {
     private LinearVelocity calculateSpeedNeeded(double x, double y, double angleRad) {
         double t = Math.sqrt((x * Math.tan(angleRad) - y) / 4.9);
         double v = x / (Math.cos(angleRad) * t);
-        return LinearVelocity.ofRelativeUnits(v, Units.MetersPerSecond);
+        return Units.MetersPerSecond.of(v);
     }
 
     private void logEverything(

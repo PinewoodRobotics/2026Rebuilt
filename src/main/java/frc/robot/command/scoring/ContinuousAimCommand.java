@@ -16,7 +16,6 @@ import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constant.TurretConstants;
 import frc.robot.subsystem.GlobalPosition;
@@ -51,8 +50,8 @@ public class ContinuousAimCommand extends Command {
   public ContinuousAimCommand(Supplier<Translation3d> targetGlobalPoseSupplier) {
     this(targetGlobalPoseSupplier, GlobalPosition::Get, () -> new Translation2d(0, 0),
         () -> new Translation2d(0, 0),
-        () -> AngularVelocity.ofRelativeUnits(0, Units.RadiansPerSecond),
-        () -> AngularAcceleration.ofRelativeUnits(0, Units.RadiansPerSecondPerSecond));
+        () -> Units.RadiansPerSecond.of(0),
+        () -> Units.RadiansPerSecondPerSecond.of(0));
   }
 
   @Override
@@ -79,7 +78,7 @@ public class ContinuousAimCommand extends Command {
     Translation2d aimPoint = new Translation2d(T_robot.get(0, 0), T_robot.get(1, 0));
     // ------------------------------------------------------------
 
-    Angle newAngle = Angle.ofRelativeUnits(aimPoint.getAngle().getRadians(), Units.Radians);
+    Angle newAngle = Units.Radians.of(aimPoint.getAngle().getRadians());
 
     AngularVelocity newAngleRate = calculateAimAngleRate(target.getNorm(), targetGlobal.getZ(),
         TurretConstants.kTurretTheta, velocity,
@@ -88,7 +87,7 @@ public class ContinuousAimCommand extends Command {
 
     double feedForwardV = newAngleRate.in(Units.RadiansPerSecond) * TurretConstants.feedForwardFactor;
 
-    turretSubsystem.setTurretPosition(newAngle, Voltage.ofRelativeUnits(feedForwardV, Units.Volts));
+    turretSubsystem.setTurretPosition(newAngle, Units.Volts.of(feedForwardV));
 
     logEverything(selfPose, targetGlobal, target, velocity, aimPoint, newAngle);
   }
@@ -359,6 +358,6 @@ public class ContinuousAimCommand extends Command {
     double d_alpha_dt = (1 / (1 + Math.pow(T_new_R_y / T_new_R_x, 2)))
         * ((T_new_R_x * d_T_new_R_y - T_new_R_y * d_T_new_R_x) / Math.pow(T_new_R_x, 2));
 
-    return AngularVelocity.ofRelativeUnits(d_alpha_dt, Units.RadiansPerSecond);
+    return Units.RadiansPerSecond.of(d_alpha_dt);
   }
 }

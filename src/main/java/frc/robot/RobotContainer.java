@@ -1,7 +1,13 @@
 package frc.robot;
 
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
-
+import edu.wpi.first.wpilibj2.command.RunCommand;
+import frc.robot.command.scoring.TurnTesting;
+import frc.robot.subsystem.TurretSubsystem;
 import pwrup.frc.core.controller.FlightModule;
 import pwrup.frc.core.controller.FlightStick;
 import pwrup.frc.core.controller.LogitechController;
@@ -18,10 +24,12 @@ public class RobotContainer {
       m_rightFlightStick);
 
   public RobotContainer() {
+    TurretSubsystem.GetInstance();
     configureBindings();
   }
 
   private void configureBindings() {
+    TurretSubsystem.GetInstance().setDefaultCommand(new TurnTesting(m_leftFlightStick));
   }
 
   public Command getAutonomousCommand() {

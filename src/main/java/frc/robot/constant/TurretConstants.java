@@ -2,8 +2,6 @@ package frc.robot.constant;
 
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Angle;
@@ -13,25 +11,23 @@ import edu.wpi.first.units.measure.AngularVelocity;
 public class TurretConstants {
 	public static final int kTurretCurrentLimit = 30;
 
-	public static final double kTurretP = 0.01;
-	public static final double kTurretI = 0.0001;
-	public static final double kTurretD = 0.0;
+	public static final double kTurretP = 0.4;
+	public static final double kTurretI = 0.0;
+	public static final double kTurretD = 0.2;
 	public static final double kTurretIZ = 0.0;
 
 	/** Max angular velocity for MAXMotion (rad/s). */
-	public static final AngularVelocity kTurretMaxVelocity = AngularVelocity.ofRelativeUnits(10.0,
-			Units.RadiansPerSecond);
+	public static final AngularVelocity kTurretMaxVelocity = Units.RadiansPerSecond.of(4.0);
 	/** Max angular acceleration for MAXMotion (rad/s^2). */
-	public static final AngularAcceleration kTurretMaxAcceleration = AngularAcceleration.ofRelativeUnits(
-			30.0, Units.RadiansPerSecondPerSecond);
+	public static final AngularAcceleration kTurretMaxAcceleration = Units.RadiansPerSecondPerSecond.of(4.0);
 
 	public static final boolean kTurretReversed = false;
-	public static final double kTurretMotorRotationsPerRotation = 1.0;
+	public static final double kTurretMotorRotationsPerRotation = 4.0;
 
-	public static final int kTurretCanId = 0;
+	public static final int kTurretCanId = 36;
 	public static final MotorType kTurretMotorType = MotorType.kBrushless;
 
-	public static final Angle kTurretTheta = Angle.ofRelativeUnits(45.0, Units.Degrees);
+	public static final Angle kTurretTheta = Units.Degrees.of(45.0);
 
 	public static final int kTurretOffByMs = 200;
 

@@ -2,14 +2,14 @@ package frc.robot.subsystem;
 
 import org.littletonrobotics.junction.Logger;
 
+import com.revrobotics.PersistMode;
+import com.revrobotics.ResetMode;
 import com.revrobotics.AbsoluteEncoder;
 import com.revrobotics.RelativeEncoder;
+import com.revrobotics.spark.FeedbackSensor;
 import com.revrobotics.spark.SparkBase.ControlType;
-import com.revrobotics.spark.SparkBase.PersistMode;
-import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
 import edu.wpi.first.units.Units;
@@ -62,7 +62,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
         // These limits are enforced when using kMAXMotionVelocityControl.
         config.closedLoop.maxMotion
-                .maxVelocity(ShooterConstants.kShooterMaxVelocity.in(Units.MetersPerSecond))
+                .cruiseVelocity(ShooterConstants.kShooterMaxVelocity.in(Units.MetersPerSecond))
                 .maxAcceleration(ShooterConstants.kShooterMaxAcceleration.in(Units.MetersPerSecondPerSecond));
 
         m_shooterMotor.configure(
@@ -80,7 +80,7 @@ public class ShooterSubsystem extends SubsystemBase {
      **/
     public int setShooterVelocity(LinearVelocity velocity) {
         lastShooterVelocitySetpoint = velocity;
-        closedLoopController.setReference(velocity.in(Units.MetersPerSecond), ControlType.kMAXMotionVelocityControl);
+        closedLoopController.setSetpoint(velocity.in(Units.MetersPerSecond), ControlType.kMAXMotionVelocityControl);
         return timeLeftToReachVelocity();
     }
 
@@ -94,7 +94,7 @@ public class ShooterSubsystem extends SubsystemBase {
             return 0;
         }
 
-        closedLoopController.setReference(lastShooterVelocitySetpoint.in(Units.MetersPerSecond),
+        closedLoopController.setSetpoint(lastShooterVelocitySetpoint.in(Units.MetersPerSecond),
                 ControlType.kMAXMotionVelocityControl);
         return timeLeftToReachVelocity();
     }
@@ -135,7 +135,7 @@ public class ShooterSubsystem extends SubsystemBase {
      * @return the current shooter velocity
      **/
     public LinearVelocity getCurrentShooterVelocity() {
-        return LinearVelocity.ofRelativeUnits(relativeEncoder.getVelocity(), Units.MetersPerSecond);
+        return Units.MetersPerSecond.of(relativeEncoder.getVelocity());
     }
 
     @Override

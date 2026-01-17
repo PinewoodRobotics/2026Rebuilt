@@ -29,5 +29,5 @@
   "java.test.defaultConfig": "WPIlibUnitTests",
   "python.analysis.typeCheckingMode": "basic",
   "cursorpyright.analysis.typeCheckingMode": "standard",
-  "explorer.excludeGitIgnore": true
+  "explorer.excludeGitIgnore": false
 }

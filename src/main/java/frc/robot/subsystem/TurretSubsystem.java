@@ -6,22 +6,23 @@ import com.ctre.phoenix6.configs.ClosedLoopGeneralConfigs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
-import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.revrobotics.PersistMode;
+import com.revrobotics.ResetMode;
 import com.revrobotics.AbsoluteEncoder;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.ClosedLoopSlot;
+import com.revrobotics.spark.FeedbackSensor;
+import com.revrobotics.spark.SparkBase;
 import com.revrobotics.spark.SparkBase.ControlType;
-import com.revrobotics.spark.SparkBase.PersistMode;
-import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkClosedLoopController;
+import com.revrobotics.spark.SparkClosedLoopController.ArbFFUnits;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Angle;
@@ -29,14 +30,14 @@ import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.spark.config.SparkFlexConfig;
 
 import frc.robot.constant.TurretConstants;
 
 public class TurretSubsystem extends SubsystemBase {
-  private final MotionMagicVelocityVoltage velocityRequest = new MotionMagicVelocityVoltage(0).withSlot(0);
   private final MotionMagicVoltage positionRequest = new MotionMagicVoltage(0).withSlot(0);
 
-  private SparkMax m_turretMotor;
+  private SparkBase m_turretMotor;
   private SparkClosedLoopController closedLoopController;
   private AbsoluteEncoder absoluteEncoder;
   private RelativeEncoder relativeEncoder;
@@ -60,9 +61,10 @@ public class TurretSubsystem extends SubsystemBase {
 
   public TurretSubsystem(int canId, MotorType motorType) {
     // configureSparkMax(canId, motorType);
-    configureTalonFX(canId);
+    configureSparkFlex(canId, motorType);
   }
 
+  @SuppressWarnings("unused")
   private void configureTalonFX(int canId) {
     this.m_turnMotor = new TalonFX(canId);
 
@@ -93,6 +95,7 @@ public class TurretSubsystem extends SubsystemBase {
     m_turnMotor.getConfigurator().apply(turnConfig);
   }
 
+  @SuppressWarnings("unused")
   private void configureSparkMax(int canId, MotorType motorType) {
     this.m_turretMotor = new SparkMax(canId, motorType);
     this.closedLoopController = m_turretMotor.getClosedLoopController();
@@ -105,12 +108,14 @@ public class TurretSubsystem extends SubsystemBase {
         .smartCurrentLimit(TurretConstants.kTurretCurrentLimit);
 
     double factor = (2 * Math.PI) / TurretConstants.kTurretMotorRotationsPerRotation;
-    // Position is radians; velocity is rad/s (Spark reports RPM by default).
-    config.encoder.positionConversionFactor(factor).velocityConversionFactor(factor / 60.0);
-    config.absoluteEncoder.positionConversionFactor(factor).velocityConversionFactor(factor / 60.0);
+    // Position is radians; velocity is rad/min (Spark reports RPM by default).
+    // Keeping velocity in "per-minute" units matches REV's MAXMotion parameter
+    // conventions
+    // (which default to RPM and RPM/s).
+    config.encoder.positionConversionFactor(factor).velocityConversionFactor(factor);
+    config.absoluteEncoder.positionConversionFactor(factor).velocityConversionFactor(factor);
 
     config.closedLoop
-        .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
         .pid(TurretConstants.kTurretP, TurretConstants.kTurretI, TurretConstants.kTurretD)
         .iZone(TurretConstants.kTurretIZ)
         .positionWrappingEnabled(true)
@@ -119,17 +124,62 @@ public class TurretSubsystem extends SubsystemBase {
 
     // These limits are enforced when using kMAXMotionPositionControl.
     config.closedLoop.maxMotion
-        .maxVelocity(TurretConstants.kTurretMaxVelocity.in(Units.RadiansPerSecond))
-        .maxAcceleration(TurretConstants.kTurretMaxAcceleration.in(Units.RadiansPerSecondPerSecond));
+        // With velocity in rad/min, express cruise as rad/min and accel as (rad/min)/s.
+        .cruiseVelocity(TurretConstants.kTurretMaxVelocity.in(Units.RadiansPerSecond) * 60.0)
+        .maxAcceleration(TurretConstants.kTurretMaxAcceleration.in(Units.RadiansPerSecondPerSecond) * 60.0);
+
+    m_turretMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+  }
+
+  /**
+   * SPARK Flex equivalent of {@link #configureSparkMax(int, MotorType)} using
+   * REVLib 2026's Spark "configure" API.
+   */
+  private void configureSparkFlex(int canId, MotorType motorType) {
+    this.m_turretMotor = new SparkFlex(canId, motorType);
+    this.closedLoopController = m_turretMotor.getClosedLoopController();
+    this.relativeEncoder = m_turretMotor.getEncoder();
+
+    SparkFlexConfig config = new SparkFlexConfig();
+    config
+        .inverted(TurretConstants.kTurretReversed)
+        .smartCurrentLimit(TurretConstants.kTurretCurrentLimit);
+
+    // Keep units consistent across the whole turret stack:
+    // - Position: radians
+    // - Velocity: rad/min (Spark reports RPM by default)
+    //
+    // This matches REV's MAXMotion parameter conventions (RPM and RPM/s by
+    // default).
+    double factor = (2 * Math.PI) / TurretConstants.kTurretMotorRotationsPerRotation;
+    config.encoder.positionConversionFactor(factor).velocityConversionFactor(factor);
+
+    config.closedLoop.feedbackSensor(FeedbackSensor.kPrimaryEncoder)
+        .pid(TurretConstants.kTurretP, TurretConstants.kTurretI, TurretConstants.kTurretD)
+        .iZone(TurretConstants.kTurretIZ)
+        .positionWrappingEnabled(true)
+        .positionWrappingMinInput(-Math.PI)
+        .positionWrappingMaxInput(Math.PI);
+
+    // These limits are enforced when using kMAXMotionPositionControl.
+    config.closedLoop.maxMotion
+        // With velocity in rad/min, express cruise as rad/min and accel as (rad/min)/s.
+        .cruiseVelocity(TurretConstants.kTurretMaxVelocity.in(Units.RadiansPerSecond) * 60.0)
+        .maxAcceleration(TurretConstants.kTurretMaxAcceleration.in(Units.RadiansPerSecondPerSecond) * 60.0);
 
     m_turretMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
   }
 
   public void setTurretPosition(Angle position, Voltage feedForward) {
     lastAimTargetRad = position.in(Units.Radians);
+
     if (closedLoopController != null) {
-      closedLoopController.setReference(lastAimTargetRad, ControlType.kMAXMotionPositionControl, ClosedLoopSlot.kSlot0,
-          feedForward.in(Units.Volts));
+      closedLoopController.setSetpoint(
+          position.in(Units.Radians),
+          ControlType.kMAXMotionPositionControl,
+          ClosedLoopSlot.kSlot0,
+          feedForward.in(Units.Volts),
+          ArbFFUnits.kVoltage);
     } else if (m_turnMotor != null) {
       m_turnMotor.setControl(positionRequest.withPosition(position).withFeedForward(feedForward));
     }
@@ -150,10 +200,10 @@ public class TurretSubsystem extends SubsystemBase {
 
   public Angle getTurretPosition() {
     // Use the same sensor the controller uses (primary encoder).
-    if (closedLoopController != null) {
+    if (m_turnMotor != null) {
       return m_turnMotor.getPosition().getValue();
     } else {
-      return Angle.ofRelativeUnits(relativeEncoder.getPosition(), Units.Radians);
+      return Units.Radians.of(relativeEncoder.getPosition());
     }
   }
 
@@ -168,7 +218,12 @@ public class TurretSubsystem extends SubsystemBase {
     double velocityRadPerSec = 0.0;
     double velocityDegPerSec = 0.0;
     if (absoluteEncoder != null) {
-      velocityRadPerSec = absoluteEncoder.getVelocity();
+      // With conversion factors above, absolute encoder velocity is rad/min.
+      velocityRadPerSec = absoluteEncoder.getVelocity() / 60.0;
+      velocityDegPerSec = Math.toDegrees(velocityRadPerSec);
+    } else if (relativeEncoder != null) {
+      // With conversion factors above, relative encoder velocity is rad/min.
+      velocityRadPerSec = relativeEncoder.getVelocity() / 60.0;
       velocityDegPerSec = Math.toDegrees(velocityRadPerSec);
     }
     Logger.recordOutput("Turret/VelocityRadiansPerSec", velocityRadPerSec);
