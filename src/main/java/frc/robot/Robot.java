@@ -22,9 +22,9 @@ import pwrup.frc.core.online.raspberrypi.PrintPiLogs;
 public class Robot extends LoggedRobot {
 
   @Getter
-  private final OptionalAutobahn communicationClient = new OptionalAutobahn();
+  private static final OptionalAutobahn communicationClient = new OptionalAutobahn();
   @Getter
-  private boolean onlineStatus;
+  private static boolean onlineStatus;
 
   private RobotContainer m_robotContainer;
 
