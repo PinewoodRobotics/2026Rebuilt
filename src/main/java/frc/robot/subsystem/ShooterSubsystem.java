@@ -20,132 +20,122 @@ import frc.robot.constant.ShooterConstants;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
 public class ShooterSubsystem extends SubsystemBase {
-    private final SparkMax m_shooterMotor;
-    private final SparkClosedLoopController closedLoopController;
-    private final AbsoluteEncoder absoluteEncoder;
-    private final RelativeEncoder relativeEncoder;
+  private static ShooterSubsystem instance;
 
-    private static ShooterSubsystem instance;
-    private LinearVelocity lastShooterVelocitySetpoint = null;
+  private final SparkMax m_shooterMotor;
+  private final SparkClosedLoopController closedLoopController;
+  private final RelativeEncoder relativeEncoder;
 
-    public static ShooterSubsystem GetInstance() {
-        if (instance == null) {
-            instance = new ShooterSubsystem(ShooterConstants.kShooterCanId, ShooterConstants.kShooterMotorType);
-        }
+  private LinearVelocity lastShooterVelocitySetpoint;
 
-        return instance;
+  public static ShooterSubsystem GetInstance() {
+    if (instance == null) {
+      instance = new ShooterSubsystem(ShooterConstants.kShooterCanId, ShooterConstants.kShooterMotorType);
     }
 
-    public ShooterSubsystem(int canId, MotorType motorType) {
-        this.m_shooterMotor = new SparkMax(canId, motorType);
-        this.closedLoopController = m_shooterMotor.getClosedLoopController();
-        this.relativeEncoder = m_shooterMotor.getEncoder();
+    return instance;
+  }
 
-        SparkMaxConfig config = new SparkMaxConfig();
-        config
-                .inverted(ShooterConstants.kShooterReversed)
-                .smartCurrentLimit(ShooterConstants.kShooterCurrentLimit);
+  public ShooterSubsystem(int canId, MotorType motorType) {
+    this.m_shooterMotor = new SparkMax(canId, motorType);
+    this.closedLoopController = m_shooterMotor.getClosedLoopController();
+    this.relativeEncoder = m_shooterMotor.getEncoder();
 
-        double factor = (2 * ShooterConstants.kWheelRadius * Math.PI)
-                / ShooterConstants.kShooterMotorRotationsPerRotation;
+    SparkMaxConfig config = new SparkMaxConfig();
+    config
+        .inverted(ShooterConstants.kShooterReversed)
+        .smartCurrentLimit(ShooterConstants.kShooterCurrentLimit);
 
-        // Velocity is m/s (Spark reports RPM by default).
-        config.encoder.velocityConversionFactor(factor / 60.0);
-        config.absoluteEncoder.velocityConversionFactor(factor / 60.0);
+    double factor = (2 * ShooterConstants.kWheelRadius * Math.PI)
+        / ShooterConstants.kShooterMotorRotationsPerRotation;
 
-        // Ensure the closed-loop is actually using the integrated encoder and has
-        // gains configured; otherwise velocity commands will be extremely weak.
-        config.closedLoop
-                .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-                .pid(ShooterConstants.kShooterP, ShooterConstants.kShooterI, ShooterConstants.kShooterD)
-                .iZone(ShooterConstants.kShooterIZ);
+    config.encoder.velocityConversionFactor(factor / 60.0);
 
-        // These limits are enforced when using kMAXMotionVelocityControl.
-        config.closedLoop.maxMotion
-                .cruiseVelocity(ShooterConstants.kShooterMaxVelocity.in(Units.MetersPerSecond))
-                .maxAcceleration(ShooterConstants.kShooterMaxAcceleration.in(Units.MetersPerSecondPerSecond));
+    config.closedLoop
+        .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
+        .pid(ShooterConstants.kShooterP, ShooterConstants.kShooterI, ShooterConstants.kShooterD)
+        .iZone(ShooterConstants.kShooterIZ);
 
-        m_shooterMotor.configure(
-                config,
-                ResetMode.kResetSafeParameters,
-                PersistMode.kPersistParameters);
-        this.absoluteEncoder = m_shooterMotor.getAbsoluteEncoder();
+    config.closedLoop.maxMotion
+        .cruiseVelocity(ShooterConstants.kShooterMaxVelocity.in(Units.MetersPerSecond))
+        .maxAcceleration(ShooterConstants.kShooterMaxAcceleration.in(Units.MetersPerSecondPerSecond));
+
+    m_shooterMotor.configure(
+        config,
+        ResetMode.kResetSafeParameters,
+        PersistMode.kPersistParameters);
+  }
+
+  /**
+   * Set the shooter velocity in meters per second.
+   * 
+   * @param velocity The velocity to set the shooter to.
+   * @return the time in ms it will take to reach the velocity
+   **/
+  public int setShooterVelocity(LinearVelocity velocity) {
+    lastShooterVelocitySetpoint = velocity;
+    closedLoopController.setSetpoint(velocity.in(Units.MetersPerSecond), ControlType.kMAXMotionVelocityControl);
+    return timeLeftToReachVelocity();
+  }
+
+  /**
+   * Re-issues the most recently commanded shooter velocity setpoint (if any).
+   *
+   * @return the time in ms it will take to reach the last setpoint (0 if none)
+   */
+  public int setShooterVelocity() {
+    if (lastShooterVelocitySetpoint == null) {
+      return 0;
     }
 
-    /**
-     * Set the shooter velocity in meters per second.
-     * 
-     * @param velocity The velocity to set the shooter to.
-     * @return the time in ms it will take to reach the velocity
-     **/
-    public int setShooterVelocity(LinearVelocity velocity) {
-        lastShooterVelocitySetpoint = velocity;
-        closedLoopController.setSetpoint(velocity.in(Units.MetersPerSecond), ControlType.kMAXMotionVelocityControl);
-        return timeLeftToReachVelocity();
+    closedLoopController.setSetpoint(lastShooterVelocitySetpoint.in(Units.MetersPerSecond),
+        ControlType.kMAXMotionVelocityControl);
+    return timeLeftToReachVelocity();
+  }
+
+  /**
+   * Estimates the time (in milliseconds) to reach the provided shooter velocity.
+   * Returns 0 if target velocity is already achieved or if acceleration is
+   * non-positive.
+   */
+  public int timeLeftToReachVelocity(LinearVelocity velocity) {
+    double currentVelocityMps = getCurrentShooterVelocity().in(Units.MetersPerSecond);
+    double targetVelocityMps = velocity.in(Units.MetersPerSecond);
+    double acceleration = ShooterConstants.kShooterMaxAcceleration.in(Units.MetersPerSecondPerSecond);
+
+    double velocityDelta = Math.max(0, Math.abs(targetVelocityMps - currentVelocityMps));
+    if (acceleration <= 0)
+      return 0;
+
+    double seconds = velocityDelta / acceleration;
+    return (int) Math.ceil(seconds * 1000.0);
+  }
+
+  /**
+   * Estimates the time (in milliseconds) to reach the most recently commanded
+   * shooter velocity setpoint. Returns 0 if no setpoint has been commanded yet.
+   */
+  public int timeLeftToReachVelocity() {
+    if (lastShooterVelocitySetpoint == null) {
+      return 0;
     }
 
-    /**
-     * Re-issues the most recently commanded shooter velocity setpoint (if any).
-     *
-     * @return the time in ms it will take to reach the last setpoint (0 if none)
-     */
-    public int setShooterVelocity() {
-        if (lastShooterVelocitySetpoint == null) {
-            return 0;
-        }
+    return timeLeftToReachVelocity(lastShooterVelocitySetpoint);
+  }
 
-        closedLoopController.setSetpoint(lastShooterVelocitySetpoint.in(Units.MetersPerSecond),
-                ControlType.kMAXMotionVelocityControl);
-        return timeLeftToReachVelocity();
-    }
+  /**
+   * Get the current shooter velocity in meters per second.
+   * 
+   * @return the current shooter velocity
+   **/
+  public LinearVelocity getCurrentShooterVelocity() {
+    return Units.MetersPerSecond.of(relativeEncoder.getVelocity());
+  }
 
-    /**
-     * Estimates the time (in milliseconds) to reach the provided shooter velocity.
-     * Returns 0 if target velocity is already achieved or if acceleration is
-     * non-positive.
-     */
-    public int timeLeftToReachVelocity(LinearVelocity velocity) {
-        double currentVelocityMps = getCurrentShooterVelocity().in(Units.MetersPerSecond);
-        double targetVelocityMps = velocity.in(Units.MetersPerSecond);
-        double acceleration = ShooterConstants.kShooterMaxAcceleration.in(Units.MetersPerSecondPerSecond);
-
-        double velocityDelta = Math.max(0, Math.abs(targetVelocityMps - currentVelocityMps));
-        if (acceleration <= 0)
-            return 0;
-
-        double seconds = velocityDelta / acceleration;
-        return (int) Math.ceil(seconds * 1000.0);
-    }
-
-    /**
-     * Estimates the time (in milliseconds) to reach the most recently commanded
-     * shooter velocity setpoint. Returns 0 if no setpoint has been commanded yet.
-     */
-    public int timeLeftToReachVelocity() {
-        if (lastShooterVelocitySetpoint == null) {
-            return 0;
-        }
-
-        return timeLeftToReachVelocity(lastShooterVelocitySetpoint);
-    }
-
-    /**
-     * Get the current shooter velocity in meters per second.
-     * 
-     * @return the current shooter velocity
-     **/
-    public LinearVelocity getCurrentShooterVelocity() {
-        return Units.MetersPerSecond.of(relativeEncoder.getVelocity());
-    }
-
-    @Override
-    public void periodic() {
-        Logger.recordOutput("Shooter/Velocity", getCurrentShooterVelocity().in(Units.MetersPerSecond));
-
-        Logger.recordOutput("Shooter/RawAbsoluteEncoderVelocity", absoluteEncoder.getVelocity());
-
-        Logger.recordOutput("Shooter/AppliedOutput", m_shooterMotor.getAppliedOutput());
-        Logger.recordOutput("Shooter/BusVoltage", m_shooterMotor.getBusVoltage());
-        Logger.recordOutput("Shooter/OutputCurrent", m_shooterMotor.getOutputCurrent());
-    }
+  @Override
+  public void periodic() {
+    Logger.recordOutput("Shooter/Velocity", getCurrentShooterVelocity().in(Units.MetersPerSecond));
+    Logger.recordOutput("Shooter/Position", Units.Meters.of(relativeEncoder.getPosition()));
+    Logger.recordOutput("Shooter/TimeLeftToReachVelocity", timeLeftToReachVelocity());
+  }
 }

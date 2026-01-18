@@ -1,6 +1,9 @@
 package frc.robot.subsystem;
 
+import org.littletonrobotics.junction.Logger;
+
 import com.revrobotics.PersistMode;
+import com.revrobotics.RelativeEncoder;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.FeedbackSensor;
@@ -24,7 +27,9 @@ public class TurretSubsystem extends SubsystemBase {
 
   private SparkMax m_turretMotor;
   private SparkClosedLoopController closedLoopController;
-  private Double lastAimTargetRad = null;
+  private RelativeEncoder relativeEncoder;
+
+  private Angle lastAimTargetRad;
 
   public static TurretSubsystem GetInstance() {
     if (instance == null) {
@@ -41,6 +46,7 @@ public class TurretSubsystem extends SubsystemBase {
   private void configureSparkMax(int canId, MotorType motorType) {
     this.m_turretMotor = new SparkMax(canId, motorType);
     this.closedLoopController = m_turretMotor.getClosedLoopController();
+    this.relativeEncoder = m_turretMotor.getEncoder();
 
     SparkMaxConfig config = new SparkMaxConfig();
     config
@@ -65,7 +71,7 @@ public class TurretSubsystem extends SubsystemBase {
   }
 
   public void setTurretPosition(Angle position, Voltage feedForward) {
-    lastAimTargetRad = position.in(Units.Radians);
+    lastAimTargetRad = position;
 
     closedLoopController.setSetpoint(
         position.in(Units.Rotations),
@@ -82,7 +88,7 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     double currentPositionRad = getTurretPosition().in(Units.Radians);
-    double distanceRad = Math.abs(lastAimTargetRad - currentPositionRad);
+    double distanceRad = Math.abs(lastAimTargetRad.in(Units.Radians) - currentPositionRad);
     double timeLeftSec = distanceRad / maxVelRadPerSec;
     double timeLeftMs = Math.max(0.0, timeLeftSec) * 1000.0;
     return (int) Math.ceil(timeLeftMs);
@@ -94,5 +100,8 @@ public class TurretSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
+    Logger.recordOutput("Turret/Position", getTurretPosition());
+    Logger.recordOutput("Turret/TimeLeftToReachPosition", getAimTimeLeftMs());
+    Logger.recordOutput("Turret/Velocity", relativeEncoder.getVelocity());
   }
 }
