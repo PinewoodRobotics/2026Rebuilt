@@ -61,7 +61,7 @@ public class TurretSubsystem extends SubsystemBase {
 
   public TurretSubsystem(int canId, MotorType motorType) {
     // configureSparkMax(canId, motorType);
-    configureSparkFlex(canId, motorType);
+    configureSparkMax(canId, motorType);
   }
 
   @SuppressWarnings("unused")
@@ -108,19 +108,17 @@ public class TurretSubsystem extends SubsystemBase {
         .smartCurrentLimit(TurretConstants.kTurretCurrentLimit);
 
     double factor = (2 * Math.PI) / TurretConstants.kTurretMotorRotationsPerRotation;
-    // Position is radians; velocity is rad/min (Spark reports RPM by default).
-    // Keeping velocity in "per-minute" units matches REV's MAXMotion parameter
-    // conventions
-    // (which default to RPM and RPM/s).
-    config.encoder.positionConversionFactor(factor).velocityConversionFactor(factor);
     config.absoluteEncoder.positionConversionFactor(factor).velocityConversionFactor(factor);
 
     config.closedLoop
+        .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
         .pid(TurretConstants.kTurretP, TurretConstants.kTurretI, TurretConstants.kTurretD)
         .iZone(TurretConstants.kTurretIZ)
         .positionWrappingEnabled(true)
-        .positionWrappingMinInput(-Math.PI)
-        .positionWrappingMaxInput(Math.PI);
+        .positionWrappingMinInput(0)
+        .positionWrappingMaxInput(1);
+
+    config.absoluteEncoder.positionConversionFactor(1);
 
     // These limits are enforced when using kMAXMotionPositionControl.
     config.closedLoop.maxMotion
@@ -175,7 +173,7 @@ public class TurretSubsystem extends SubsystemBase {
 
     if (closedLoopController != null) {
       closedLoopController.setSetpoint(
-          position.in(Units.Radians),
+          position.in(Units.Revolutions),
           ControlType.kMAXMotionPositionControl,
           ClosedLoopSlot.kSlot0,
           feedForward.in(Units.Volts),
