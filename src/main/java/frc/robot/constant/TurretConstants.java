@@ -12,12 +12,11 @@ public class TurretConstants {
 	public static final int kTurretCanId = 27;
 	public static final int kTurretCurrentLimit = 30;
 	public static final double feedForwardFactor = 1.0;
-	public static final boolean kTurretReversed = false;
 	public static final Angle kTurretTheta = Units.Degrees.of(45.0);
 	public static final double kTurretMotorRotationsPerRotation = 16.0;
 	public static final MotorType kTurretMotorType = MotorType.kBrushless;
 
-	public static final double kTurretP = 0.0;
+	public static final double kTurretP = 0.2;
 	public static final double kTurretI = 0.0;
 	public static final double kTurretD = 0.0;
 	public static final double kTurretIZ = 0.0;

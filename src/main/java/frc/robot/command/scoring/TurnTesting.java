@@ -26,16 +26,10 @@ public class TurnTesting extends Command {
     public void execute() {
         double axis = fl.getRawAxis(FlightStick.AxisEnum.JOYSTICKROTATION.value);
         axis = MathUtil.applyDeadband(axis, 0.05);
-        double targetRad = 2 * axis * Math.PI;
-
+        axis = MathUtil.clamp(axis, 0.0, 1.0);
         m_subsystem.setTurretPosition(
-                Units.Radians.of(targetRad),
-                Units.Volts.of(2));
-    }
-
-    @Override
-    public void end(boolean interrupted) {
-
+                Units.Rotations.of(axis),
+                Units.Volts.of(0));
     }
 
     @Override

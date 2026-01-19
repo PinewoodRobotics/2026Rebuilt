@@ -14,6 +14,16 @@ THRIFT_GEN_DIR = $(GEN_DIR)/thrift
 THRIFT_TS_SCHEMA_GEN_DIR = $(THRIFT_GEN_DIR)/ts_schema
 PROTO_PY_GEN_DIR = $(PROTO_GEN_DIR)/python
 
+TEAM_NUMBER=4765
+
+build:
+	export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+	./gradlew build
+
+deploy:
+	export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+	./gradlew deploy -PteamNumber=$(TEAM_NUMBER)
+
 initialize:
 	python3 -m venv .venv
 	.venv/bin/pip install -r requirements.txt

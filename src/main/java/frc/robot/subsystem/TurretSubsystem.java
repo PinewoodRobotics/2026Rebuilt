@@ -3,7 +3,6 @@ package frc.robot.subsystem;
 import org.littletonrobotics.junction.Logger;
 
 import com.revrobotics.PersistMode;
-import com.revrobotics.RelativeEncoder;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.FeedbackSensor;
@@ -27,9 +26,9 @@ public class TurretSubsystem extends SubsystemBase {
 
   private SparkMax m_turretMotor;
   private SparkClosedLoopController closedLoopController;
-  private RelativeEncoder relativeEncoder;
 
-  private Angle lastAimTargetRad;
+  /** Last commanded turret goal angle (for logging / time estimate). */
+  private Angle lastAimTarget;
 
   public static TurretSubsystem GetInstance() {
     if (instance == null) {
@@ -46,14 +45,13 @@ public class TurretSubsystem extends SubsystemBase {
   private void configureSparkMax(int canId, MotorType motorType) {
     this.m_turretMotor = new SparkMax(canId, motorType);
     this.closedLoopController = m_turretMotor.getClosedLoopController();
-    this.relativeEncoder = m_turretMotor.getEncoder();
 
     SparkMaxConfig config = new SparkMaxConfig();
     config
-        .inverted(TurretConstants.kTurretReversed)
         .smartCurrentLimit(TurretConstants.kTurretCurrentLimit);
 
-    config.absoluteEncoder.positionConversionFactor(1);
+    config.absoluteEncoder.positionConversionFactor(1.0);
+    config.absoluteEncoder.velocityConversionFactor(1.0 / 60.0);
 
     config.closedLoop
         .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
@@ -63,19 +61,18 @@ public class TurretSubsystem extends SubsystemBase {
         .positionWrappingMinInput(0)
         .positionWrappingMaxInput(1);
 
-    config.closedLoop.maxMotion
-        .cruiseVelocity(TurretConstants.kTurretMaxVelocity.in(Units.RotationsPerSecond))
-        .maxAcceleration(TurretConstants.kTurretMaxAcceleration.in(Units.RotationsPerSecondPerSecond));
-
     m_turretMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
   }
 
+  /**
+   * Simple position PID (no MAXMotion).
+   */
   public void setTurretPosition(Angle position, Voltage feedForward) {
-    lastAimTargetRad = position;
+    lastAimTarget = position;
 
     closedLoopController.setSetpoint(
         position.in(Units.Rotations),
-        ControlType.kMAXMotionPositionControl,
+        ControlType.kPosition,
         ClosedLoopSlot.kSlot0,
         feedForward.in(Units.Volts),
         ArbFFUnits.kVoltage);
@@ -83,25 +80,28 @@ public class TurretSubsystem extends SubsystemBase {
 
   public int getAimTimeLeftMs() {
     double maxVelRadPerSec = TurretConstants.kTurretMaxVelocity.in(Units.RadiansPerSecond);
-    if (lastAimTargetRad == null || maxVelRadPerSec <= 0.0) {
+    if (lastAimTarget == null || maxVelRadPerSec <= 0.0) {
       return 0;
     }
 
     double currentPositionRad = getTurretPosition().in(Units.Radians);
-    double distanceRad = Math.abs(lastAimTargetRad.in(Units.Radians) - currentPositionRad);
+    double distanceRad = Math.abs(lastAimTarget.in(Units.Radians) - currentPositionRad);
     double timeLeftSec = distanceRad / maxVelRadPerSec;
     double timeLeftMs = Math.max(0.0, timeLeftSec) * 1000.0;
     return (int) Math.ceil(timeLeftMs);
   }
 
   public Angle getTurretPosition() {
-    return Units.Radians.of(m_turretMotor.getAbsoluteEncoder().getPosition());
+    return Units.Rotations.of(m_turretMotor.getAbsoluteEncoder().getPosition());
   }
 
   @Override
   public void periodic() {
-    Logger.recordOutput("Turret/Position", getTurretPosition());
-    Logger.recordOutput("Turret/TimeLeftToReachPosition", getAimTimeLeftMs());
-    Logger.recordOutput("Turret/Velocity", relativeEncoder.getVelocity());
+    Logger.recordOutput("Turret/PositionRot", getTurretPosition().in(Units.Rotations));
+    Logger.recordOutput("Turret/PositionDeg", getTurretPosition().in(Units.Degrees));
+    Logger.recordOutput("Turret/Velocity", m_turretMotor.getAbsoluteEncoder().getVelocity());
+    Logger.recordOutput("Turret/DesiredOutputRot", lastAimTarget != null ? lastAimTarget.in(Units.Rotations) : 0);
+    Logger.recordOutput("Turret/AppliedOutput", m_turretMotor.getAppliedOutput());
+    Logger.recordOutput("Turret/BusVoltage", m_turretMotor.getBusVoltage());
   }
 }
