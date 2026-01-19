@@ -1,4 +1,4 @@
-package frc.robot.subystem;
+package frc.robot.subsystem;
 
 import java.util.Optional;
 

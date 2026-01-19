@@ -118,7 +118,6 @@ public class WheelMoverSpark extends WheelMoverBase {
     // Ensure the closed-loop is actually using the integrated encoder and has
     // gains configured; otherwise velocity commands will be extremely weak.
     config.closedLoop
-        .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
         .pid(c.kDriveP, c.kDriveI, c.kDriveD)
         .iZone(c.kDriveIZ)
         .outputRange(c.kDriveMinOutput, c.kDriveMaxOutput);
@@ -137,7 +136,6 @@ public class WheelMoverSpark extends WheelMoverBase {
         .smartCurrentLimit(c.kTurnCurrentLimit);
 
     config.closedLoop
-        .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
         .pid(c.kTurnP, c.kTurnI, c.kTurnD)
         .iZone(c.kTurnIZ)
         .positionWrappingEnabled(true)

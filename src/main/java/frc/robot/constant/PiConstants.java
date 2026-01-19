@@ -56,9 +56,17 @@ public class PiConstants {
      * specific Pi. For example, if you have a single process requiring a specific
      * pi feature (like a gpu), you can add it here and it will completely bypass
      * the weighting system and just be auto added to the respective pi.
-     * 
+     *
      * AutomaticPiNetwork.AddConstrainedProcesses(
      * new ConstrainedProcess<>(ProcessType.APRIL_TAG_DETECTOR, "tripli"));
      */
+  }
+
+  /**
+   * Autobahn topic names used for subscribing/publishing
+   */
+  public static class AutobahnConfig {
+    public static String poseSubscribeTopic = "pos-extrapolator/robot-position";
+    public static String cameraTagsViewTopic = "apriltag/tag";
   }
 }
