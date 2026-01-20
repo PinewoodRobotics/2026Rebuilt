@@ -29,5 +29,6 @@
   "java.test.defaultConfig": "WPIlibUnitTests",
   "python.analysis.typeCheckingMode": "basic",
   "cursorpyright.analysis.typeCheckingMode": "standard",
-  "explorer.excludeGitIgnore": false
+  "explorer.excludeGitIgnore": false,
+  "java.jdt.ls.vmargs": "-XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xmx4G -Xms100m -Xlog:disable"
 }

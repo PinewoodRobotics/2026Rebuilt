@@ -28,6 +28,13 @@ public class Robot extends LoggedRobot {
 
   private RobotContainer m_robotContainer;
 
+  /**
+   * Static accessor for the Autobahn client (used by subsystems during construction)
+   */
+  public static OptionalAutobahn getAutobahnClient() {
+    return communicationClient;
+  }
+
   public Robot() {
     Logger.addDataReceiver(new NT4Publisher());
     Logger.start();

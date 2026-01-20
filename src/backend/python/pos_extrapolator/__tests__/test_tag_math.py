@@ -323,7 +323,9 @@ def test_solve_pnp_mulicam_deduplicates_cameras_and_builds_point_arrays(
 
     # Options are constructed with expected types/values
     estimation_options = cast(FakeRANSACOptions, kwargs["estimation_options"])
-    refinement_options = cast(FakeAbsolutePoseRefinementOptions, kwargs["refinement_options"])
+    refinement_options = cast(
+        FakeAbsolutePoseRefinementOptions, kwargs["refinement_options"]
+    )
     assert isinstance(estimation_options, FakeRANSACOptions)
     assert float(estimation_options.max_error) == pytest.approx(6.0)
     assert isinstance(refinement_options, FakeAbsolutePoseRefinementOptions)

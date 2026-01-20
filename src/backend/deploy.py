@@ -7,12 +7,18 @@ from backend.deployment.util import (
 
 def get_modules() -> list[_Module]:
     return [
+        ModuleTypes.PythonModule(
+            local_root_folder_path="python/april",
+            local_main_file_path="src/main.py",
+            extra_run_args=[],
+            equivalent_run_definition="april-server",
+        ),
         ModuleTypes.ProtobufModule(
             project_root_folder_path="src/proto",
             build_for_platforms=[],
         ),
         ModuleTypes.ThriftModule(
-            project_root_folder_path="ThriftTsConfig/schema",
+            project_root_folder_path="ThriftTsCon   fig/schema",
             build_for_platforms=[],
         ),
         ModuleTypes.PythonModule(
