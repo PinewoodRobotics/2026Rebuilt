@@ -2,8 +2,8 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj2.command.Command;
 
-import frc.robot.command.SwerveMoveTeleop;<<<<<<<HEAD=======
-import frc.robot.constant.PiConstants;>>>>>>>f756011c10c39e9abddc80dcf4f8940662e2dc62
+import frc.robot.command.SwerveMoveTeleop;
+import frc.robot.constant.PiConstants;
 import frc.robot.hardware.AHRSGyro;
 import frc.robot.subsystem.CameraSubsystem;
 import frc.robot.subsystem.GlobalPosition;
