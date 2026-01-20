@@ -5,6 +5,7 @@ import java.io.File;
 import edu.wpi.first.wpilibj.Filesystem;
 import lombok.AllArgsConstructor;
 import pwrup.frc.core.online.raspberrypi.AutomaticPiNetwork;
+import pwrup.frc.core.online.raspberrypi.ConstrainedProcess;
 import pwrup.frc.core.online.raspberrypi.PiNetwork;
 import pwrup.frc.core.online.raspberrypi.WeightedProcess;
 
@@ -47,19 +48,11 @@ public class PiConstants {
   // dynamically sets up the required processes on each Pi. This assumes that all
   // process types are available on all Pis.
   public static final AutomaticPiNetwork<ProcessType> network = new AutomaticPiNetwork<ProcessType>(
-      networkInitializeTimeSec /* ProcessType.APRIL_TAG_DETECTOR, ProcessType.POSE_EXTRAPOLATOR */);
+      networkInitializeTimeSec, ProcessType.APRIL_TAG_DETECTOR, ProcessType.POSE_EXTRAPOLATOR);
 
   static {
-    /*
-     * If you need to add a constrained process to a specific Pi, you can do so
-     * here. A constrained process is a process that is only allowed to run on a
-     * specific Pi. For example, if you have a single process requiring a specific
-     * pi feature (like a gpu), you can add it here and it will completely bypass
-     * the weighting system and just be auto added to the respective pi.
-     *
-     * AutomaticPiNetwork.AddConstrainedProcesses(
-     * new ConstrainedProcess<>(ProcessType.APRIL_TAG_DETECTOR, "tripli"));
-     */
+    AutomaticPiNetwork.AddConstrainedProcesses(
+        new ConstrainedProcess<>(ProcessType.APRIL_TAG_DETECTOR, "nathan-hale"));
   }
 
   /**

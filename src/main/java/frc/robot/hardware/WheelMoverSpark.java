@@ -14,7 +14,6 @@ import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -35,9 +34,6 @@ public class WheelMoverSpark extends WheelMoverBase {
   private final CANcoder turnCANcoder;
   private final RelativeEncoder m_driveRelativeEncoder, m_rotationRelativeEncoder;
 
-  /**
-   * Compatibility constructor: allows using the same constants as the TalonFX-based modules.
-   */
   public WheelMoverSpark(
       int driveMotorChannel,
       InvertedValue driveMotorInverted,
@@ -81,14 +77,10 @@ public class WheelMoverSpark extends WheelMoverBase {
 
     configureTurnMotor(turnMotorReversed, c);
     m_rotationRelativeEncoder = m_turnMotor.getEncoder();
-    // Seed the integrated encoder with the absolute module angle (rotations).
-    // CANCoder absolute position is in rotations; normalize into [0, 1) to match
-    // the configured Spark position wrapping range.
     double absRotations = turnCANcoder.getAbsolutePosition().getValueAsDouble();
     m_rotationRelativeEncoder.setPosition(wrapRotations0To1(absRotations));
   }
 
-  /** Configures the CANCoder with magnet offset and sensor direction. */
   private void configureCANCoder(SensorDirectionValue direction, double magnetOffset) {
     CANcoderConfiguration config = new CANcoderConfiguration();
     config.MagnetSensor.MagnetOffset = magnetOffset;
@@ -171,19 +163,16 @@ public class WheelMoverSpark extends WheelMoverBase {
 
   @Override
   public Distance getDistance() {
-    return Distance.ofRelativeUnits(m_driveRelativeEncoder.getPosition(), Units.Meters);
+    return Distance.ofRelativeUnits(-m_driveRelativeEncoder.getPosition(), Units.Meters);
   }
 
   /***************************************************************************************************/
 
-  /** Sets drive speed in meters/sec using SparkMax velocity closed-loop. */
   @Override
   protected void setSpeed(LinearVelocity mpsSpeed) {
     final var c = SwerveConstants.INSTANCE;
     final double requestedMps = mpsSpeed.in(Units.MetersPerSecond);
 
-    // Velocity feedforward (volts) based on requested speed, matching the TalonFX
-    // path which uses wheel rotations/sec.
     final double wheelCircumference = Math.PI * c.kWheelDiameterMeters;
     final double wheelRps = wheelCircumference == 0.0 ? 0.0 : requestedMps / wheelCircumference;
     double ffVolts = c.kDriveV * wheelRps;
@@ -197,13 +186,8 @@ public class WheelMoverSpark extends WheelMoverBase {
         ffVolts);
   }
 
-  /** Sets module azimuth in radians using SparkMax position closed-loop. */
   @Override
   protected void turnWheel(Angle newRotationRad) {
-    // We control the turning motor in *module rotations* and rely on position
-    // wrapping in [0, 1) rotations for continuous shortest-path motion.
-    // Note: getAngle() is negated for project convention, so we must also negate
-    // the commanded setpoint so "hold current angle" doesn't drive a full spin.
     double rotations = newRotationRad.in(Units.Radians) / (2.0 * Math.PI);
     rotations = wrapRotations0To1(rotations);
     m_turnPIDController.setReference(

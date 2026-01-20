@@ -23,7 +23,7 @@ repositories {
 
 def ROBOT_MAIN_CLASS = "frc.robot.Main"
 
-def EXPECTED_NUM_OF_PIS = 0;
+def EXPECTED_NUM_OF_PIS = 1;
 
 // Define deploy target and artifacts
 deploy {
@@ -91,7 +91,7 @@ jar {
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     from sourceSets.main.allSource
     manifest edu.wpi.first.gradlerio.GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 // Set the jar task for deployment
@@ -163,7 +163,6 @@ def buildDynamically(configFilePath) {
                 "#############################################################\n" +
                 "\u001B[0m"
         println "\u001B[31mError Output:\n${stderr.toString().trim()}\u001B[0m"
-        throw new Exception("Failed to build dependencies")
     }
 
     println "Standard Output:\n${stdout.toString().trim()}"
@@ -223,6 +222,7 @@ def applyBackend(expectedNumOfPis) {
 }
 
 buildDynamically("./config.ini")
+generateConfig()
 
 tasks.register("applyBackend") {
     group = "build"
@@ -232,15 +232,6 @@ tasks.register("applyBackend") {
     }
 }
 
-tasks.register("generateConfig") {
-    group = "build"
-    description = "Generate config.json from TSX output"
-    doLast {
-        generateConfig()
-    }
-}
-
-tasks.build.dependsOn(tasks.generateConfig)
 tasks.build.dependsOn(tasks.generateProto)
 
 tasks.deploy.dependsOn(tasks.applyBackend)

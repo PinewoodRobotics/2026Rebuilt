@@ -13,6 +13,7 @@ import pwrup.frc.core.controller.FlightStick;
 import pwrup.frc.core.controller.LogitechController;
 import pwrup.frc.core.controller.OperatorPanel;
 import pwrup.frc.core.online.PublicationSubsystem;
+import pwrup.frc.core.online.raspberrypi.PrintPiLogs;
 
 public class RobotContainer {
 
@@ -21,20 +22,18 @@ public class RobotContainer {
   final FlightStick m_leftFlightStick = new FlightStick(2);
   final FlightStick m_rightFlightStick = new FlightStick(3);
   final FlightModule m_flightModule = new FlightModule(
-    m_leftFlightStick,
-    m_rightFlightStick);
-  SwerveMoveTeleop m_moveCommand;
-  private Boolean isNonFieldRelative = false;
+      m_leftFlightStick,
+      m_rightFlightStick);
 
   public RobotContainer() {
-    // Initialize subsystems
+    CameraSubsystem.GetInstance();
     GlobalPosition.GetInstance();
     OdometrySubsystem.GetInstance();
-    CameraSubsystem.GetInstance();
     AHRSGyro.GetInstance();
+    SwerveSubsystem.GetInstance();
 
     // Initialize publication subsystem for sending data to Pi
-    PublicationSubsystem.GetInstance(Robot.getAutobahnClient());
+    PublicationSubsystem.GetInstance(Robot.getCommunicationClient());
 
     setSwerveCommands();
   }
@@ -42,11 +41,8 @@ public class RobotContainer {
   private void setSwerveCommands() {
     SwerveSubsystem swerveSubsystem = SwerveSubsystem.GetInstance();
 
-    // Create and set the default teleop drive command
-    this.m_moveCommand = new SwerveMoveTeleop(swerveSubsystem, m_flightModule);
-    swerveSubsystem.setDefaultCommand(m_moveCommand);
+    swerveSubsystem.setDefaultCommand(new SwerveMoveTeleop(swerveSubsystem, m_flightModule));
 
-    // Right Flight Stick B5: Reset gyro to 0 degrees
     m_rightFlightStick
         .B5()
         .onTrue(swerveSubsystem.runOnce(() -> {
@@ -59,14 +55,12 @@ public class RobotContainer {
   }
 
   public void onAnyModeStart() {
-    // Sync odometry and gyro to global position from Pi when mode starts
     var position = GlobalPosition.Get();
     if (position != null) {
       AHRSGyro.GetInstance().setAngleAdjustment(position.getRotation().getDegrees());
       OdometrySubsystem.GetInstance().setOdometryPosition(position);
     }
 
-    // Register data classes for publishing to Pi
     PublicationSubsystem.addDataClasses(
         OdometrySubsystem.GetInstance(),
         AHRSGyro.GetInstance());

@@ -15,6 +15,18 @@ def get_modules() -> list[_Module]:
             project_root_folder_path="ThriftTsConfig/schema",
             build_for_platforms=[],
         ),
+        ModuleTypes.PythonModule(
+            local_root_folder_path="python/pos_extrapolator",
+            local_main_file_path="main.py",
+            extra_run_args=[],
+            equivalent_run_definition="position-extrapolator",
+        ),
+        ModuleTypes.PythonModule(
+            local_root_folder_path="python/april",
+            local_main_file_path="src/main.py",
+            extra_run_args=[],
+            equivalent_run_definition="april-server",
+        ),
     ]
 
     """

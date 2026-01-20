@@ -27,7 +27,7 @@ public class GlobalPosition extends SubsystemBase {
   }
 
   public GlobalPosition() {
-    Robot.getAutobahnClient().subscribe(PiConstants.AutobahnConfig.poseSubscribeTopic,
+    Robot.getCommunicationClient().subscribe(PiConstants.AutobahnConfig.poseSubscribeTopic,
         NamedCallback.FromConsumer(this::subscription));
   }
 

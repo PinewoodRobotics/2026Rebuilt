@@ -25,7 +25,7 @@ const rear_left: CameraParameters = {
   exposure_time: 10,
   camera_type: CameraType.OV2311,
   video_options: {
-    send_feed: false,
+    send_feed: true,
     overlay_tags: true,
     publication_topic: "camera/rear_left/video",
     compression_quality: 30,

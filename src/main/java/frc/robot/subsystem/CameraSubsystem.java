@@ -51,7 +51,7 @@ public class CameraSubsystem extends SubsystemBase {
   }
 
   private CameraSubsystem() {
-    Robot.getAutobahnClient().subscribe(
+    Robot.getCommunicationClient().subscribe(
         PiConstants.AutobahnConfig.cameraTagsViewTopic,
         NamedCallback.FromConsumer(this::subscription));
   }

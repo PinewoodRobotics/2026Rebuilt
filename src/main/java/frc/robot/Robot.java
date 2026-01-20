@@ -28,25 +28,19 @@ public class Robot extends LoggedRobot {
 
   private RobotContainer m_robotContainer;
 
-  /**
-   * Static accessor for the Autobahn client (used by subsystems during construction)
-   */
-  public static OptionalAutobahn getAutobahnClient() {
-    return communicationClient;
-  }
-
   public Robot() {
     Logger.addDataReceiver(new NT4Publisher());
     Logger.start();
 
     RPC.SetClient(communicationClient);
-    PrintPiLogs.ToSystemOut(communicationClient, TopicConstants.kPiTechnicalLogTopic);
+    // PrintPiLogs.ToSystemOut(communicationClient,
+    // TopicConstants.kPiTechnicalLogTopic);
   }
 
   @Override
   public void robotInit() {
-    m_robotContainer = new RobotContainer();
     initializeNetwork();
+    m_robotContainer = new RobotContainer();
   }
 
   @Override
@@ -127,6 +121,7 @@ public class Robot extends LoggedRobot {
       // new selected processes)
       PiConstants.network.setConfig(readFromFile(PiConstants.configFilePath));
       boolean success = PiConstants.network.restartAllPis();
+      System.out.println("INITIALIZED NETWORK!");
       if (!success) { // one of the exit codes is not successful in http req
         System.out.println("ERROR: Failed to restart Pis");
       }

@@ -6,6 +6,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.constant.TopicConstants;
 import frc.robot.hardware.AHRSGyro;
 import proto.sensor.GeneralSensorDataOuterClass.GeneralSensorData;
 import proto.sensor.Odometry.OdometryData;
@@ -99,6 +100,6 @@ public class OdometrySubsystem extends SubsystemBase implements IDataClass {
 
   @Override
   public String getPublishTopic() {
-    return "robot/odometry";
+    return TopicConstants.kOdometryPublishTopic;
   }
 }
