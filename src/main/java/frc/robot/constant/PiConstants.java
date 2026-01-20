@@ -5,6 +5,7 @@ import java.io.File;
 import edu.wpi.first.wpilibj.Filesystem;
 import lombok.AllArgsConstructor;
 import pwrup.frc.core.online.raspberrypi.AutomaticPiNetwork;
+import pwrup.frc.core.online.raspberrypi.ConstrainedProcess;
 import pwrup.frc.core.online.raspberrypi.PiNetwork;
 import pwrup.frc.core.online.raspberrypi.WeightedProcess;
 
@@ -47,7 +48,7 @@ public class PiConstants {
   // dynamically sets up the required processes on each Pi. This assumes that all
   // process types are available on all Pis.
   public static final AutomaticPiNetwork<ProcessType> network = new AutomaticPiNetwork<ProcessType>(
-      networkInitializeTimeSec /* ProcessType.APRIL_TAG_DETECTOR, ProcessType.POSE_EXTRAPOLATOR */);
+      networkInitializeTimeSec, ProcessType.APRIL_TAG_DETECTOR, ProcessType.POSE_EXTRAPOLATOR);
 
   static {
     /*
@@ -60,6 +61,7 @@ public class PiConstants {
      * AutomaticPiNetwork.AddConstrainedProcesses(
      * new ConstrainedProcess<>(ProcessType.APRIL_TAG_DETECTOR, "tripli"));
      */
+    AutomaticPiNetwork.AddConstrainedProcesses(new ConstrainedProcess<>(ProcessType.APRIL_TAG_DETECTOR, "nathan-hale"));
   }
 
   /**

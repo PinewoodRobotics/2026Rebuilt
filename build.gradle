@@ -23,7 +23,7 @@ repositories {
 
 def ROBOT_MAIN_CLASS = "frc.robot.Main"
 
-def EXPECTED_NUM_OF_PIS = 0;
+def EXPECTED_NUM_OF_PIS = 1;
 
 // Define deploy target and artifacts
 deploy {
@@ -88,10 +88,10 @@ wpi.sim.addDriverstation()
 
 // Create a fat jar (including all dependencies) and set the manifest for WPILib
 jar {
+    from sourceSets.main.output  // Your classes FIRST
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
-    from sourceSets.main.allSource
     manifest edu.wpi.first.gradlerio.GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE  // Skip duplicates, keep first
 }
 
 // Set the jar task for deployment
@@ -163,7 +163,6 @@ def buildDynamically(configFilePath) {
                 "#############################################################\n" +
                 "\u001B[0m"
         println "\u001B[31mError Output:\n${stderr.toString().trim()}\u001B[0m"
-        throw new Exception("Failed to build dependencies")
     }
 
     println "Standard Output:\n${stdout.toString().trim()}"

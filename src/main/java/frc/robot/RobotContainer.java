@@ -3,6 +3,7 @@ package frc.robot;
 import edu.wpi.first.wpilibj2.command.Command;
 
 import frc.robot.command.SwerveMoveTeleop;
+import frc.robot.constant.PiConstants;
 import frc.robot.hardware.AHRSGyro;
 import frc.robot.subsystem.CameraSubsystem;
 import frc.robot.subsystem.GlobalPosition;
@@ -13,6 +14,7 @@ import pwrup.frc.core.controller.FlightStick;
 import pwrup.frc.core.controller.LogitechController;
 import pwrup.frc.core.controller.OperatorPanel;
 import pwrup.frc.core.online.PublicationSubsystem;
+import pwrup.frc.core.online.raspberrypi.PrintPiLogs;
 
 public class RobotContainer {
 
@@ -35,6 +37,7 @@ public class RobotContainer {
 
     // Initialize publication subsystem for sending data to Pi
     PublicationSubsystem.GetInstance(Robot.getAutobahnClient());
+    PrintPiLogs.ToSystemOut(Robot.getAutobahnClient(), "pi-technical-log");
 
     setSwerveCommands();
   }

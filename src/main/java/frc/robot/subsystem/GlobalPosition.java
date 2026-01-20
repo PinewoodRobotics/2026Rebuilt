@@ -16,8 +16,8 @@ import proto.util.Position.RobotPosition;
 public class GlobalPosition extends SubsystemBase {
   private static long lastUpdateTime = 0;
   private static GlobalPosition self;
-  private static Pose2d position;
-  private static ChassisSpeeds positionVelocity;
+  private static Pose2d position = new Pose2d();
+  private static ChassisSpeeds positionVelocity = new ChassisSpeeds();
 
   public static GlobalPosition GetInstance() {
     if (self == null) {
