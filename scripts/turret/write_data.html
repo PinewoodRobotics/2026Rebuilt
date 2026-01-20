@@ -1,0 +1,1377 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Turret Data Recorder (v, t, d)</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1020;
+        --panel: rgba(255, 255, 255, 0.06);
+        --panel2: rgba(255, 255, 255, 0.09);
+        --text: rgba(255, 255, 255, 0.92);
+        --muted: rgba(255, 255, 255, 0.68);
+        --border: rgba(255, 255, 255, 0.14);
+        --accent: #7c5cff;
+        --danger: #ff4d6d;
+        --ok: #2dd4bf;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+          "Apple Color Emoji", "Segoe UI Emoji";
+        color: var(--text);
+        background: radial-gradient(1200px 700px at 15% 10%, rgba(124, 92, 255, 0.22), transparent 55%),
+          radial-gradient(900px 500px at 70% 35%, rgba(45, 212, 191, 0.12), transparent 60%),
+          var(--bg);
+      }
+
+      header {
+        padding: 24px 18px 10px;
+        border-bottom: 1px solid var(--border);
+        background: linear-gradient(to bottom, rgba(255, 255, 255, 0.04), transparent);
+      }
+
+      .wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+
+      .sub {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      main {
+        padding: 18px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+
+      @media (min-width: 960px) {
+        .grid {
+          grid-template-columns: 380px 1fr;
+          align-items: start;
+        }
+      }
+
+      .card {
+        border: 1px solid var(--border);
+        background: var(--panel);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+      }
+
+      .card .hd {
+        padding: 12px 12px;
+        background: linear-gradient(to bottom, rgba(255, 255, 255, 0.06), transparent);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .card .hd strong {
+        font-size: 13px;
+        letter-spacing: 0.2px;
+      }
+
+      .card .bd {
+        padding: 12px;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .row2 {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .row3 {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      @media (min-width: 520px) {
+        .row2 {
+          grid-template-columns: 1fr auto;
+          align-items: end;
+        }
+
+        .row3 {
+          grid-template-columns: 1fr 1fr 1fr;
+        }
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      input[type="number"],
+      input[type="text"],
+      select,
+      textarea {
+        width: 100%;
+        padding: 10px 10px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.18);
+        color: var(--text);
+        outline: none;
+      }
+
+      input[type="number"]:focus,
+      input[type="text"]:focus,
+      select:focus,
+      textarea:focus {
+        border-color: rgba(124, 92, 255, 0.7);
+        box-shadow: 0 0 0 4px rgba(124, 92, 255, 0.15);
+      }
+
+      .hint {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.3;
+      }
+
+      .btns {
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      button {
+        cursor: pointer;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text);
+        padding: 9px 10px;
+        border-radius: 10px;
+        font-weight: 650;
+        font-size: 12px;
+        letter-spacing: 0.15px;
+      }
+
+      button:hover {
+        background: rgba(255, 255, 255, 0.11);
+      }
+
+      button.primary {
+        border-color: rgba(124, 92, 255, 0.55);
+        background: rgba(124, 92, 255, 0.22);
+      }
+
+      button.primary:hover {
+        background: rgba(124, 92, 255, 0.28);
+      }
+
+      button.danger {
+        border-color: rgba(255, 77, 109, 0.55);
+        background: rgba(255, 77, 109, 0.18);
+      }
+
+      button.danger:hover {
+        background: rgba(255, 77, 109, 0.24);
+      }
+
+      button.ok {
+        border-color: rgba(45, 212, 191, 0.55);
+        background: rgba(45, 212, 191, 0.16);
+      }
+
+      button.ok:hover {
+        background: rgba(45, 212, 191, 0.2);
+      }
+
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .kbd {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.82);
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--border);
+        padding: 2px 6px;
+        border-radius: 8px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .meta strong {
+        color: var(--text);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+
+      th,
+      td {
+        padding: 10px 10px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+      }
+
+      th {
+        text-align: left;
+        color: var(--muted);
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        position: sticky;
+        top: 0;
+        background: rgba(10, 14, 28, 0.92);
+        backdrop-filter: blur(10px);
+        z-index: 1;
+      }
+
+      tr:hover td {
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .twrap {
+        max-height: 560px;
+        overflow: auto;
+      }
+
+      .cell-actions {
+        display: flex;
+        gap: 6px;
+      }
+
+      .mini {
+        padding: 6px 8px;
+        font-size: 11px;
+        border-radius: 9px;
+      }
+
+      .mono {
+        font-family: var(--mono);
+      }
+
+      .notice {
+        margin-top: 10px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .status {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.82);
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .fileInput {
+        display: none;
+      }
+
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+        font-family: var(--mono);
+        font-size: 11px;
+        line-height: 1.35;
+      }
+
+      .charts {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      @media (min-width: 960px) {
+        .charts {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      canvas.chart {
+        width: 100%;
+        height: 260px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.16);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <div class="topbar">
+          <div>
+            <h1>Turret Data Recorder</h1>
+            <div class="sub">
+              Record samples for regression training: velocity <span class="mono">(m/s)</span>, time
+              <span class="mono">(s)</span>, distance <span class="mono">(d)</span>.
+              <span class="pill"><span class="status" id="autosaveStatus">autosave: …</span></span>
+            </div>
+          </div>
+          <div class="meta">
+            <span class="pill">entries: <strong id="entryCount">0</strong></span>
+            <span class="pill">avg v: <strong id="avgV">–</strong></span>
+            <span class="pill">avg t: <strong id="avgT">–</strong></span>
+            <span class="pill">avg d: <strong id="avgD">–</strong></span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="wrap grid">
+        <section class="card">
+          <div class="hd">
+            <strong>Add entry</strong>
+            <span class="status">Tip: press <span class="kbd">Enter</span> to add</span>
+          </div>
+          <div class="bd">
+            <div class="row">
+              <div class="row2">
+                <label>
+                  Test / dataset
+                  <select id="testSelect"></select>
+                </label>
+                <div class="btns" style="margin: 0; justify-content: flex-end">
+                  <button id="newTestBtn" title="Create a new test/dataset">New test</button>
+                  <button id="renameTestBtn" title="Rename current test">Rename</button>
+                  <button id="deleteTestBtn" class="danger" title="Delete current test">Delete</button>
+                  <button id="sample30Btn" class="ok" title="Fill Test 1 with 30 sample entries">
+                    Sample 30
+                  </button>
+                </div>
+              </div>
+
+              <div class="btns" style="margin-top: 0">
+                <button class="danger" id="clearTestBtn" title="Delete all entries in current test">
+                  Clear test
+                </button>
+                <button class="danger" id="clearAllTestsBtn" title="Delete ALL tests and ALL entries">
+                  Clear all tests
+                </button>
+              </div>
+
+              <div class="row3">
+                <label>
+                  Velocity (m/s)
+                  <input id="inV" type="number" step="any" inputmode="decimal" placeholder="e.g. 12.3" />
+                </label>
+                <label>
+                  Time (s)
+                  <input id="inT" type="number" step="any" inputmode="decimal" placeholder="e.g. 0.42" />
+                </label>
+                <label>
+                  Distance (d)
+                  <input id="inD" type="number" step="any" inputmode="decimal" placeholder="e.g. 7.8" />
+                </label>
+              </div>
+
+              <label>
+                Notes (optional)
+                <input id="inNote" type="text" placeholder="e.g. angle=32deg, wheel=5200rpm" />
+              </label>
+
+              <div class="btns">
+                <button class="primary" id="addBtn">Add entry</button>
+                <button id="addKeepBtn" title="Add without clearing fields">Add & keep</button>
+              </div>
+
+              <div class="hint">
+                - **Autosaves** to this browser (local storage). Export anytime to a JSON file.<br />
+                - Distance units are whatever you use consistently (meters recommended).
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="hd">
+            <strong>Entries</strong>
+            <div class="btns" style="margin: 0">
+              <button class="ok" id="exportBtn">Export JSON</button>
+              <button id="copyBtn" title="Copy JSON to clipboard">Copy JSON</button>
+              <button id="importBtn">Import JSON</button>
+              <input class="fileInput" id="importFile" type="file" accept=".json,application/json" />
+            </div>
+          </div>
+          <div class="bd" style="padding: 0">
+            <div class="twrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 68px">#</th>
+                    <th>v (m/s)</th>
+                    <th>t (s)</th>
+                    <th>d</th>
+                    <th>note</th>
+                    <th style="width: 180px">actions</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+              </table>
+            </div>
+            <div class="notice" style="padding: 10px 12px; border-top: 1px solid var(--border)">
+              Export format:
+              <span class="mono">{"tests":[{"name":"Test 1","entries":[{"v":0,"t":0,"d":0}]}]}</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="card" style="grid-column: 1 / -1">
+          <div class="hd">
+            <strong>Charts</strong>
+            <span class="status">Point graphs: velocity vs time, velocity vs distance</span>
+          </div>
+          <div class="bd">
+            <div class="charts">
+              <div>
+                <div class="status" style="margin: 2px 0 8px">v (m/s) vs t (s)</div>
+                <canvas
+                  id="chartVT"
+                  class="chart"
+                  role="img"
+                  aria-label="Velocity vs Time bar chart"
+                ></canvas>
+              </div>
+              <div>
+                <div class="status" style="margin: 2px 0 8px">v (m/s) vs d</div>
+                <canvas
+                  id="chartVD"
+                  class="chart"
+                  role="img"
+                  aria-label="Velocity vs Distance bar chart"
+                ></canvas>
+              </div>
+            </div>
+            <div class="hint" style="margin-top: 10px">
+              - Each dot is one entry.
+            </div>
+          </div>
+        </section>
+
+        <section class="card" style="grid-column: 1 / -1">
+          <div class="hd">
+            <strong>Bulk add (paste)</strong>
+            <span class="status">One entry per line: <span class="mono">v,t,d</span> or <span class="mono">v t d</span></span>
+          </div>
+          <div class="bd">
+            <label>
+              Paste lines here
+              <textarea
+                id="bulk"
+                placeholder="Examples:
+12.3, 0.42, 7.8
+11.8 0.39 7.1
+13.0,0.44,8.0"
+              ></textarea>
+            </label>
+            <div class="btns">
+              <button class="primary" id="bulkAddBtn">Add pasted lines</button>
+              <button id="bulkClearBtn">Clear text</button>
+            </div>
+            <div class="hint">
+              - Lines starting with <span class="mono">#</span> are ignored.
+              - You can add notes after a <span class="mono">|</span>, e.g.
+              <span class="mono">12.3,0.42,7.8 | angle=30</span>.
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      const STORAGE_KEY_V2 = "turret_data_tests_v1";
+      const STORAGE_KEY_V1 = "turret_data_entries_v1";
+      const SEEDED_KEY = "turret_data_seeded_samples_v1";
+
+      /** @typedef {{id: string, v: number, t: number, d: number, note?: string, created_at: string}} Entry */
+      /** @typedef {{id: string, name: string, created_at: string, entries: Entry[]}} Test */
+
+      /** @type {Entry[]} */
+      let entries = [];
+
+      /** @type {Test[]} */
+      let tests = [];
+      /** @type {string} */
+      let currentTestId = "";
+
+      const el = (id) => document.getElementById(id);
+      const inV = el("inV");
+      const inT = el("inT");
+      const inD = el("inD");
+      const inNote = el("inNote");
+      const tbody = el("tbody");
+      const chartVT = el("chartVT");
+      const chartVD = el("chartVD");
+      const testSelect = el("testSelect");
+
+      const entryCount = el("entryCount");
+      const avgV = el("avgV");
+      const avgT = el("avgT");
+      const avgD = el("avgD");
+      const autosaveStatus = el("autosaveStatus");
+
+      function nowIso() {
+        return new Date().toISOString();
+      }
+
+      function uuid() {
+        // Not cryptographic; good enough for row ids.
+        return Math.random().toString(16).slice(2) + "-" + Date.now().toString(16);
+      }
+
+      function makeTest(name) {
+        return {
+          id: uuid(),
+          name: name || "Test",
+          created_at: nowIso(),
+          entries: [],
+        };
+      }
+
+      function getOrCreateTest1() {
+        let t = tests.find((x) => (x.name || "").toLowerCase() === "test 1");
+        if (!t) {
+          t = makeTest("Test 1");
+          tests.unshift(t);
+        }
+        return t;
+      }
+
+      function generateSampleEntry(i) {
+        // Simple, consistent sample data: distance ≈ v * t with a bit of noise.
+        // (Good enough to verify UI + chart scaling.)
+        const v = 8 + ((i * 37) % 120) / 10; // 8.0 .. 20.0-ish
+        const t = 0.15 + ((i * 29) % 90) / 100; // 0.15 .. 1.04-ish
+        const noise = (((i * 17) % 11) - 5) * 0.02; // small +/- noise
+        const d = v * t + noise;
+        return {
+          id: uuid(),
+          v,
+          t,
+          d,
+          note: "sample",
+          created_at: nowIso(),
+        };
+      }
+
+      function seedSample30IntoTest1({ replace }) {
+        const t1 = getOrCreateTest1();
+        if (replace) t1.entries.splice(0, t1.entries.length);
+        for (let i = 0; i < 30; i++) t1.entries.push(generateSampleEntry(i));
+        currentTestId = t1.id;
+        entries = t1.entries;
+        save();
+        render();
+      }
+
+      function seedSamplesIfFresh() {
+        try {
+          if (localStorage.getItem(SEEDED_KEY)) return;
+          const hasExisting = !!localStorage.getItem(STORAGE_KEY_V2) || !!localStorage.getItem(STORAGE_KEY_V1);
+          if (hasExisting) {
+            localStorage.setItem(SEEDED_KEY, "1");
+            return;
+          }
+          // Fresh browser: auto-seed Test 1 with 30 entries so UI isn't empty.
+          seedSample30IntoTest1({ replace: true });
+          localStorage.setItem(SEEDED_KEY, "1");
+        } catch {
+          // ignore
+        }
+      }
+
+      function ensureTests() {
+        if (!Array.isArray(tests) || tests.length === 0) {
+          const t = makeTest("Test 1");
+          tests = [t];
+          currentTestId = t.id;
+          entries = t.entries;
+          return;
+        }
+        const found = tests.find((t) => t.id === currentTestId);
+        const active = found || tests[0];
+        currentTestId = active.id;
+        entries = active.entries;
+      }
+
+      function renderTestSelect() {
+        testSelect.innerHTML = "";
+        tests.forEach((t) => {
+          const opt = document.createElement("option");
+          opt.value = t.id;
+          opt.textContent = `${t.name} (${t.entries.length})`;
+          testSelect.appendChild(opt);
+        });
+        testSelect.value = currentTestId;
+      }
+
+      function fmt(x) {
+        if (typeof x !== "number" || !Number.isFinite(x)) return "–";
+        const abs = Math.abs(x);
+        if (abs !== 0 && (abs < 0.001 || abs >= 10000)) return x.toExponential(5);
+        return String(Math.round(x * 1e6) / 1e6);
+      }
+
+      function parseNum(value) {
+        if (value == null) return null;
+        const s = String(value).trim();
+        if (!s) return null;
+        const n = Number(s);
+        return Number.isFinite(n) ? n : null;
+      }
+
+      function setStatus(text) {
+        autosaveStatus.textContent = text;
+      }
+
+      function save() {
+        try {
+          const payload = {
+            schema: "turret_tests_v1",
+            saved_at: nowIso(),
+            current_test_id: currentTestId,
+            tests,
+          };
+          localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(payload));
+          setStatus("autosave: saved " + new Date().toLocaleTimeString());
+        } catch {
+          setStatus("autosave: failed (storage full?)");
+        }
+      }
+
+      function load() {
+        try {
+          const rawV2 = localStorage.getItem(STORAGE_KEY_V2);
+          if (rawV2) {
+            const parsed = JSON.parse(rawV2);
+            if (parsed && Array.isArray(parsed.tests)) {
+              tests = parsed.tests
+                .map((t) => ({
+                  id: String(t.id ?? uuid()),
+                  name: typeof t.name === "string" ? t.name : "Test",
+                  created_at: typeof t.created_at === "string" ? t.created_at : nowIso(),
+                  entries: Array.isArray(t.entries)
+                    ? t.entries
+                        .map((e) => ({
+                          id: String(e.id ?? uuid()),
+                          v: Number(e.v),
+                          t: Number(e.t),
+                          d: Number(e.d),
+                          note: typeof e.note === "string" ? e.note : "",
+                          created_at: typeof e.created_at === "string" ? e.created_at : nowIso(),
+                        }))
+                        .filter((e) => Number.isFinite(e.v) && Number.isFinite(e.t) && Number.isFinite(e.d))
+                    : [],
+                }))
+                .filter((t) => t && typeof t.id === "string");
+              currentTestId = typeof parsed.current_test_id === "string" ? parsed.current_test_id : "";
+              ensureTests();
+              return;
+            }
+          }
+
+          // Back-compat: v1 stored just the entries array.
+          const rawV1 = localStorage.getItem(STORAGE_KEY_V1);
+          if (!rawV1) return;
+          const parsedV1 = JSON.parse(rawV1);
+          if (!Array.isArray(parsedV1)) return;
+          const t = makeTest("Test 1");
+          t.entries = parsedV1
+            .map((e) => ({
+              id: String(e.id ?? uuid()),
+              v: Number(e.v),
+              t: Number(e.t),
+              d: Number(e.d),
+              note: typeof e.note === "string" ? e.note : "",
+              created_at: typeof e.created_at === "string" ? e.created_at : nowIso(),
+            }))
+            .filter((e) => Number.isFinite(e.v) && Number.isFinite(e.t) && Number.isFinite(e.d));
+          tests = [t];
+          currentTestId = t.id;
+          entries = t.entries;
+          // Upgrade storage to v2
+          save();
+        } catch {
+          // ignore
+        }
+      }
+
+      function recalcMeta() {
+        entryCount.textContent = String(entries.length);
+        if (entries.length === 0) {
+          avgV.textContent = "–";
+          avgT.textContent = "–";
+          avgD.textContent = "–";
+          return;
+        }
+        const sum = entries.reduce(
+          (acc, e) => {
+            acc.v += e.v;
+            acc.t += e.t;
+            acc.d += e.d;
+            return acc;
+          },
+          { v: 0, t: 0, d: 0 }
+        );
+        avgV.textContent = fmt(sum.v / entries.length);
+        avgT.textContent = fmt(sum.t / entries.length);
+        avgD.textContent = fmt(sum.d / entries.length);
+      }
+
+      function withCanvas(canvas, draw) {
+        const rect = canvas.getBoundingClientRect();
+        const cssW = Math.max(280, Math.floor(rect.width || 0));
+        const cssH = Math.max(220, Math.floor(rect.height || 0));
+        const dpr = window.devicePixelRatio || 1;
+
+        // Only resize backing store when needed (keeps things snappy).
+        const needW = Math.floor(cssW * dpr);
+        const needH = Math.floor(cssH * dpr);
+        if (canvas.width !== needW || canvas.height !== needH) {
+          canvas.width = needW;
+          canvas.height = needH;
+        }
+
+        const ctx = canvas.getContext("2d");
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        draw(ctx, cssW, cssH);
+      }
+
+      function drawPointChart(canvas, points, opts) {
+        const { title, xLabel, yLabel } = opts;
+        const pts = points.filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
+
+        withCanvas(canvas, (ctx, w, h) => {
+          ctx.clearRect(0, 0, w, h);
+
+          const pad = { l: 46, r: 12, t: 14, b: 34 };
+          const pw = Math.max(1, w - pad.l - pad.r);
+          const ph = Math.max(1, h - pad.t - pad.b);
+
+          // Title
+          ctx.fillStyle = "rgba(255,255,255,0.85)";
+          ctx.font = "12px ui-sans-serif, system-ui";
+          ctx.fillText(title, pad.l, 12);
+
+          // Empty state
+          if (pts.length === 0) {
+            ctx.fillStyle = "rgba(255,255,255,0.65)";
+            ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+            ctx.fillText("No entries yet", pad.l, pad.t + ph / 2);
+            return;
+          }
+
+          const xs = pts.map((p) => p.x);
+          const ys = pts.map((p) => p.y);
+          let minX = Math.min(...xs);
+          let maxX = Math.max(...xs);
+          let minY = Math.min(...ys);
+          let maxY = Math.max(...ys);
+
+          // Always include zero on both axes.
+          minX = Math.min(0, minX);
+          maxX = Math.max(0, maxX);
+          minY = Math.min(0, minY);
+          maxY = Math.max(0, maxY);
+
+          // Avoid zero ranges
+          if (minX === maxX) {
+            minX -= 1;
+            maxX += 1;
+          }
+          if (minY === maxY) {
+            minY -= 1;
+            maxY += 1;
+          }
+
+          const xToPx = (x) => pad.l + ((x - minX) / (maxX - minX)) * pw;
+          const yToPx = (y) => pad.t + ph - ((y - minY) / (maxY - minY)) * ph;
+
+          // Axes
+          ctx.strokeStyle = "rgba(255,255,255,0.18)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(pad.l, pad.t);
+          ctx.lineTo(pad.l, pad.t + ph);
+          ctx.lineTo(pad.l + pw, pad.t + ph);
+          ctx.stroke();
+
+          // Y ticks
+          const yTicks = 4;
+          ctx.font = "11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+          for (let i = 0; i <= yTicks; i++) {
+            const t = i / yTicks;
+            const yVal = minY + (maxY - minY) * t;
+            const y = yToPx(yVal);
+            ctx.strokeStyle = "rgba(255,255,255,0.08)";
+            ctx.beginPath();
+            ctx.moveTo(pad.l, y);
+            ctx.lineTo(pad.l + pw, y);
+            ctx.stroke();
+
+            ctx.fillStyle = "rgba(255,255,255,0.65)";
+            ctx.fillText(fmt(yVal), 6, y + 4);
+          }
+
+          // X ticks
+          const xTicks = 4;
+          for (let i = 0; i <= xTicks; i++) {
+            const t = i / xTicks;
+            const xVal = minX + (maxX - minX) * t;
+            const x = xToPx(xVal);
+            ctx.strokeStyle = "rgba(255,255,255,0.06)";
+            ctx.beginPath();
+            ctx.moveTo(x, pad.t);
+            ctx.lineTo(x, pad.t + ph);
+            ctx.stroke();
+          }
+
+          // Points
+          ctx.fillStyle = "rgba(124, 92, 255, 0.9)";
+          ctx.strokeStyle = "rgba(0,0,0,0.25)";
+          const r = 3.5;
+          for (const p of pts) {
+            const x = xToPx(p.x);
+            const y = yToPx(p.y);
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // X labels
+          ctx.fillStyle = "rgba(255,255,255,0.70)";
+          for (let i = 0; i <= xTicks; i++) {
+            const t = i / xTicks;
+            const xVal = minX + (maxX - minX) * t;
+            const x = xToPx(xVal);
+            const label = fmt(xVal);
+            const tw = ctx.measureText(label).width;
+            ctx.fillText(label, x - tw / 2, pad.t + ph + 18);
+          }
+
+          // Axis labels
+          ctx.fillStyle = "rgba(255,255,255,0.65)";
+          ctx.font = "11px ui-sans-serif, system-ui";
+          ctx.fillText(xLabel, pad.l + pw - ctx.measureText(xLabel).width, pad.t + ph + 30);
+          ctx.save();
+          ctx.translate(12, pad.t + 10);
+          ctx.rotate(-Math.PI / 2);
+          ctx.fillText(yLabel, 0, 0);
+          ctx.restore();
+        });
+      }
+
+      function renderCharts() {
+        const ptsVT = entries
+          .map((e) => ({ x: e.t, y: e.v }))
+          .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
+        const ptsVD = entries
+          .map((e) => ({ x: e.d, y: e.v }))
+          .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
+
+        drawPointChart(chartVT, ptsVT, {
+          title: "Velocity vs Time",
+          xLabel: "t (s)",
+          yLabel: "v (m/s)",
+        });
+        drawPointChart(chartVD, ptsVD, {
+          title: "Velocity vs Distance",
+          xLabel: "d",
+          yLabel: "v (m/s)",
+        });
+      }
+
+      function render() {
+        recalcMeta();
+        renderTestSelect();
+        tbody.innerHTML = "";
+        entries.forEach((e, idx) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="mono">${idx + 1}</td>
+            <td class="mono">${fmt(e.v)}</td>
+            <td class="mono">${fmt(e.t)}</td>
+            <td class="mono">${fmt(e.d)}</td>
+            <td>${escapeHtml(e.note || "")}</td>
+            <td>
+              <div class="cell-actions">
+                <button class="mini" data-action="edit" data-id="${e.id}">Edit</button>
+                <button class="mini danger" data-action="delete" data-id="${e.id}">Delete</button>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+        renderCharts();
+      }
+
+      function escapeHtml(s) {
+        return s
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function addEntry({ keepFields }) {
+        const v = parseNum(inV.value);
+        const t = parseNum(inT.value);
+        const d = parseNum(inD.value);
+        const note = (inNote.value || "").trim();
+
+        if (v == null || t == null || d == null) {
+          alert("Please enter valid numbers for v, t, and d.");
+          return;
+        }
+
+        entries.push({
+          id: uuid(),
+          v,
+          t,
+          d,
+          note,
+          created_at: nowIso(),
+        });
+        save();
+        render();
+
+        if (!keepFields) {
+          inV.value = "";
+          inT.value = "";
+          inD.value = "";
+          inNote.value = "";
+          inV.focus();
+        }
+      }
+
+      function toExportObject() {
+        const flattened = [];
+        for (const t of tests) {
+          for (const e of t.entries) {
+            flattened.push({
+              test: t.name,
+              v: e.v,
+              t: e.t,
+              d: e.d,
+              note: e.note || "",
+              created_at: e.created_at,
+            });
+          }
+        }
+        return {
+          created_at: nowIso(),
+          schema: "turret_tests_v1",
+          current_test_id: currentTestId,
+          tests: tests.map((t) => ({
+            name: t.name,
+            created_at: t.created_at,
+            entries: t.entries.map((e) => ({
+              v: e.v,
+              t: e.t,
+              d: e.d,
+              note: e.note || "",
+              created_at: e.created_at,
+            })),
+          })),
+          // Convenience for training: all entries in one list with a test label.
+          entries: flattened,
+        };
+      }
+
+      function toJsonString() {
+        return JSON.stringify(toExportObject(), null, 2);
+      }
+
+      function downloadJson() {
+        const blob = new Blob([toJsonString()], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "turret_data.json";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      async function copyJson() {
+        const txt = toJsonString();
+        try {
+          await navigator.clipboard.writeText(txt);
+          setStatus("autosave: copied JSON " + new Date().toLocaleTimeString());
+        } catch {
+          // fallback
+          const ta = document.createElement("textarea");
+          ta.value = txt;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+          setStatus("autosave: copied JSON " + new Date().toLocaleTimeString());
+        }
+      }
+
+      function clearCurrentTest() {
+        const active = tests.find((t) => t.id === currentTestId);
+        const name = active?.name || "current test";
+        if (!confirm(`Clear ALL entries in "${name}"? This cannot be undone.`)) return;
+        entries.splice(0, entries.length);
+        save();
+        render();
+      }
+
+      function clearAllTests() {
+        if (!confirm("Delete ALL tests and ALL entries? This cannot be undone.")) return;
+        const t = makeTest("Test 1");
+        tests = [t];
+        currentTestId = t.id;
+        entries = t.entries;
+        save();
+        render();
+      }
+
+      function switchTest(id) {
+        const found = tests.find((t) => t.id === id);
+        if (!found) return;
+        currentTestId = found.id;
+        entries = found.entries;
+        save();
+        render();
+      }
+
+      function newTest() {
+        const name = prompt("New test name:", `Test ${tests.length + 1}`);
+        if (name == null) return;
+        const t = makeTest((name || "").trim() || `Test ${tests.length + 1}`);
+        tests.push(t);
+        currentTestId = t.id;
+        entries = t.entries;
+        save();
+        render();
+      }
+
+      function renameTest() {
+        const active = tests.find((t) => t.id === currentTestId);
+        if (!active) return;
+        const name = prompt("Rename test:", active.name);
+        if (name == null) return;
+        active.name = (name || "").trim() || active.name;
+        save();
+        render();
+      }
+
+      function deleteTest() {
+        if (tests.length <= 1) {
+          alert("You must keep at least one test.");
+          return;
+        }
+        const idx = tests.findIndex((t) => t.id === currentTestId);
+        if (idx < 0) return;
+        const name = tests[idx].name;
+        if (!confirm(`Delete test "${name}" and all its entries?`)) return;
+        tests.splice(idx, 1);
+        currentTestId = tests[Math.max(0, idx - 1)].id;
+        ensureTests();
+        save();
+        render();
+      }
+
+      function handleRowAction(ev) {
+        const btn = ev.target.closest("button[data-action]");
+        if (!btn) return;
+        const id = btn.getAttribute("data-id");
+        const action = btn.getAttribute("data-action");
+        const idx = entries.findIndex((e) => e.id === id);
+        if (idx < 0) return;
+
+        if (action === "delete") {
+          if (!confirm("Delete this entry?")) return;
+          entries.splice(idx, 1);
+          save();
+          render();
+          return;
+        }
+
+        if (action === "edit") {
+          const e = entries[idx];
+          const nextV = prompt("Edit velocity v (m/s):", String(e.v));
+          if (nextV == null) return;
+          const nextT = prompt("Edit time t (s):", String(e.t));
+          if (nextT == null) return;
+          const nextD = prompt("Edit distance d:", String(e.d));
+          if (nextD == null) return;
+          const nextNote = prompt("Edit note (optional):", e.note || "");
+          if (nextNote == null) return;
+
+          const v = parseNum(nextV);
+          const t = parseNum(nextT);
+          const d = parseNum(nextD);
+          if (v == null || t == null || d == null) {
+            alert("Invalid numbers. Edit cancelled.");
+            return;
+          }
+          entries[idx] = { ...e, v, t, d, note: (nextNote || "").trim() };
+          save();
+          render();
+        }
+      }
+
+      function parseBulkLine(line) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith("#")) return null;
+
+        let note = "";
+        let left = trimmed;
+        const pipeIdx = trimmed.indexOf("|");
+        if (pipeIdx >= 0) {
+          left = trimmed.slice(0, pipeIdx).trim();
+          note = trimmed.slice(pipeIdx + 1).trim();
+        }
+
+        const parts = left
+          .replaceAll(",", " ")
+          .split(/\s+/)
+          .map((p) => p.trim())
+          .filter(Boolean);
+
+        if (parts.length < 3) return null;
+        const v = parseNum(parts[0]);
+        const t = parseNum(parts[1]);
+        const d = parseNum(parts[2]);
+        if (v == null || t == null || d == null) return null;
+        return { v, t, d, note };
+      }
+
+      function bulkAdd() {
+        const text = el("bulk").value || "";
+        const lines = text.split(/\r?\n/);
+        let added = 0;
+        let bad = 0;
+        for (const line of lines) {
+          const parsed = parseBulkLine(line);
+          if (!parsed) {
+            if (line.trim() && !line.trim().startsWith("#")) bad++;
+            continue;
+          }
+          entries.push({
+            id: uuid(),
+            v: parsed.v,
+            t: parsed.t,
+            d: parsed.d,
+            note: parsed.note || "",
+            created_at: nowIso(),
+          });
+          added++;
+        }
+        if (added > 0) {
+          save();
+          render();
+        }
+        alert(`Bulk add complete.\nAdded: ${added}\nSkipped (invalid): ${bad}`);
+      }
+
+      function importJsonText(text) {
+        let obj;
+        try {
+          obj = JSON.parse(text);
+        } catch {
+          alert("That file is not valid JSON.");
+          return;
+        }
+
+        // If JSON includes tests, import them as tests.
+        if (obj && Array.isArray(obj.tests)) {
+          const importedTests = obj.tests
+            .map((t) => ({
+              id: uuid(),
+              name: typeof t.name === "string" ? t.name : "Imported test",
+              created_at: typeof t.created_at === "string" ? t.created_at : nowIso(),
+              entries: Array.isArray(t.entries)
+                ? t.entries
+                    .map((e) => ({
+                      id: uuid(),
+                      v: Number(e.v),
+                      t: Number(e.t),
+                      d: Number(e.d),
+                      note: typeof e.note === "string" ? e.note : "",
+                      created_at: typeof e.created_at === "string" ? e.created_at : nowIso(),
+                    }))
+                    .filter((e) => Number.isFinite(e.v) && Number.isFinite(e.t) && Number.isFinite(e.d))
+                : [],
+            }))
+            .filter((t) => t.entries.length > 0);
+
+          if (importedTests.length === 0) {
+            alert("No valid tests/entries found in that JSON.");
+            return;
+          }
+
+          const shouldReplace = confirm(
+            `Import found ${importedTests.length} tests.\n\nOK = replace ALL tests\nCancel = append tests`
+          );
+          tests = shouldReplace ? importedTests : tests.concat(importedTests);
+          currentTestId = tests[tests.length - 1].id;
+          ensureTests();
+          save();
+          render();
+          return;
+        }
+
+        // Otherwise treat as entries (array or {entries:[...]})
+        let newEntries = [];
+        if (Array.isArray(obj)) {
+          newEntries = obj;
+        } else if (obj && Array.isArray(obj.entries)) {
+          newEntries = obj.entries;
+        } else {
+          alert("JSON must be tests[] or an array of entries / {entries:[...]}");
+          return;
+        }
+
+        const converted = newEntries
+          .map((e) => ({
+            id: uuid(),
+            v: Number(e.v),
+            t: Number(e.t),
+            d: Number(e.d),
+            note: typeof e.note === "string" ? e.note : "",
+            created_at: typeof e.created_at === "string" ? e.created_at : nowIso(),
+          }))
+          .filter((e) => Number.isFinite(e.v) && Number.isFinite(e.t) && Number.isFinite(e.d));
+
+        if (converted.length === 0) {
+          alert("No valid entries found in that JSON.");
+          return;
+        }
+
+        const shouldReplace = confirm(
+          `Import found ${converted.length} valid entries.\n\nOK = replace current test entries\nCancel = append to current test`
+        );
+        if (shouldReplace) {
+          entries.splice(0, entries.length, ...converted);
+        } else {
+          entries.push(...converted);
+        }
+        save();
+        render();
+      }
+
+      // Wire up UI
+      el("addBtn").addEventListener("click", () => addEntry({ keepFields: false }));
+      el("addKeepBtn").addEventListener("click", () => addEntry({ keepFields: true }));
+      el("clearTestBtn").addEventListener("click", clearCurrentTest);
+      el("clearAllTestsBtn").addEventListener("click", clearAllTests);
+      el("exportBtn").addEventListener("click", downloadJson);
+      el("copyBtn").addEventListener("click", copyJson);
+      tbody.addEventListener("click", handleRowAction);
+
+      el("bulkAddBtn").addEventListener("click", bulkAdd);
+      el("bulkClearBtn").addEventListener("click", () => (el("bulk").value = ""));
+
+      const importFile = el("importFile");
+      el("importBtn").addEventListener("click", () => importFile.click());
+      importFile.addEventListener("change", async () => {
+        const file = importFile.files?.[0];
+        importFile.value = "";
+        if (!file) return;
+        const text = await file.text();
+        importJsonText(text);
+      });
+
+      testSelect.addEventListener("change", () => switchTest(testSelect.value));
+      el("newTestBtn").addEventListener("click", newTest);
+      el("renameTestBtn").addEventListener("click", renameTest);
+      el("deleteTestBtn").addEventListener("click", deleteTest);
+      el("sample30Btn").addEventListener("click", () => {
+        const t1 = getOrCreateTest1();
+        const replace = t1.entries.length === 0 ? true : confirm('Replace entries in "Test 1" with 30 samples?');
+        if (replace === false) return;
+        seedSample30IntoTest1({ replace: true });
+      });
+
+      document.addEventListener("keydown", (ev) => {
+        // Enter adds entry if focus is in one of the inputs (not textarea)
+        const tag = document.activeElement?.tagName?.toLowerCase();
+        if (ev.key === "Enter" && (tag === "input" || tag === "select")) {
+          ev.preventDefault();
+          addEntry({ keepFields: false });
+        }
+      });
+
+      // Init
+      load();
+      ensureTests();
+      seedSamplesIfFresh();
+      setStatus("autosave: loaded " + new Date().toLocaleTimeString());
+      render();
+      inV.focus();
+
+      window.addEventListener("resize", () => {
+        // Re-render charts to match new canvas size
+        renderCharts();
+      });
+    </script>
+  </body>
+</html>
