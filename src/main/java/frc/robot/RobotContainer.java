@@ -3,11 +3,16 @@ package frc.robot;
 import edu.wpi.first.wpilibj2.command.Command;
 
 import frc.robot.command.SwerveMoveTeleop;
-import frc.robot.subystem.SwerveSubsystem;
+import frc.robot.hardware.AHRSGyro;
+import frc.robot.subsystem.CameraSubsystem;
+import frc.robot.subsystem.GlobalPosition;
+import frc.robot.subsystem.OdometrySubsystem;
+import frc.robot.subsystem.SwerveSubsystem;
 import pwrup.frc.core.controller.FlightModule;
 import pwrup.frc.core.controller.FlightStick;
 import pwrup.frc.core.controller.LogitechController;
 import pwrup.frc.core.controller.OperatorPanel;
+import pwrup.frc.core.online.PublicationSubsystem;
 
 public class RobotContainer {
 
@@ -22,6 +27,15 @@ public class RobotContainer {
   private Boolean isNonFieldRelative = false;
 
   public RobotContainer() {
+    // Initialize subsystems
+    GlobalPosition.GetInstance();
+    OdometrySubsystem.GetInstance();
+    CameraSubsystem.GetInstance();
+    AHRSGyro.GetInstance();
+
+    // Initialize publication subsystem for sending data to Pi
+    PublicationSubsystem.GetInstance(Robot.getAutobahnClient());
+
     setSwerveCommands();
   }
 
@@ -45,5 +59,16 @@ public class RobotContainer {
   }
 
   public void onAnyModeStart() {
+    // Sync odometry and gyro to global position from Pi when mode starts
+    var position = GlobalPosition.Get();
+    if (position != null) {
+      AHRSGyro.GetInstance().setAngleAdjustment(position.getRotation().getDegrees());
+      OdometrySubsystem.GetInstance().setOdometryPosition(position);
+    }
+
+    // Register data classes for publishing to Pi
+    PublicationSubsystem.addDataClasses(
+        OdometrySubsystem.GetInstance(),
+        AHRSGyro.GetInstance());
   }
 }
