@@ -27,8 +27,6 @@ public class RobotContainer {
       m_rightFlightStick);
 
   public RobotContainer() {
-    CameraSubsystem.GetInstance();
-    GlobalPosition.GetInstance();
     OdometrySubsystem.GetInstance();
     AHRSGyro.GetInstance();
     SwerveSubsystem.GetInstance();
@@ -56,6 +54,8 @@ public class RobotContainer {
   }
 
   public void onAnyModeStart() {
+    CameraSubsystem.GetInstance();
+    GlobalPosition.GetInstance();
     var position = GlobalPosition.Get();
     if (position != null) {
       AHRSGyro.GetInstance().setAngleAdjustment(position.getRotation().getDegrees());
