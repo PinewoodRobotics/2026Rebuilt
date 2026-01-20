@@ -18,7 +18,7 @@ public class TurretConstants {
 
 	public static final double kTurretP = 1;
 	public static final double kTurretI = 0.01;
-	public static final double kTurretD = 0.0;
+	public static final double kTurretD = 1;
 	public static final double kTurretIZ = 0.0;
 
 	public static final AngularVelocity kTurretMaxVelocity = Units.RadiansPerSecond.of(4.0);
