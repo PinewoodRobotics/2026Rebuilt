@@ -232,12 +232,28 @@ tasks.register("applyBackend") {
     }
 }
 
+tasks.register("cleanGeneratedProto") {
+    group = "build"
+    description = "Delete protobuf generated + extracted sources to avoid stale incremental builds"
+    doLast {
+        // Generated Java sources from protoc (your override uses this base dir)
+        delete("$buildDir/generated/source")
+        // Protos extracted from dependencies (Gradle protobuf plugin caches these)
+        delete("$buildDir/extracted-protos")
+        delete("$buildDir/extracted-include-protos")
+    }
+}
+
 tasks.build.dependsOn(tasks.generateProto)
 
 tasks.deploy.dependsOn(tasks.applyBackend)
 
 tasks.jar.dependsOn(tasks.generateProto)
 tasks.compileJava.dependsOn(tasks.generateProto)
+
+tasks.withType(com.google.protobuf.gradle.GenerateProtoTask).configureEach {
+    dependsOn(tasks.cleanGeneratedProto)
+}
 
 
 protobuf {
