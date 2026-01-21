@@ -3,6 +3,7 @@ package frc.robot.command;
 import org.pwrup.util.Vec2;
 
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.constant.ControllerConstants;
 import frc.robot.constant.swerve.SwerveConstants;
 import frc.robot.subsystem.SwerveSubsystem;
 import frc.robot.util.CustomMath;
@@ -27,24 +28,23 @@ public class SwerveMoveTeleop extends Command {
 
   @Override
   public void execute() {
-    final var c = SwerveConstants.INSTANCE;
     double r = CustomMath.deadband(
         controller.leftFlightStick.getRawAxis(
             FlightStick.AxisEnum.JOYSTICKROTATION.value) * -1,
-        c.kRotDeadband,
-        c.kRotMinValue);
+        ControllerConstants.kRotDeadband,
+        ControllerConstants.kRotMinValue);
 
     double x = CustomMath.deadband(
         controller.rightFlightStick.getRawAxis(
             FlightStick.AxisEnum.JOYSTICKY.value) * -1,
-        c.kXSpeedDeadband,
-        c.kXSpeedMinValue);
+        ControllerConstants.kXSpeedDeadband,
+        ControllerConstants.kXSpeedMinValue);
 
     double y = CustomMath.deadband(
         controller.rightFlightStick.getRawAxis(
             FlightStick.AxisEnum.JOYSTICKX.value) * -1,
-        c.kYSpeedDeadband,
-        c.kYSpeedMinValue);
+        ControllerConstants.kYSpeedDeadband,
+        ControllerConstants.kYSpeedMinValue);
 
     var velocity = SwerveSubsystem.fromPercentToVelocity(new Vec2(x, y), r);
 

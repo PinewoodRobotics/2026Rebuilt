@@ -13,6 +13,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constant.BotConstants;
 import frc.robot.constant.BotConstants.RobotVariant;
@@ -25,7 +26,8 @@ import frc.robot.util.CustomMath;
 import pwrup.frc.core.hardware.sensor.IGyroscopeLike;
 
 /**
- * Minimal swerve subsystem: drives with joystick input through PWRUP SwerveDrive.
+ * Minimal swerve subsystem: drives with joystick input through PWRUP
+ * SwerveDrive.
  */
 public class SwerveSubsystem extends SubsystemBase {
   private static SwerveSubsystem self;
@@ -186,9 +188,9 @@ public class SwerveSubsystem extends SubsystemBase {
 
   public static ChassisSpeeds fromPercentToVelocity(Vec2 percentXY, double rotationPercent) {
     final var c = SwerveConstants.INSTANCE;
-    double vx = clamp(percentXY.getX(), -1, 1) * c.tempMaxSpeed;
-    double vy = clamp(percentXY.getY(), -1, 1) * c.tempMaxSpeed;
-    double omega = clamp(rotationPercent, -1, 1) * c.kMaxAngularSpeedRadPerSec;
+    double vx = clamp(percentXY.getX(), -1, 1) * c.kMaxSpeed.in(Units.MetersPerSecond);
+    double vy = clamp(percentXY.getY(), -1, 1) * c.kMaxSpeed.in(Units.MetersPerSecond);
+    double omega = clamp(rotationPercent, -1, 1) * c.kMaxTurnSpeed.in(Units.RadiansPerSecond);
     return new ChassisSpeeds(vx, vy, omega);
   }
 

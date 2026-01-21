@@ -67,21 +67,24 @@ public class WheelMoverTalonFX extends WheelMoverBase {
                 .withStatorCurrentLimit(
                     c.kDriveStatorLimit)
                 .withSupplyCurrentLimit(
-                    c.kDriveSupplyLimit))
+                    c.kDriveSupplyLimit.in(Units.Amps)))
         .withFeedback(
             new FeedbackConfigs()
                 .withSensorToMechanismRatio(
-                    c.kDriveGearRatio))
+                    c.kDriveConversionFactor))
         .withSlot0(
             new Slot0Configs()
                 .withKP(c.kDriveP)
                 .withKI(c.kDriveI)
                 .withKD(c.kDriveD)
-                .withKV(c.kDriveV))
+                .withKV(c.kDriveV.in(Units.Volts)))
         .withMotionMagic(
             new MotionMagicConfigs()
-                .withMotionMagicAcceleration(c.kDriveMotionMagicAcceleration)
-                .withMotionMagicJerk(c.kDriveMotionMagicJerk));
+                // Phoenix expects mechanism rotations/sec; we treat the mechanism as the
+                // wheel (SensorToMechanismRatio is configured to wheel rotations).
+                .withMotionMagicCruiseVelocity(maxWheelRps(c))
+                .withMotionMagicAcceleration(maxWheelRpsPerSec(c))
+                .withMotionMagicJerk(maxWheelRpsPerSec2(c)));
 
     m_driveMotor.getConfigurator().apply(driveConfig);
 
@@ -98,8 +101,9 @@ public class WheelMoverTalonFX extends WheelMoverBase {
                     c.kTurnSupplyLimit))
         .withFeedback(
             new FeedbackConfigs()
-                .withSensorToMechanismRatio(
-                    c.kTurnConversionFactor))
+                // CTRE expects motor rotations per mechanism rotation (module rotation).
+                // Our project constant is module rotations per motor rotation.
+                .withSensorToMechanismRatio(1.0 / c.kTurnConversionFactor))
         .withSlot0(
             new Slot0Configs()
                 .withKP(c.kTurnP)
@@ -109,9 +113,10 @@ public class WheelMoverTalonFX extends WheelMoverBase {
             new ClosedLoopGeneralConfigs().withContinuousWrap(true))
         .withMotionMagic(
             new MotionMagicConfigs()
-                .withMotionMagicCruiseVelocity(c.kTurnMotionMagicCruiseVelocity)
-                .withMotionMagicAcceleration(c.kTurnMotionMagicAcceleration)
-                .withMotionMagicJerk(c.kTurnMotionMagicJerk));
+                // Phoenix expects mechanism rotations/sec (module rotations/sec).
+                .withMotionMagicCruiseVelocity(maxModuleRps(c))
+                .withMotionMagicAcceleration(maxModuleRpsPerSec(c))
+                .withMotionMagicJerk(maxModuleRpsPerSec2(c)));
 
     m_turnMotor.getConfigurator().apply(turnConfig);
     m_turnMotor.setPosition(
@@ -121,7 +126,7 @@ public class WheelMoverTalonFX extends WheelMoverBase {
   @Override
   protected void setSpeed(LinearVelocity mpsSpeed) {
     final var c = SwerveConstants.INSTANCE;
-    double wheelCircumference = Math.PI * c.kWheelDiameterMeters;
+    double wheelCircumference = Math.PI * c.kWheelDiameter.in(Units.Meters);
     double speedMps = mpsSpeed.in(Units.MetersPerSecond);
     double wheelRps = speedMps / wheelCircumference;
 
@@ -171,7 +176,7 @@ public class WheelMoverTalonFX extends WheelMoverBase {
    * wheel rotations
    */
   private double convertWheelRotationsToMeters(double wheelRotations) {
-    return -wheelRotations * (Math.PI * SwerveConstants.INSTANCE.kWheelDiameterMeters);
+    return -wheelRotations * (Math.PI * SwerveConstants.INSTANCE.kWheelDiameter.in(Units.Meters));
   }
 
   public double getCANCoderAngle() {
@@ -214,4 +219,48 @@ public class WheelMoverTalonFX extends WheelMoverBase {
     Logger.recordOutput(base + "requestedAngle", requestedAngle.in(Units.Degrees));
     Logger.recordOutput(base + "requestedDistance", distance.in(Units.Meters));
   }
+
+  // ***********************************************************************************************
+  // ***********************************************************************************************
+  // ***********************************************************************************************
+  // ***********************************************************************************************
+
+  private static double maxWheelRps(SwerveConstants c) {
+    final double wheelCircumference = Math.PI * c.kWheelDiameter.in(Units.Meters);
+    if (wheelCircumference == 0.0) {
+      return 0.0;
+    }
+    return c.kMaxSpeed.in(Units.MetersPerSecond) / wheelCircumference;
+  }
+
+  private static double maxWheelRpsPerSec(SwerveConstants c) {
+    final double wheelCircumference = Math.PI * c.kWheelDiameter.in(Units.Meters);
+    if (wheelCircumference == 0.0) {
+      return 0.0;
+    }
+    return c.kMaxLinearAcceleration.in(Units.MetersPerSecondPerSecond) / wheelCircumference;
+  }
+
+  private static double maxWheelRpsPerSec2(SwerveConstants c) {
+    final double wheelCircumference = Math.PI * c.kWheelDiameter.in(Units.Meters);
+    if (wheelCircumference == 0.0) {
+      return 0.0;
+    }
+    // c.kMaxLinearJerk is in meters/sec^3.
+    return c.kMaxLinearJerk / wheelCircumference;
+  }
+
+  private static double maxModuleRps(SwerveConstants c) {
+    return c.kMaxTurnSpeed.in(Units.RadiansPerSecond) / (2.0 * Math.PI);
+  }
+
+  private static double maxModuleRpsPerSec(SwerveConstants c) {
+    return c.kMaxTurnAcceleration.in(Units.RadiansPerSecondPerSecond) / (2.0 * Math.PI);
+  }
+
+  private static double maxModuleRpsPerSec2(SwerveConstants c) {
+    // c.kMaxTurnJerk is in radians/sec^3.
+    return c.kMaxTurnJerk / (2.0 * Math.PI);
+  }
+
 }

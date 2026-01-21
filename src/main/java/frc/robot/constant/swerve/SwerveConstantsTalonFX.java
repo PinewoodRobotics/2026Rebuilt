@@ -6,6 +6,13 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.AngularAcceleration;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.LinearAcceleration;
+import edu.wpi.first.units.measure.Voltage;
 
 public class SwerveConstantsTalonFX {
   public static final Translation2d rearLeftTranslation = new Translation2d(
@@ -24,15 +31,21 @@ public class SwerveConstantsTalonFX {
       -0.38,
       0.38);
 
-  public static final Pose2d headingControl = new Pose2d(4.72, 3.52, new Rotation2d(0));
-
   public static final double kMaxSpeedMPSNormElevator = 2;
   public static final double kMaxSpeedMPSTopElevator = 0.6;
   public static double tempMaxSpeed = kMaxSpeedMPSNormElevator;
-  public static final int kTurnCurrentLimit = 10;
-  public static final int kDriveCurrentLimit = 30;
 
-  public static final double kMaxAngularSpeedRadPerSec = Math.PI / 1.3; // 180 deg/s
+  public static final AngularVelocity kMaxTurnSpeed = Units.RadiansPerSecond.of(Math.PI / 1.3); // 180 deg/s
+  public static final AngularAcceleration kMaxTurnAcceleration = Units.RadiansPerSecondPerSecond.of(10.0);
+  /** Units: radians/sec^3 */
+  public static final double kMaxTurnJerk = 100.0;
+
+  public static final LinearAcceleration kMaxLinearAcceleration = Units.MetersPerSecondPerSecond.of(3.0);
+  /** Units: meters/sec^3 */
+  public static final double kMaxLinearJerk = 20.0;
+
+  public static final Current kTurnCurrentLimit = Units.Amps.of(10);
+  public static final Current kDriveCurrentLimit = Units.Amps.of(30);
 
   // the driving motor ports
   public static final int kFrontLeftDriveMotorPort = 7;
@@ -82,7 +95,7 @@ public class SwerveConstantsTalonFX {
   public static final double kRearRightCANcoderMagnetOffset = 0.459;
 
   // stats used by SwerveSubsystem for math
-  public static final double kWheelDiameterMeters = 0.089;
+  public static final Distance kWheelDiameter = Units.Meters.of(0.089);
   public static final double kDriveBaseWidth = 0.66;
   public static final double kDriveBaseLength = 0.66;
 
@@ -108,7 +121,7 @@ public class SwerveConstantsTalonFX {
   public static final double kDriveD = 0;
   public static final double kDriveIZ = 0;
   public static final double kDriveFF = 0;
-  public static final double kDriveV = 0.6; // Velocity feedforward - critical for velocity control
+  public static final Voltage kDriveV = Units.Volts.of(0.6); // Velocity feedforward - critical for velocity control
   public static final double kDriveMinOutput = -1;
   public static final double kDriveMaxOutput = 1;
 
@@ -120,7 +133,7 @@ public class SwerveConstantsTalonFX {
 
   public static final double kDriveMaxRPM = 5700;
   public static final double kDriveStatorLimit = 70; // TEMP
-  public static final double kDriveSupplyLimit = 40; // TEMP
+  public static final Current kDriveSupplyLimit = Units.Amps.of(40); // TEMP
 
   // PID values for the turning
   public static final double kTurnP = 1.5 * 12;

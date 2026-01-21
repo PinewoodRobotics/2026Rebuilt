@@ -92,8 +92,12 @@ public class OdometrySubsystem extends SubsystemBase implements IDataClass {
         .build();
 
     all.setOdometry(
-        OdometryData.newBuilder().setPosition(pose).setVelocity(velocity).setPositionChange(positionChangeVec)
-            .setTimeChangeS((float) timeChange).build());
+        OdometryData.newBuilder()
+            .setPosition(pose)
+            .setVelocity(velocity)
+            .setPositionChange(positionChangeVec)
+            .setTimeChangeS((float) timeChange)
+            .build());
 
     return all.build().toByteArray();
   }

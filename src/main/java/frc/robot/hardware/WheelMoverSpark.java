@@ -94,10 +94,10 @@ public class WheelMoverSpark extends WheelMoverBase {
     SparkMaxConfig config = new SparkMaxConfig();
     config
         .inverted(reversed)
-        .smartCurrentLimit(c.kDriveCurrentLimit);
+        .smartCurrentLimit((int) c.kDriveCurrentLimit.in(Units.Amps));
 
-    final double factor = (Math.PI * c.kWheelDiameterMeters) /
-        c.kDriveGearRatio;
+    final double factor = (Math.PI * c.kWheelDiameter.in(Units.Meters)) /
+        c.kDriveConversionFactor;
 
     config.encoder
         .positionConversionFactor(factor)
@@ -125,7 +125,7 @@ public class WheelMoverSpark extends WheelMoverBase {
     SparkMaxConfig config = new SparkMaxConfig();
     config
         .inverted(reversed)
-        .smartCurrentLimit(c.kTurnCurrentLimit);
+        .smartCurrentLimit((int) c.kTurnCurrentLimit.in(Units.Amps));
 
     config.closedLoop
         .pid(c.kTurnP, c.kTurnI, c.kTurnD)
@@ -173,9 +173,9 @@ public class WheelMoverSpark extends WheelMoverBase {
     final var c = SwerveConstants.INSTANCE;
     final double requestedMps = mpsSpeed.in(Units.MetersPerSecond);
 
-    final double wheelCircumference = Math.PI * c.kWheelDiameterMeters;
+    final double wheelCircumference = Math.PI * c.kWheelDiameter.in(Units.Meters);
     final double wheelRps = wheelCircumference == 0.0 ? 0.0 : requestedMps / wheelCircumference;
-    double ffVolts = c.kDriveV * wheelRps;
+    double ffVolts = c.kDriveV.in(Units.Volts) * wheelRps;
     // Clamp to reasonable motor voltage.
     ffVolts = Math.max(-12.0, Math.min(12.0, ffVolts));
 
