@@ -22,7 +22,7 @@ from backend.python.common.debug.logger import (
     info,
     init_logging,
 )
-from backend.python.common.debug.pubsub_replay import ReplayAutobahn
+from backend.python.common.debug.pubsub_replay import ReplayAutobahn, autolog
 from backend.python.common.debug.replay_recorder import (
     init_replay_recorder,
     record_output,
@@ -67,6 +67,8 @@ def init_utilities(
 
     if get_system_status() == SystemStatus.SIMULATION:
         init_replay_recorder(replay_path="latest", mode="r")
+    else:
+        init_replay_recorder(replay_path="latest", mode="w")
 
 
 def get_autobahn_server(system_config: BasicSystemConfig):
@@ -144,6 +146,11 @@ async def main():
         DataPreparerManager(),
     )
 
+    @autolog(
+        config.pos_extrapolator.message_config.post_tag_input_topic,
+        config.pos_extrapolator.message_config.post_odometry_input_topic,
+        config.pos_extrapolator.message_config.post_imu_input_topic,
+    )
     async def process_data(message: bytes):
         data = GeneralSensorData.FromString(message)
         one_of_name = data.WhichOneof("data")
@@ -175,6 +182,11 @@ async def main():
         await autobahn_server.publish(
             config.pos_extrapolator.message_config.post_robot_position_output_topic,
             proto_position.SerializeToString(),
+        )
+
+        record_output(
+            config.pos_extrapolator.message_config.post_robot_position_output_topic,
+            proto_position,
         )
 
         await asyncio.sleep(

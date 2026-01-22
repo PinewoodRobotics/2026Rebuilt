@@ -83,7 +83,7 @@ class iPod:
     def record_output(self, key: str, data: T):
         raise NotImplementedError("record_output is not implemented")
 
-    def write(self, key: str, data_type: str, data: bytes, time: float = time.time()):
+    def write(self, key: str, data_type: str, data: bytes, time: float | None = None):
         raise NotImplementedError("write is not implemented")
 
     def close(self):
@@ -129,8 +129,10 @@ class Recorder(iPod):
         self.write(key, "bytes", data)
 
     def write(
-        self, key: str, data_type: str, data: bytes, time: float = time_module.time()
+        self, key: str, data_type: str, data: bytes, time: float | None = None
     ):
+        if time is None:
+            time = time_module.time()
         ReplayDB.create(key=key, timestamp=time, data_type=data_type, data=data)
 
 
