@@ -89,9 +89,11 @@ wpi.sim.addDriverstation()
 // Create a fat jar (including all dependencies) and set the manifest for WPILib
 jar {
     from sourceSets.main.output  // Your classes FIRST
-    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    from({ configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }) {
+        exclude "proto/**"
+    }
     manifest edu.wpi.first.gradlerio.GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 // Set the jar task for deployment
