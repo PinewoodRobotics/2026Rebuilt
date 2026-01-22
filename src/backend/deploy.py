@@ -27,6 +27,12 @@ def get_modules() -> list[_Module]:
             extra_run_args=[],
             equivalent_run_definition="april-server",
         ),
+        ModuleTypes.PythonModule(
+            local_root_folder_path="python/fan_color",
+            local_main_file_path="main.py",
+            extra_run_args=[],
+            equivalent_run_definition="fan-color",
+        ),
     ]
 
     """

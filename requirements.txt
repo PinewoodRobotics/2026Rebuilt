@@ -25,6 +25,8 @@ thrift
 opencv-python
 requests
 ultralytics
+pycolmap
+adafruit-circuitpython-neopixel
 
 # dev deps
 pytest-cov
