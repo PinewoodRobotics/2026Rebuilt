@@ -91,7 +91,7 @@ jar {
     from sourceSets.main.output  // Your classes FIRST
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     manifest edu.wpi.first.gradlerio.GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
 // Set the jar task for deployment
@@ -136,11 +136,20 @@ def buildDynamically(configFilePath) {
 
     try {
         project.exec {
-            commandLine "python3", "scripts/clone_and_build_repos.py", "--config-file-path", configFilePath
-            standardOutput = stdout
-            errorOutput = stderr
-            ignoreExitValue = false
-        }
+          def javaHome =
+                  System.getenv("JAVA_HOME")
+                  ?: (project.findProperty("org.gradle.java.home") as String)
+                  ?: System.getProperty("java.home")
+
+          environment "JAVA_HOME", javaHome
+          // optional but often useful if the script spawns `java/javac/gradle`:
+          environment "PATH", "${javaHome}/bin:${System.getenv("PATH")}"
+
+          commandLine "python3", "scripts/clone_and_build_repos.py", "--config-file-path", configFilePath
+          standardOutput = stdout
+          errorOutput = stderr
+          ignoreExitValue = false
+      }
     } catch (Exception e) {
         buildFailed = true
         // ANSI escape code for red: \u001B[31m, reset: \u001B[0m
@@ -266,7 +275,13 @@ protobuf {
         all().each { task ->
             task.builtins {
                 java {
-                    option 'lite'
+                    // IMPORTANT:
+                    // Do NOT generate "lite" Java protobufs here.
+                    //
+                    // The Autobahn client dependency expects full protobuf-generated builders
+                    // where methods like `TopicMessage.Builder.build()` have the concrete return
+                    // type. In lite mode, `build()` is inherited from GeneratedMessageLite and
+                    // has an erased return type, which causes a runtime NoSuchMethodError.
                 }
             }
         }
