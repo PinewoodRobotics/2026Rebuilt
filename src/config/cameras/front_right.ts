@@ -7,7 +7,7 @@ import { MatrixUtil, VectorUtil } from "../util/math";
 const front_right: CameraParameters = {
   pi_to_run_on: "tynan",
   name: "front_right",
-  camera_path: "/dev/usb_cam2",
+  camera_path: "/dev/usb_cam1",
   flags: 0,
   width: 800,
   height: 600,

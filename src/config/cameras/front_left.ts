@@ -7,7 +7,7 @@ import { MatrixUtil, VectorUtil } from "../util/math";
 const front_left: CameraParameters = {
   pi_to_run_on: "tynan",
   name: "front_left",
-  camera_path: "/dev/usb_cam4",
+  camera_path: "/dev/usb_cam3",
   flags: 0,
   width: 800,
   height: 600,
@@ -25,7 +25,7 @@ const front_left: CameraParameters = {
   camera_type: CameraType.OV2311,
   video_options: {
     send_feed: false,
-    compression_quality: 50,
+    compression_quality: 10,
     publication_topic: "cameras/front_left",
     do_compression: true,
     overlay_tags: true,

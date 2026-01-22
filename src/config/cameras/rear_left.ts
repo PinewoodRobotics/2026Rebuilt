@@ -7,7 +7,7 @@ import { MatrixUtil, VectorUtil } from "../util/math";
 const rear_left: CameraParameters = {
   pi_to_run_on: "nathan-hale",
   name: "rear_left",
-  camera_path: "/dev/usb_cam1",
+  camera_path: "/dev/usb_cam3",
   flags: 0,
   width: 800,
   height: 600,
@@ -25,7 +25,7 @@ const rear_left: CameraParameters = {
   exposure_time: 10,
   camera_type: CameraType.OV2311,
   video_options: {
-    send_feed: true,
+    send_feed: false,
     overlay_tags: true,
     publication_topic: "camera/rear_left/video",
     compression_quality: 30,

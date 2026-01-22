@@ -49,7 +49,8 @@ public class GlobalPosition extends SubsystemBase {
       lastUpdateTime = (long) position.getTimestamp();
       long currentTimeMillis = System.currentTimeMillis();
 
-      Logger.recordOutput("Global/transportTime", currentTimeMillis - lastUpdateTime);
+      // Logger.recordOutput("Global/transportTime", currentTimeMillis -
+      // lastUpdateTime);
     } catch (InvalidProtocolBufferException e) {
       e.printStackTrace();
       return;

@@ -29,7 +29,8 @@ public class Robot extends LoggedRobot {
   private RobotContainer m_robotContainer;
 
   /**
-   * Static accessor for the Autobahn client (used by subsystems during construction)
+   * Static accessor for the Autobahn client (used by subsystems during
+   * construction)
    */
   public static OptionalAutobahn getAutobahnClient() {
     return communicationClient;

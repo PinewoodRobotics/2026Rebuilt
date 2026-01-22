@@ -1,5 +1,6 @@
 package frc.robot.subsystem;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -13,13 +14,14 @@ import com.google.protobuf.InvalidProtocolBufferException;
 
 import autobahn.client.NamedCallback;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robot;
 import frc.robot.constant.PiConstants;
@@ -30,7 +32,22 @@ import proto.sensor.GeneralSensorDataOuterClass.SensorName;
 public class CameraSubsystem extends SubsystemBase {
   private static CameraSubsystem instance;
 
-  private static final AprilTagFieldLayout FIELD_LAYOUT = AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
+  private static final String FIELD_LAYOUT_DEPLOY_FILE = "2026-rebuilt-welded.json";
+  private static final AprilTagFieldLayout FIELD_LAYOUT = loadFieldLayout();
+
+  private static AprilTagFieldLayout loadFieldLayout() {
+    try {
+      var path = Filesystem.getDeployDirectory().toPath().resolve(FIELD_LAYOUT_DEPLOY_FILE);
+      return new AprilTagFieldLayout(path);
+    } catch (IOException e) {
+      DriverStation.reportError(
+          "Failed to load AprilTag field layout from deploy file '" + FIELD_LAYOUT_DEPLOY_FILE
+              + "'. AprilTag field poses will be unavailable.",
+          e.getStackTrace());
+      // Create an empty layout so we don't crash robot init.
+      return new AprilTagFieldLayout(List.of(), 0.0, 0.0);
+    }
+  }
 
   private static class CameraMetrics {
     volatile GeneralSensorData lastSensorData;
@@ -95,8 +112,6 @@ public class CameraSubsystem extends SubsystemBase {
       var apriltags = data.getApriltags();
       var worldTags = apriltags.getWorldTags();
       var tags = worldTags.getTagsList();
-
-      logTagMetrics(sensorId, tags);
     } catch (InvalidProtocolBufferException e) {
       e.printStackTrace();
     }

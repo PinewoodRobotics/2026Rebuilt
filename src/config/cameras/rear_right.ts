@@ -7,7 +7,7 @@ import { MatrixUtil, VectorUtil } from "../util/math";
 const rear_right: CameraParameters = {
   pi_to_run_on: "nathan-hale",
   name: "rear_right",
-  camera_path: "/dev/usb_cam3",
+  camera_path: "/dev/usb_cam1",
   flags: 0,
   width: 800,
   height: 600,
