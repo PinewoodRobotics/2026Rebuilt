@@ -26,8 +26,8 @@ const front_right: CameraParameters = {
   video_options: {
     send_feed: false,
     do_compression: true,
-    overlay_tags: false,
-    compression_quality: 30,
+    overlay_tags: true,
+    compression_quality: 10,
   },
 };
 

@@ -91,7 +91,7 @@ jar {
     from sourceSets.main.output  // Your classes FIRST
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     manifest edu.wpi.first.gradlerio.GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 // Set the jar task for deployment
@@ -116,9 +116,11 @@ def generateConfig() {
             ignoreExitValue = false
         }
 
-        def deployDir = new File("src/main/deploy")
+        def deployDir = project.file("src/main/deploy")
         deployDir.mkdirs()
-        new File(deployDir, "config").text = stdout.toString().trim()
+        def configFile = new File(deployDir, "config")
+        configFile.delete()
+        configFile.text = stdout.toString().trim()
     } catch (Exception e) {
         println "Failed to generate config: ${e.message}"
         println "Error Output:\n${stderr.toString().trim()}"
