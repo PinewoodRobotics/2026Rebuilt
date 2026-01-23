@@ -60,7 +60,7 @@ public class RobotContainer {
     if (position != null) {
       AHRSGyro.GetInstance().setAngleAdjustment(position.getRotation().getDegrees());
       OdometrySubsystem.GetInstance().setOdometryPosition(position);
-      SwerveSubsystem.GetInstance().resetGyro(0);
+      // SwerveSubsystem.GetInstance().resetGyro(0);
     }
 
     PublicationSubsystem.addDataClasses(

@@ -44,6 +44,7 @@ class WatchdogBaseConfig(BaseModel):
     port: int
     stats_pub_period_s: float
     send_stats: bool
+    process_memory_file: str
 
 
 class BasicSystemConfig(BaseModel):
@@ -58,15 +59,6 @@ class SystemStatus(Enum):
     DEVELOPMENT_LOCAL = "development_local"
     DEVELOPMENT = "development_remote"
     SIMULATION = "simulation"
-
-
-def get_system_name() -> str:
-    global self_name
-    if self_name is None:
-        with open("system_data/name.txt", "r") as f:
-            self_name = f.read().strip()
-
-    return self_name
 
 
 def get_system_status() -> SystemStatus:
@@ -85,18 +77,6 @@ def get_top_10_processes() -> list[psutil.Process]:
     )
 
     return processes[:10]
-
-
-def load_basic_system_config() -> BasicSystemConfig:
-    system_name = get_system_name()
-
-    with open("system_data/basic_system_config.json", "r") as f:
-        config_content = f.read()
-
-    config_content = re.sub(r"<system_name>", system_name, config_content)
-
-    config_dict = json.loads(config_content)
-    return BasicSystemConfig(**config_dict)
 
 
 def get_local_ip(iface: str = "eth0") -> str | None:
@@ -123,14 +103,39 @@ def get_local_hostname(include_local_suffix: bool = True) -> str:
 
 def get_config_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
-    _ = parser.add_argument("--config", type=str, default=None)
+    parser.add_argument("--config-file-path", type=str, default=None)
+    parser.add_argument("--name-file-path", type=str, default=None)
+    parser.add_argument("--basic-system-config-file-path", type=str, default=None)
     return parser
 
 
+def get_system_name(args: argparse.Namespace = get_config_parser().parse_args()) -> str:
+    global self_name
+    if self_name is None:
+        with open(args.name_file_path, "r") as f:
+            self_name = f.read().strip()
+
+    return self_name
+
+
+def load_basic_system_config(
+    args: argparse.Namespace = get_config_parser().parse_args(),
+) -> BasicSystemConfig:
+    system_name = get_system_name(args)
+
+    with open(args.basic_system_config_file_path, "r") as f:
+        config_content = f.read()
+
+    config_content = re.sub(r"<system_name>", system_name, config_content)
+
+    config_dict = json.loads(config_content)
+    return BasicSystemConfig(**config_dict)
+
+
 def load_configs() -> tuple[BasicSystemConfig, Config]:
-    basic_system_config = load_basic_system_config()
     args = get_config_parser().parse_args()
-    config = from_uncertainty_config(args.config)
+    basic_system_config = load_basic_system_config(args)
+    config = from_uncertainty_config(args.config_file_path)
     if config is None or basic_system_config is None:
         raise ValueError("Failed to load configs")
 

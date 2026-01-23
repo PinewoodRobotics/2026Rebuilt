@@ -36,13 +36,13 @@ public class SwerveMoveTeleop extends Command {
 
     double x = CustomMath.deadband(
         controller.rightFlightStick.getRawAxis(
-            FlightStick.AxisEnum.JOYSTICKY.value) * -1,
+            FlightStick.AxisEnum.JOYSTICKY.value),
         ControllerConstants.kXSpeedDeadband,
         ControllerConstants.kXSpeedMinValue);
 
     double y = CustomMath.deadband(
         controller.rightFlightStick.getRawAxis(
-            FlightStick.AxisEnum.JOYSTICKX.value) * -1,
+            FlightStick.AxisEnum.JOYSTICKX.value),
         ControllerConstants.kYSpeedDeadband,
         ControllerConstants.kYSpeedMinValue);
 

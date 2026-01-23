@@ -43,6 +43,7 @@ class DetectionCamera:
         do_compression: bool = True,
         compression_quality: int = 90,
         overlay_tags: bool = False,
+        do_detection: bool = True,
     ):
         self.detector: TagDetector = detector
         self.tag_size: float = tag_size
@@ -55,6 +56,7 @@ class DetectionCamera:
         self.do_compression: bool = do_compression
         self.compression_quality: int = compression_quality
         self.overlay_tags: bool = overlay_tags
+        self.do_detection = do_detection
 
         self.name: str = name
 
@@ -107,7 +109,10 @@ class DetectionCamera:
                 print("No frame found!")
                 continue
 
-            tags_world, corners_found = self._process_tags(frame)
+            tags_world = []
+            corners_found = []
+            if self.do_detection:
+                tags_world, corners_found = self._process_tags(frame)
 
             if self.record_for_replay:
                 record_image(f"frame-{self.name}", frame)

@@ -84,6 +84,7 @@ async def main():
             do_compression=camera.video_options.do_compression or True,
             compression_quality=camera.video_options.compression_quality or 90,
             overlay_tags=camera.video_options.overlay_tags,
+            do_detection=camera.do_detection,
         )
 
         camera_detector_list.append(detector_cam)

@@ -66,7 +66,7 @@ async def main():
 
     while True:
         show_pie(pixels, current_cpu_load, color=(255, 0, 0), bg=(0, 255, 0))
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.3)
 
 
 if __name__ == "__main__":

@@ -15,11 +15,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import autobahn.client.NamedCallback;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -34,6 +31,7 @@ public class CameraSubsystem extends SubsystemBase {
 
   private static final String FIELD_LAYOUT_DEPLOY_FILE = "2026-rebuilt-welded.json";
   private static final AprilTagFieldLayout FIELD_LAYOUT = loadFieldLayout();
+  private static final int POSE_LOG_DIVISOR = 5; // Log pose arrays at ~10Hz (50Hz / 5)
 
   private static AprilTagFieldLayout loadFieldLayout() {
     try {
@@ -54,11 +52,18 @@ public class CameraSubsystem extends SubsystemBase {
     volatile double lastProcessingTimeMs;
     volatile double lastFps;
     volatile long lastArrivalTimeMs;
+
+    // Derived/cached values for logging (computed on message arrival, not in
+    // periodic()).
+    volatile Pose2d[] lastCameraRelativePoses2d = new Pose2d[0];
+    volatile int[] lastFieldTagIds = new int[0];
+    volatile Pose2d[] lastFieldPoses2d = new Pose2d[0];
   }
 
   // Metrics and last packets for each camera (keyed by sensor_id from
   // GeneralSensorData).
   private final Map<String, CameraMetrics> metricsBySensor = new ConcurrentHashMap<>();
+  private int poseLogCounter = 0;
 
   public static CameraSubsystem GetInstance() {
     if (instance == null) {
@@ -109,50 +114,50 @@ public class CameraSubsystem extends SubsystemBase {
       metrics.lastProcessingTimeMs = data.getProcessingTimeMs();
       metrics.lastSensorData = data;
 
+      // Precompute per-tag poses here so periodic() doesn't allocate or loop tags.
       var apriltags = data.getApriltags();
       var worldTags = apriltags.getWorldTags();
-      var tags = worldTags.getTagsList();
+      List<ProcessedTag> tags = worldTags.getTagsList();
+
+      Pose2d[] cameraRelativePoses = new Pose2d[tags.size()];
+      int[] fieldIdsTmp = new int[tags.size()];
+      Pose2d[] fieldPosesTmp = new Pose2d[tags.size()];
+      int fieldCount = 0;
+
+      for (int i = 0; i < tags.size(); i++) {
+        ProcessedTag tag = tags.get(i);
+        int id = tag.getId();
+
+        var pos = tag.getPositionWPILib();
+        var rot = tag.getRotationWPILib();
+
+        cameraRelativePoses[i] = new Pose2d(
+            new Translation2d(pos.getX(), pos.getY()),
+            new Rotation2d(rot.getYaw()));
+
+        var fieldPoseOpt = FIELD_LAYOUT.getTagPose(id);
+        if (fieldPoseOpt.isPresent()) {
+          fieldIdsTmp[fieldCount] = id;
+          fieldPosesTmp[fieldCount] = fieldPoseOpt.get().toPose2d();
+          fieldCount++;
+        }
+      }
+
+      if (fieldCount != fieldIdsTmp.length) {
+        int[] fieldIds = new int[fieldCount];
+        Pose2d[] fieldPoses = new Pose2d[fieldCount];
+        System.arraycopy(fieldIdsTmp, 0, fieldIds, 0, fieldCount);
+        System.arraycopy(fieldPosesTmp, 0, fieldPoses, 0, fieldCount);
+        metrics.lastFieldTagIds = fieldIds;
+        metrics.lastFieldPoses2d = fieldPoses;
+      } else {
+        metrics.lastFieldTagIds = fieldIdsTmp;
+        metrics.lastFieldPoses2d = fieldPosesTmp;
+      }
+
+      metrics.lastCameraRelativePoses2d = cameraRelativePoses;
     } catch (InvalidProtocolBufferException e) {
       e.printStackTrace();
-    }
-  }
-
-  private void logTagMetrics(String sensorId, List<ProcessedTag> tags) {
-    String prefix = "Camera/" + sensorId + "/AprilTags/";
-
-    CameraMetrics metrics = metricsBySensor.get(sensorId);
-    if (metrics != null) {
-      Logger.recordOutput(prefix + "frameProcessingMs", metrics.lastProcessingTimeMs);
-      Logger.recordOutput(prefix + "fps", metrics.lastFps);
-    }
-    Logger.recordOutput(prefix + "tagCount", tags.size());
-
-    if (tags.isEmpty()) {
-      return;
-    }
-
-    for (ProcessedTag tag : tags) {
-      int id = tag.getId();
-
-      var pos = tag.getPositionWPILib();
-      var rot = tag.getRotationWPILib();
-
-      Translation3d cameraTranslation = new Translation3d(
-          pos.getX(),
-          pos.getY(),
-          pos.getZ());
-
-      Rotation3d cameraRotation = new Rotation3d(0.0, 0.0, rot.getYaw());
-
-      Pose3d cameraRelativePose = new Pose3d(cameraTranslation, cameraRotation);
-
-      Logger.recordOutput(
-          prefix + "CameraRelativePose3d/Tag" + id,
-          cameraRelativePose);
-
-      FIELD_LAYOUT.getTagPose(id).ifPresent(fieldPose -> Logger.recordOutput(
-          prefix + "FieldPose/Tag" + id,
-          fieldPose));
     }
   }
 
@@ -184,67 +189,67 @@ public class CameraSubsystem extends SubsystemBase {
     return metricsBySensor.keySet();
   }
 
-  @Override
-  public void periodic() {
-    double globalFps = 0.0;
-
-    List<Pose2d> cameraRelativePoses = new ArrayList<>();
-    Map<Integer, Pose2d> fieldPosesByTagId = new LinkedHashMap<>();
-
-    long now = System.currentTimeMillis();
-
-    for (Map.Entry<String, CameraMetrics> entry : metricsBySensor.entrySet()) {
-      String sensorId = entry.getKey();
-      CameraMetrics metrics = entry.getValue();
-      String prefix = "Camera/" + sensorId + "/AprilTags/";
-      Logger.recordOutput(prefix + "frameProcessingMs", metrics.lastProcessingTimeMs);
-      Logger.recordOutput(prefix + "fps", metrics.lastFps);
-
-      globalFps += metrics.lastFps;
-
-      long ageMs = metrics.lastArrivalTimeMs > 0 ? now - metrics.lastArrivalTimeMs : 0;
-      double estimatedLatencyMs = ageMs + metrics.lastProcessingTimeMs;
-
-      // Age of the last frame seen from this camera and an approximate end-to-end
-      // latency (capture -> backend processing -> transport -> robot use),
-      // computed without trusting any remote timestamps.
-      Logger.recordOutput(prefix + "frameAgeMs", ageMs);
-      Logger.recordOutput(prefix + "estimatedLatencyMs", estimatedLatencyMs);
-
-      GeneralSensorData data = metrics.lastSensorData;
-      if (data == null) {
-        continue;
-      }
-
-      var apriltags = data.getApriltags();
-      var worldTags = apriltags.getWorldTags();
-      List<ProcessedTag> tags = worldTags.getTagsList();
-
-      for (ProcessedTag tag : tags) {
-        int id = tag.getId();
-
-        var pos = tag.getPositionWPILib();
-        var rot = tag.getRotationWPILib();
-
-        Pose2d cameraRelativePose2d = new Pose2d(
-            new Translation2d(pos.getX(), pos.getY()),
-            new Rotation2d(rot.getYaw()));
-
-        cameraRelativePoses.add(cameraRelativePose2d);
-
-        FIELD_LAYOUT.getTagPose(id)
-            .ifPresent(fieldPose3d -> fieldPosesByTagId.put(id, fieldPose3d.toPose2d()));
-      }
-    }
-
-    Logger.recordOutput("Camera/Global/AprilTags/fpsCombined", globalFps);
-
-    Logger.recordOutput(
-        "Camera/Global/AprilTags/CameraRelativePose2d",
-        cameraRelativePoses.toArray(new Pose2d[0]));
-
-    Logger.recordOutput(
-        "Camera/Global/AprilTags/FieldPose2d",
-        fieldPosesByTagId.values().toArray(new Pose2d[0]));
-  }
+  /*
+   * @Override
+   * public void periodic() {
+   * double globalFps = 0.0;
+   * 
+   * long now = System.currentTimeMillis();
+   * 
+   * for (Map.Entry<String, CameraMetrics> entry : metricsBySensor.entrySet()) {
+   * String sensorId = entry.getKey();
+   * CameraMetrics metrics = entry.getValue();
+   * String prefix = "Camera/" + sensorId + "/AprilTags/";
+   * Logger.recordOutput(prefix + "frameProcessingMs",
+   * metrics.lastProcessingTimeMs);
+   * Logger.recordOutput(prefix + "fps", metrics.lastFps);
+   * 
+   * globalFps += metrics.lastFps;
+   * 
+   * long ageMs = metrics.lastArrivalTimeMs > 0 ? now - metrics.lastArrivalTimeMs
+   * : 0;
+   * double estimatedLatencyMs = ageMs + metrics.lastProcessingTimeMs;
+   * 
+   * // Age of the last frame seen from this camera and an approximate end-to-end
+   * // latency (capture -> backend processing -> transport -> robot use),
+   * // computed without trusting any remote timestamps.
+   * Logger.recordOutput(prefix + "frameAgeMs", ageMs);
+   * Logger.recordOutput(prefix + "estimatedLatencyMs", estimatedLatencyMs);
+   * }
+   * 
+   * Logger.recordOutput("Camera/Global/AprilTags/fpsCombined", globalFps);
+   * 
+   * boolean shouldLogPoses = (poseLogCounter++ % POSE_LOG_DIVISOR) == 0;
+   * if (shouldLogPoses) {
+   * List<Pose2d> cameraRelativePoses = new ArrayList<>();
+   * Map<Integer, Pose2d> fieldPosesByTagId = new LinkedHashMap<>();
+   * 
+   * for (CameraMetrics metrics : metricsBySensor.values()) {
+   * Pose2d[] cameraPoses = metrics.lastCameraRelativePoses2d;
+   * if (cameraPoses != null && cameraPoses.length > 0) {
+   * for (Pose2d p : cameraPoses) {
+   * cameraRelativePoses.add(p);
+   * }
+   * }
+   * 
+   * int[] fieldIds = metrics.lastFieldTagIds;
+   * Pose2d[] fieldPoses = metrics.lastFieldPoses2d;
+   * if (fieldIds != null && fieldPoses != null) {
+   * int n = Math.min(fieldIds.length, fieldPoses.length);
+   * for (int i = 0; i < n; i++) {
+   * fieldPosesByTagId.put(fieldIds[i], fieldPoses[i]);
+   * }
+   * }
+   * }
+   * 
+   * Logger.recordOutput(
+   * "Camera/Global/AprilTags/CameraRelativePose2d",
+   * cameraRelativePoses.toArray(new Pose2d[cameraRelativePoses.size()]));
+   * 
+   * Logger.recordOutput(
+   * "Camera/Global/AprilTags/FieldPose2d",
+   * fieldPosesByTagId.values().toArray(new Pose2d[fieldPosesByTagId.size()]));
+   * }
+   * }
+   */
 }

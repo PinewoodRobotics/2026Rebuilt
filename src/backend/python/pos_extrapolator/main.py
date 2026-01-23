@@ -146,11 +146,6 @@ async def main():
         DataPreparerManager(),
     )
 
-    @autolog(
-        config.pos_extrapolator.message_config.post_tag_input_topic,
-        config.pos_extrapolator.message_config.post_odometry_input_topic,
-        config.pos_extrapolator.message_config.post_imu_input_topic,
-    )
     async def process_data(message: bytes):
         data = GeneralSensorData.FromString(message)
         one_of_name = data.WhichOneof("data")
@@ -184,10 +179,12 @@ async def main():
             proto_position.SerializeToString(),
         )
 
+        """
         record_output(
             config.pos_extrapolator.message_config.post_robot_position_output_topic,
             proto_position,
         )
+        """
 
         await asyncio.sleep(
             config.pos_extrapolator.time_s_between_position_sends

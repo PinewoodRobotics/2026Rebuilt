@@ -144,7 +144,6 @@ def buildDynamically(configFilePath) {
                   ?: System.getProperty("java.home")
 
           environment "JAVA_HOME", javaHome
-          // optional but often useful if the script spawns `java/javac/gradle`:
           environment "PATH", "${javaHome}/bin:${System.getenv("PATH")}"
 
           commandLine "python3", "scripts/clone_and_build_repos.py", "--config-file-path", configFilePath

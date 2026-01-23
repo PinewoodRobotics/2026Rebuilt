@@ -2,12 +2,12 @@ import {
   CameraType,
   type CameraParameters,
 } from "generated/thrift/gen-nodejs/camera_types";
-import { MatrixUtil, VectorUtil } from "../util/math";
+import { MatrixUtil, VectorUtil } from "../../util/math";
 
 const logitech_cam: CameraParameters = {
   pi_to_run_on: "nathan-hale",
   name: "front_left",
-  camera_path: "/dev/usb_cam2",
+  camera_path: "/dev/usb_cam4",
   flags: 0,
   width: 640,
   height: 480,
@@ -28,9 +28,10 @@ const logitech_cam: CameraParameters = {
     send_feed: true,
     overlay_tags: false,
     publication_topic: "camera/logitech/video",
-    compression_quality: 90,
+    compression_quality: 10,
     do_compression: true,
   },
+  do_detection: true,
 };
 
 export default logitech_cam;
