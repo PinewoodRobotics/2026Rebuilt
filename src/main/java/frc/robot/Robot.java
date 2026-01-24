@@ -11,13 +11,12 @@ import org.littletonrobotics.junction.networktables.NT4Publisher;
 
 import autobahn.client.Address;
 import autobahn.client.AutobahnClient;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.constant.PiConstants;
-import frc.robot.constant.TopicConstants;
 import frc.robot.util.RPC;
 import lombok.Getter;
 import pwrup.frc.core.online.raspberrypi.OptionalAutobahn;
-import pwrup.frc.core.online.raspberrypi.PrintPiLogs;
 
 public class Robot extends LoggedRobot {
 
@@ -27,6 +26,7 @@ public class Robot extends LoggedRobot {
   private static boolean onlineStatus;
 
   private RobotContainer m_robotContainer;
+  private Command m_autonomousCommand;
 
   /**
    * Static accessor for the Autobahn client (used by subsystems during
@@ -69,6 +69,13 @@ public class Robot extends LoggedRobot {
   @Override
   public void autonomousInit() {
     m_robotContainer.onAnyModeStart();
+
+    m_autonomousCommand = m_robotContainer.getAutonomousCommand();
+    if (m_autonomousCommand != null) {
+      CommandScheduler.getInstance().schedule(m_autonomousCommand);
+    } else {
+      System.out.println("WARNING: getAutonomousCommand() returned null; nothing scheduled for auton.");
+    }
   }
 
   @Override
@@ -78,6 +85,11 @@ public class Robot extends LoggedRobot {
   @Override
   public void teleopInit() {
     m_robotContainer.onAnyModeStart();
+
+    if (m_autonomousCommand != null) {
+      m_autonomousCommand.cancel();
+      m_autonomousCommand = null;
+    }
   }
 
   @Override

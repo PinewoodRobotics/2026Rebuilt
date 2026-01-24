@@ -13,7 +13,7 @@ import logitech_cam from "./cameras/b-bot/logitech_cam";
 
 const config: Config = {
   pos_extrapolator: pose_extrapolator,
-  cameras: [front_left, front_right, rear_left, rear_right, logitech_cam],
+  cameras: [front_left, front_right, rear_left, rear_right],
   april_detection: april_tag_detection_config,
   lidar_configs: lidar_configs,
   pathfinding: pathfinding_config,
