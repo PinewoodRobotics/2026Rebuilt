@@ -5,9 +5,9 @@ import {
 import { MatrixUtil, VectorUtil } from "../../util/math";
 
 const logitech_cam: CameraParameters = {
-  pi_to_run_on: "nathan-hale",
-  name: "front_left",
-  camera_path: "/dev/usb_cam4",
+  pi_to_run_on: "agatha-king",
+  name: "logitech",
+  camera_path: "/dev/usb_cam3",
   flags: 0,
   width: 640,
   height: 480,

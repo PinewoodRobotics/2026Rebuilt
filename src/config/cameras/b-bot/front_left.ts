@@ -5,7 +5,7 @@ import {
 import { MatrixUtil, VectorUtil } from "../../util/math";
 
 const front_left: CameraParameters = {
-  pi_to_run_on: "tynan",
+  pi_to_run_on: "agatha-king",
   name: "front_left",
   camera_path: "/dev/usb_cam1",
   flags: 0,
