@@ -12,6 +12,8 @@ pub fn filter_points_rect(
                 && point.x <= top_right.x
                 && point.y >= bottom_left.y
                 && point.y <= top_right.y
+                && point.z >= bottom_left.z
+                && point.z <= top_right.z
         })
         .collect()
 }

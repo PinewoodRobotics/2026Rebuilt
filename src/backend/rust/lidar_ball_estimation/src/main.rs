@@ -10,7 +10,10 @@ use futures_util::StreamExt;
 use prost::Message;
 use unitree_lidar_l1_rust::lidar::reader::{LidarReader, LidarResult};
 
+mod ball_tracker;
 mod math;
+
+const PUB_TOPIC: &str = "lidar3d/pointcloud";
 
 const AUTOBAHN_HOST: &str = "localhost";
 const AUTOBAHN_PORT: u16 = 9000;
@@ -48,6 +51,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (bottom_left_corner_world, top_right_corner_world) =
         math::get_rect_corners(BOTTOM_RIGHT_CORNER_WORLD, HEIGHT, WIDTH, LENGTH);
 
+    let mut tracker =
+        ball_tracker::BallFlightTracker::new(ball_tracker::BallFlightTrackerConfig::default());
+
     let mut reader = reader.into_stream();
     while let Some(result) = reader.next().await {
         match result {
@@ -66,13 +72,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     top_right_corner_world,
                 );
 
+                let now = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap();
+                let now_s = now.as_secs_f64();
+                let status = tracker.update(&points, now_s);
+
                 let general_sensor_data = GeneralSensorData {
                     sensor_name: SensorName::Lidar as i32,
                     sensor_id: LIDAR_NAME.to_string(),
-                    timestamp: std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs() as i64,
+                    timestamp: now.as_secs() as i64,
                     data: Some(Data::Lidar(LidarData {
                         data: Some(lidar_data::Data::PointCloud3d(PointCloud3d {
                             ranges: points,
@@ -84,12 +93,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 let _ = autobahn
                     .publish(
-                        &format!("lidar/lidar3d/pointcloud"),
+                        &format!("{}", PUB_TOPIC),
                         general_sensor_data.encode_to_vec(),
                     )
                     .await;
+
+                if status == ball_tracker::UpdateStatus::Landed {
+                    if let Some(summary) = tracker.take_summary() {
+                        println!(
+                            "Ball landed: tof={:.3}s peak_z={:.3}m horiz_dist={:.3}m samples={}",
+                            summary.time_of_flight_s,
+                            summary.peak_z_m,
+                            summary.horizontal_distance_m,
+                            summary.sample_count
+                        );
+                    }
+                    tracker.reset();
+                }
             }
-            LidarResult::ImuReading(imu) => {}
+            LidarResult::ImuReading(_imu) => {}
         }
     }
 
