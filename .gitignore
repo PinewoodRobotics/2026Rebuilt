@@ -208,3 +208,4 @@ src/main/deploy/config
 
 *.db
 .coverage
+checkpoints/

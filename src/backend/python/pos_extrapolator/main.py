@@ -22,10 +22,9 @@ from backend.python.common.debug.logger import (
     info,
     init_logging,
 )
-from backend.python.common.debug.pubsub_replay import ReplayAutobahn, autolog
+from backend.python.common.debug.pubsub_replay import ReplayAutobahn
 from backend.python.common.debug.replay_recorder import (
     init_replay_recorder,
-    record_output,
 )
 from backend.python.common.util.extension import subscribe_to_multiple_topics
 from backend.python.common.util.parser import get_default_process_parser
@@ -34,7 +33,6 @@ from backend.python.common.util.system import (
     SystemStatus,
     get_system_name,
     get_system_status,
-    load_basic_system_config,
     load_configs,
 )
 from backend.python.pos_extrapolator.data_prep import DataPreparerManager
