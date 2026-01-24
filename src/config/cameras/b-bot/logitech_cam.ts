@@ -25,7 +25,7 @@ const logitech_cam: CameraParameters = {
   camera_type: CameraType.ULTRAWIDE_100,
   brightness: 50,
   video_options: {
-    send_feed: true,
+    send_feed: false,
     overlay_tags: false,
     publication_topic: "camera/logitech/video",
     compression_quality: 10,

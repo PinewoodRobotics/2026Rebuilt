@@ -49,7 +49,7 @@ public class PiConstants {
   // process types are available on all Pis.
   public static final AutomaticPiNetwork<ProcessType> network = new AutomaticPiNetwork<ProcessType>(
       networkInitializeTimeSec, ProcessType.POSE_EXTRAPOLATOR, ProcessType.APRIL_TAG_DETECTOR,
-      ProcessType.APRIL_TAG_DETECTOR);
+      ProcessType.APRIL_TAG_DETECTOR, ProcessType.APRIL_TAG_DETECTOR);
 
   static {
     AutomaticPiNetwork.AddConstrainedProcesses(
@@ -57,7 +57,7 @@ public class PiConstants {
     AutomaticPiNetwork.AddConstrainedProcesses(
         new ConstrainedProcess<>(ProcessType.APRIL_TAG_DETECTOR, "tynan"));
     AutomaticPiNetwork.AddConstrainedProcesses(
-        new ConstrainedProcess<>(ProcessType.POSE_EXTRAPOLATOR, "nathan-hale"));
+        new ConstrainedProcess<>(ProcessType.APRIL_TAG_DETECTOR, "agatha-king"));
   }
 
   /**
