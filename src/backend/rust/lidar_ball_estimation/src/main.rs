@@ -16,7 +16,7 @@ mod math;
 const PUB_TOPIC: &str = "lidar3d/pointcloud";
 
 const AUTOBAHN_HOST: &str = "localhost";
-const AUTOBAHN_PORT: u16 = 9000;
+const AUTOBAHN_PORT: u16 = 8080;
 
 const CLOUD_SCAN_NUM: u32 = 28;
 const PORT: &str = "/dev/ttyUSB0";
@@ -27,9 +27,9 @@ const MAX_DISTANCE_METERS: f64 = 40.0;
 const LIDAR_NAME: &str = "lidar-1";
 
 const BOTTOM_RIGHT_CORNER_WORLD: nalgebra::Vector3<f32> = nalgebra::Vector3::new(0.0, 0.0, 0.0);
-const HEIGHT: f32 = 5.0;
-const WIDTH: f32 = 10.0;
-const LENGTH: f32 = 10.0;
+const HEIGHT: f32 = 20.0;
+const WIDTH: f32 = 20.0;
+const LENGTH: f32 = 20.0;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -66,17 +66,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         z: point.z,
                     })
                     .collect::<Vec<_>>();
-                let points = math::filter_points_rect(
+                /*let points = math::filter_points_rect(
                     points,
                     bottom_left_corner_world,
                     top_right_corner_world,
-                );
+                );*/
 
                 let now = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap();
                 let now_s = now.as_secs_f64();
-                let status = tracker.update(&points, now_s);
+                // let status = tracker.update(&points, now_s);
 
                 let general_sensor_data = GeneralSensorData {
                     sensor_name: SensorName::Lidar as i32,
@@ -92,13 +92,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 };
 
                 let _ = autobahn
-                    .publish(
-                        &format!("{}", PUB_TOPIC),
-                        general_sensor_data.encode_to_vec(),
-                    )
+                    .publish(&PUB_TOPIC, general_sensor_data.encode_to_vec())
                     .await;
 
-                if status == ball_tracker::UpdateStatus::Landed {
+                println!("Published point cloud");
+
+                /*if status == ball_tracker::UpdateStatus::Landed {
                     if let Some(summary) = tracker.take_summary() {
                         println!(
                             "Ball landed: tof={:.3}s peak_z={:.3}m horiz_dist={:.3}m samples={}",
@@ -109,7 +108,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         );
                     }
                     tracker.reset();
-                }
+                }*/
             }
             LidarResult::ImuReading(_imu) => {}
         }

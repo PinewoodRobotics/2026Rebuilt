@@ -1,5 +1,5 @@
 [package]
-name = "lidar-ball-estimation"
+name = "lidar_ball_estimation"
 version = "0.1.0"
 edition = "2021"
 

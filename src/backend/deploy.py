@@ -34,13 +34,6 @@ def get_modules() -> list[_Module]:
             extra_run_args=[],
             equivalent_run_definition="fan-color",
         ),
-        ModuleTypes.RustModule(
-            extra_run_args=[],
-            runnable_name="lidar_ball_estimation",
-            equivalent_run_definition="lidar-ball-estimation",
-            project_root_folder_path="src/backend/rust/lidar_ball_estimation",
-            build_for_platforms=[SystemType.PI5_BASE_PREBUILT],
-        ),
     ]
 
     """
