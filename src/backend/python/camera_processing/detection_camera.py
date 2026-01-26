@@ -1,6 +1,6 @@
 import threading
 import time
-from typing import Callable, cast
+from typing import Callable, Type, cast
 
 import cv2
 import numpy as np
@@ -28,6 +28,51 @@ from backend.generated.proto.python.sensor.general_sensor_data_pb2 import (
     GeneralSensorData,
     SensorName,
 )
+from backend.generated.thrift.config.ttypes import Config
+from backend.generated.thrift.camera_processor.ttypes import CameraPipelineType
+
+
+class CameraPipeline:
+    def process(
+        self,
+        frame: NDArray[np.uint8],
+        send_data_lambda: Callable[[bytes], None],
+        config: Config,
+    ): ...
+
+
+class CameraProcessor:
+    _registry: dict[CameraPipelineType, type[CameraPipeline]] = {}
+    _config_instance: Config
+    _send_data_lambda: Callable[[bytes], None]
+
+    @classmethod
+    def register(cls, pipeline_type: CameraPipelineType):
+        def decorator(pipeline_class: Type[CameraPipeline]):
+            cls._registry[pipeline_type] = pipeline_class
+            return pipeline_class
+
+        return decorator
+
+    @classmethod
+    def set_config(cls, config: Config):
+        cls._config_instance = config
+
+    @classmethod
+    def set_data_lambda(cls, send_data_lambda: Callable[[bytes], None]):
+        cls._send_data_lambda = send_data_lambda
+
+    def process_image(self, frame: NDArray[np.uint8], pi_name: str):
+        if pi_name not in self._registry:
+            raise ValueError(f"Pipeline {pi_name} not found")
+
+        pipeline_class = self._registry[pipeline_type]
+        pipeline = pipeline_class()
+        pipeline.process(
+            frame,
+            self._send_data_lambda,
+            CameraProcessor._config_instance,
+        )
 
 
 class DetectionCamera:
