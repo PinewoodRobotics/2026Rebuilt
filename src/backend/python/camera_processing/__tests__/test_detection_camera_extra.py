@@ -5,8 +5,8 @@ from backend.generated.proto.python.sensor.general_sensor_data_pb2 import (
     GeneralSensorData,
     SensorName,
 )
-from backend.python.april.src.detection_camera import DetectionCamera
-from backend.python.april.src.tag_detector import TagDetection, TagDetector
+from backend.python.camera_processing.detection_camera import DetectionCamera
+from backend.python.camera_processing.tag_detector import TagDetection, TagDetector
 
 
 class _DummyCapture:
@@ -22,7 +22,9 @@ class _DummyCapture:
 
 class _DummyDetector(TagDetector):
     def __init__(self):
-        super().__init__(detector=None, detector_type="dummy", processing_function=lambda _d, _f: [])
+        super().__init__(
+            detector=None, detector_type="dummy", processing_function=lambda _d, _f: []
+        )
 
 
 def test_overlay_tag_on_frame_handles_gray_and_bgr_inputs():

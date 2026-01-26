@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from backend.python.common.camera.abstract_camera import (
     AbstractCaptureDevice,
 )
-from backend.python.april.src.util import (
+from backend.python.camera_processing.util import (
     get_map1_and_map2,
     get_undistored_frame,
 )

@@ -6,9 +6,9 @@ import cv2
 import numpy as np
 from numpy.typing import NDArray
 
-from backend.python.april.src.tag_detector import TagDetection, TagDetector
+from backend.python.camera_processing.tag_detector import TagDetection, TagDetector
 from backend.python.common.camera.abstract_camera import AbstractCaptureDevice
-from backend.python.april.src.util import (
+from backend.python.camera_processing.util import (
     convert_to_wpi_position,
     convert_to_wpi_rotation,
     post_process_detection,

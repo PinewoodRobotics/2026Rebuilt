@@ -23,10 +23,10 @@ def get_modules() -> list[_Module]:
             equivalent_run_definition="position-extrapolator",
         ),
         ModuleTypes.PythonModule(
-            local_root_folder_path="python/april",
-            local_main_file_path="src/main.py",
+            local_root_folder_path="python/camera_processing",
+            local_main_file_path="main.py",
             extra_run_args=[],
-            equivalent_run_definition="april-server",
+            equivalent_run_definition="camera-processing",
         ),
         ModuleTypes.PythonModule(
             local_root_folder_path="python/fan_color",

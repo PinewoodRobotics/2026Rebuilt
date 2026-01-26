@@ -18,7 +18,7 @@ public class PiConstants {
     // position-extrapolator is the equivalent run definition name defined in
     // deploy.py
     POSE_EXTRAPOLATOR("position-extrapolator"), // example process name
-    APRIL_TAG_DETECTOR("april-server"); // example process name
+    CAMERA_PROCESSING("camera-processing"); // example process name
 
     private final String name;
 
@@ -32,7 +32,7 @@ public class PiConstants {
       switch (this) {
         case POSE_EXTRAPOLATOR:
           return 0.5;
-        case APRIL_TAG_DETECTOR:
+        case CAMERA_PROCESSING:
           return 1.0;
       }
 
@@ -48,16 +48,16 @@ public class PiConstants {
   // dynamically sets up the required processes on each Pi. This assumes that all
   // process types are available on all Pis.
   public static final AutomaticPiNetwork<ProcessType> network = new AutomaticPiNetwork<ProcessType>(
-      networkInitializeTimeSec, ProcessType.POSE_EXTRAPOLATOR, ProcessType.APRIL_TAG_DETECTOR,
-      ProcessType.APRIL_TAG_DETECTOR, ProcessType.APRIL_TAG_DETECTOR);
+      networkInitializeTimeSec, ProcessType.POSE_EXTRAPOLATOR, ProcessType.CAMERA_PROCESSING,
+      ProcessType.CAMERA_PROCESSING, ProcessType.CAMERA_PROCESSING);
 
   static {
     AutomaticPiNetwork.AddConstrainedProcesses(
-        new ConstrainedProcess<>(ProcessType.APRIL_TAG_DETECTOR, "nathan-hale"));
+        new ConstrainedProcess<>(ProcessType.CAMERA_PROCESSING, "nathan-hale"));
     AutomaticPiNetwork.AddConstrainedProcesses(
-        new ConstrainedProcess<>(ProcessType.APRIL_TAG_DETECTOR, "tynan"));
+        new ConstrainedProcess<>(ProcessType.CAMERA_PROCESSING, "tynan"));
     AutomaticPiNetwork.AddConstrainedProcesses(
-        new ConstrainedProcess<>(ProcessType.APRIL_TAG_DETECTOR, "agatha-king"));
+        new ConstrainedProcess<>(ProcessType.CAMERA_PROCESSING, "agatha-king"));
   }
 
   /**

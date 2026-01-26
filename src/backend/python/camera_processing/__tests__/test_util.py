@@ -5,8 +5,11 @@ import numpy as np
 import pyapriltags
 import pytest
 
-from backend.python.april.src.__tests__.util import add_cur_dir, get_all_generated_tags
-from backend.python.april.src.util import (
+from backend.python.camera_processing.__tests__.util import (
+    add_cur_dir,
+    get_all_generated_tags,
+)
+from backend.python.camera_processing.util import (
     post_process_detection,
     process_image,
     solve_pnp_tag_corners,

@@ -1,7 +1,7 @@
 import numpy as np
 
 from backend.generated.thrift.config.apriltag.ttypes import AprilDetectionConfig
-from backend.python.april.src.tag_detector import TagDetector
+from backend.python.camera_processing.tag_detector import TagDetector
 
 
 class _FakeDetection:

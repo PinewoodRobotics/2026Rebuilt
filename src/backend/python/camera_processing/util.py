@@ -25,7 +25,7 @@ from backend.generated.thrift.config.apriltag.ttypes import (
     SpecialDetectorType,
 )
 from backend.generated.thrift.config.camera.ttypes import CameraParameters, CameraType
-from backend.python.april.src.tag_detector import TagDetection, TagDetector
+from backend.python.camera_processing.tag_detector import TagDetection, TagDetector
 from backend.python.common.camera.abstract_camera import AbstractCaptureDevice
 from backend.python.common.debug.logger import info
 from backend.python.common.util.math import get_np_from_matrix, get_np_from_vector

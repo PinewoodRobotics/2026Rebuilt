@@ -5,8 +5,8 @@ import time
 
 import pyapriltags
 
-from backend.python.april.src.detection_camera import DetectionCamera
-from backend.python.april.src.util import build_detector
+from backend.python.camera_processing.detection_camera import DetectionCamera
+from backend.python.camera_processing.util import build_detector
 from backend.python.common.camera.abstract_camera import get_camera_capture_device
 from backend.python.common.debug.logger import LogLevel, init_logging, success
 from backend.generated.thrift.config.apriltag.ttypes import AprilDetectionConfig
