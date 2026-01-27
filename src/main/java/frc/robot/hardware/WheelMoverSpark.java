@@ -266,6 +266,7 @@ public class WheelMoverSpark extends WheelMoverBase {
     // Actual (encoder-derived) module values
     Logger.recordOutput(base + "actual/speedMps", actualMps.in(Units.MetersPerSecond));
     Logger.recordOutput(base + "actual/distanceM", actualDistance.in(Units.Meters));
+    Logger.recordOutput(base + "actual/distance_abs_encoder", m_driveMotor.getEncoder().getPosition());
     Logger.recordOutput(base + "actual/angleDeg", actualAngle.in(Units.Degrees));
     Logger.recordOutput(base + "actual/angleRad", actualAngle.in(Units.Radians));
 

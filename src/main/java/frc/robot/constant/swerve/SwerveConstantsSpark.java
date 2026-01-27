@@ -95,7 +95,7 @@ public final class SwerveConstantsSpark {
   public static final double kRearRightCANcoderMagnetOffset = -0.0976;
   public static final double kRearLeftCANcoderMagnetOffset = 0.255;
 
-  public static final Distance kWheelDiameter = Units.Meters.of(0.09);
+  public static final Distance kWheelDiameter = Units.Meters.of(0.1016);
 
   public static final double kDriveP = 0.01;
   public static final double kDriveI = 0;

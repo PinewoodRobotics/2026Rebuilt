@@ -1,5 +1,7 @@
 package frc.robot;
 
+import org.littletonrobotics.junction.Logger;
+
 import com.pathplanner.lib.commands.PathPlannerAuto;
 
 import edu.wpi.first.wpilibj2.command.Command;
@@ -26,7 +28,7 @@ public class RobotContainer {
   final FlightModule m_flightModule = new FlightModule(
       m_leftFlightStick,
       m_rightFlightStick);
-  static final String kPathPlannerAutoName = "Auton1";
+  static final String kPathPlannerAutoName = "Ball Shooter Left";
 
   public RobotContainer() {
     CameraSubsystem.GetInstance();
