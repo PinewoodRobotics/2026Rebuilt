@@ -6,7 +6,7 @@ import com.kauailabs.navx.frc.AHRS;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.I2C;
-import frc.robot.util.CustomMath;
+import frc.robot.util.LocalMath;
 import proto.sensor.GeneralSensorDataOuterClass.GeneralSensorData;
 import proto.sensor.GeneralSensorDataOuterClass.SensorName;
 import proto.sensor.Imu.ImuData;
@@ -52,7 +52,7 @@ public class AHRSGyro implements IGyroscopeLike, IDataClass {
 
   @Override
   public double[] getYPR() {
-    double yawAdj = CustomMath.wrapTo180(m_gyro.getYaw() + yawSoftOffsetDeg);
+    double yawAdj = LocalMath.wrapTo180(m_gyro.getYaw() + yawSoftOffsetDeg);
     return new double[] {
         yawAdj,
         m_gyro.getPitch(),
@@ -127,7 +127,7 @@ public class AHRSGyro implements IGyroscopeLike, IDataClass {
   }
 
   public Rotation2d getNoncontinuousAngle() {
-    return Rotation2d.fromDegrees(CustomMath.wrapTo180(m_gyro.getAngle()));
+    return Rotation2d.fromDegrees(LocalMath.wrapTo180(m_gyro.getAngle()));
   }
 
   @Override

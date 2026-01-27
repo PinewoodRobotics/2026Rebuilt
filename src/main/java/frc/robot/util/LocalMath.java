@@ -1,10 +1,12 @@
 package frc.robot.util;
 
+import edu.wpi.first.math.geometry.Translation2d;
+
 /**
  * @note MathFun = Math Functions
  * @apiNote this is the file where all of the math functions go
  */
-public class CustomMath {
+public class LocalMath {
 
   /**
    * Wraps an angle to the range [-180, 180] degrees.
@@ -19,5 +21,9 @@ public class CustomMath {
     }
 
     return newAngle - 180;
+  }
+
+  public static Translation2d fromGlobalToRelative(Translation2d globalRobotPose, Translation2d globalTargetPose) {
+    return globalTargetPose.minus(globalRobotPose);
   }
 }
