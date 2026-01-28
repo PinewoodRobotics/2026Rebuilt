@@ -180,51 +180,50 @@ sourceSets {
     }
 }
 
-def applyBackend(expectedNumOfPis) {
-  def stdout = new ByteArrayOutputStream()
-  def stderr = new ByteArrayOutputStream()
-  def buildFailed = false
-
-  try {
-    project.exec {
-      commandLine "make", "deploy-backend"
-      standardOutput = stdout
-      errorOutput = stderr
-      ignoreExitValue = false
-    }
-  } catch (Exception e) {
-    buildFailed = true
-    println "Failed to apply backend: ${e.message}"
-    println "Error Output:\n${stderr.toString().trim()}"
-  }
-
-  println stdout;
-  println stderr;
-
-  if (!stderr.toString().contains("Deployed on " + expectedNumOfPis.toString() + " Pis") && !stdout.toString().contains("Deployed on " + expectedNumOfPis.toString() + " Pis")) {
-    println ""
-    println "============================================================="
-    println "Failed to apply backend because it was not deployed on the expected number of Pis. Please set the expected number of Pis in the build.gradle file and try again (check 'EXPECTED_NUM_OF_PIS' variable)."
-    println "Expected number of Pis: " + expectedNumOfPis.toString()
-    println "Deployed number of Pis: " + stdout.toString().split("Deployed on ")[1].split(" Pis")[0]
-    println "============================================================="
-    println ""
-
-    throw new Exception("Failed to apply backend because it was not deployed on the expected number of Pis (expected " + expectedNumOfPis.toString() + " Pis, deployed " + stdout.toString().split("Deployed on ")[1].split(" Pis")[0] + " Pis)")
-  }
-}
-
-// buildDynamically("./config.ini")
-
 tasks.register("applyBackend") {
     group = "build"
     description = "Apply backend"
     doLast {
-        applyBackend(EXPECTED_NUM_OF_PIS)
+        def stdout = new ByteArrayOutputStream()
+        def stderr = new ByteArrayOutputStream()
+        def buildFailed = false
+
+        try {
+            project.exec {
+                commandLine "make", "deploy-backend"
+                standardOutput = stdout
+                errorOutput = stderr
+                ignoreExitValue = false
+            }
+        } catch (Exception e) {
+            buildFailed = true
+            println "Failed to apply backend: ${e.message}"
+            println "Error Output:\n${stderr.toString().trim()}"
+        }
+
+        println stdout
+        println stderr
+
+        def expectedNumOfPisStr = EXPECTED_NUM_OF_PIS.toString()
+        def deployedPisRegex = /Deployed on (\d+) Pis/
+
+        def outputCombined = stdout.toString() + "\n" + stderr.toString()
+        def matcher = (outputCombined =~ deployedPisRegex)
+        def deployedNumOfPis = matcher.find() ? matcher.group(1) : "unknown"
+
+        if (!outputCombined.contains("Deployed on " + expectedNumOfPisStr + " Pis")) {
+            println ""
+            println "============================================================="
+            println "Failed to apply backend because it was not deployed on the expected number of Pis. Please set the expected number of Pis in the build.gradle file and try again (check 'EXPECTED_NUM_OF_PIS' variable)."
+            println "Expected number of Pis: " + expectedNumOfPisStr
+            println "Deployed number of Pis: " + deployedNumOfPis
+            println "============================================================="
+            println ""
+
+            throw new Exception("Failed to apply backend because it was not deployed on the expected number of Pis (expected " + expectedNumOfPisStr + " Pis, deployed " + deployedNumOfPis + " Pis)")
+        }
     }
 }
-
-// tasks.deploy.dependsOn(tasks.applyBackend)
 
 tasks.jar.dependsOn(tasks.generateProto)
 tasks.compileJava.dependsOn(tasks.generateProto)
