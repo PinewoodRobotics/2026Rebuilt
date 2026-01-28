@@ -6,8 +6,8 @@ plugins {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_22
-    targetCompatibility = JavaVersion.VERSION_22
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 ext {
@@ -24,6 +24,7 @@ repositories {
 def ROBOT_MAIN_CLASS = "frc.robot.Main"
 
 def EXPECTED_NUM_OF_PIS = 3;
+def dynamicLibDir = layout.projectDirectory.dir("lib/build")
 
 // Define deploy target and artifacts
 deploy {
@@ -50,6 +51,54 @@ wpi.java.debugJni = false
 
 def includeDesktopSupport = false
 
+def buildDynamicDepsTask = tasks.register("buildDynamicDeps") {
+    group = "build setup"
+    description = "Clones/builds dynamic deps and drops jars into lib/build"
+
+    inputs.file("config.ini")
+    outputs.dir(dynamicLibDir)
+    outputs.upToDateWhen { false }  // run every build cycle so deps are always refreshed
+
+    doLast {
+        def stdout = new ByteArrayOutputStream()
+        def stderr = new ByteArrayOutputStream()
+
+        try {
+            exec {
+                def javaHome =
+                        System.getenv("JAVA_HOME")
+                        ?: (project.findProperty("org.gradle.java.home") as String)
+                        ?: System.getProperty("java.home")
+
+                environment "JAVA_HOME", javaHome
+                environment "PATH", "${javaHome}/bin:${System.getenv("PATH")}"
+
+                commandLine "python3", "scripts/clone_and_build_repos.py",
+                        "--config-file-path", "config.ini"
+
+                standardOutput = stdout
+                errorOutput = stderr
+            }
+        } catch (Exception e) {
+            // print error output, then rethrow
+            def err = stderr.toString().trim()
+            if (err) println err
+            println "Exception during exec: $e"
+            throw e
+        }
+
+        println stdout.toString().trim()
+        def err = stderr.toString().trim()
+        if (err) println err
+    }
+}
+
+// Create a provider that forces lazy evaluation of the directory
+// This ensures VSCode picks up new JARs when it refreshes the classpath
+def dynamicJarsProvider = buildDynamicDepsTask.map { 
+    dynamicLibDir 
+}
+
 // Define project dependencies
 dependencies {
     implementation wpi.java.deps.wpilib()
@@ -71,10 +120,15 @@ dependencies {
     
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
-    implementation "com.google.protobuf:protobuf-java:3.22.2"
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    implementation "com.google.protobuf:protobuf-java:3.22.2"
+    // Use provider with fileTree to force lazy evaluation so VSCode picks up new JARs
+    implementation(files(dynamicJarsProvider.map { dir -> 
+        fileTree(dir: dir, include: "*.jar") 
+    }).builtBy(buildDynamicDepsTask))
 }
 
 test {
@@ -99,21 +153,6 @@ deployArtifact.jarTask = jar
 wpi.java.configureExecutableTasks(jar)
 wpi.java.configureTestTasks(test)
 
-buildDynamically("./config.ini")
-
-tasks.register("applyBackend") {
-    group = "build"
-    description = "Apply backend"
-    doLast {
-        applyBackend(EXPECTED_NUM_OF_PIS)
-    }
-}
-
-// tasks.deploy.dependsOn(tasks.applyBackend)
-
-tasks.jar.dependsOn(tasks.generateProto)
-tasks.compileJava.dependsOn(tasks.generateProto)
-
 
 protobuf {
     protoc {
@@ -137,39 +176,6 @@ sourceSets {
         }
         proto {
             srcDirs = ['src/proto']
-        }
-    }
-}
-
-// Function to build dependencies dynamically. This calls a python script that clones and builds the dependencies.
-// It then adds the jars to the classpath.
-def buildDynamically(configFilePath) {
-    def stdout = new ByteArrayOutputStream()
-    def stderr = new ByteArrayOutputStream()
-    
-    project.exec {
-      def javaHome =
-              System.getenv("JAVA_HOME")
-              ?: (project.findProperty("org.gradle.java.home") as String)
-              ?: System.getProperty("java.home")
-
-      environment "JAVA_HOME", javaHome
-      environment "PATH", "${javaHome}/bin:${System.getenv("PATH")}"
-
-      commandLine "python3", "scripts/clone_and_build_repos.py", "--config-file-path", configFilePath
-      standardOutput = stdout
-      errorOutput = stderr
-      ignoreExitValue = false
-    }
-
-    println "${stdout.toString().trim()}"
-    println "${stderr.toString().trim()}"
-
-    def jarFiles = fileTree(dir: "lib/build", include: '*.jar')
-
-    project.afterEvaluate {
-        dependencies {
-            implementation files(jarFiles)
         }
     }
 }
@@ -207,3 +213,19 @@ def applyBackend(expectedNumOfPis) {
     throw new Exception("Failed to apply backend because it was not deployed on the expected number of Pis (expected " + expectedNumOfPis.toString() + " Pis, deployed " + stdout.toString().split("Deployed on ")[1].split(" Pis")[0] + " Pis)")
   }
 }
+
+// buildDynamically("./config.ini")
+
+tasks.register("applyBackend") {
+    group = "build"
+    description = "Apply backend"
+    doLast {
+        applyBackend(EXPECTED_NUM_OF_PIS)
+    }
+}
+
+// tasks.deploy.dependsOn(tasks.applyBackend)
+
+tasks.jar.dependsOn(tasks.generateProto)
+tasks.compileJava.dependsOn(tasks.generateProto)
+tasks.compileJava.dependsOn(tasks.buildDynamicDeps)
