@@ -432,10 +432,9 @@ class DeploymentOptions:
     @staticmethod
     def with_automatic_discovery(
         modules: list[_Module],
-        pi_name_to_process_types: (
-            Mapping[str, Sequence[_WeightedProcess]]
-            | Callable[..., Mapping[str, Sequence[_WeightedProcess]]]
-        ),
+        pi_name_to_process_types: Callable[
+            ..., Mapping[str, Sequence[_WeightedProcess]]
+        ],
         backend_local_path: str = "src/backend/",
     ):
         if os.path.exists(LOCAL_BINARIES_PATH):
@@ -444,17 +443,8 @@ class DeploymentOptions:
 
         raspberrypis = _RaspberryPi.discover_all()
 
-        # Resolve process assignment mapping (supports dynamic mapping based on discovered Pis).
-        discovered_pi_names = [p.address for p in raspberrypis]
-        if callable(pi_name_to_process_types):
-            try:
-                process_mapping = pi_name_to_process_types(discovered_pi_names)
-            except TypeError:
-                process_mapping = pi_name_to_process_types()
-        else:
-            process_mapping = pi_name_to_process_types
+        process_mapping = pi_name_to_process_types([p.address for p in raspberrypis])
 
-        print("Discovered Pis:", discovered_pi_names)
         print(
             "Process assignment:",
             {k: [str(p) for p in v] for k, v in process_mapping.items()},
@@ -464,9 +454,9 @@ class DeploymentOptions:
         from backend.deployment.process_type_util import normalize_pi_name
 
         for pi in raspberrypis:
-            pi_address = pi.address or pi.host
-            normalized_name = normalize_pi_name(pi_address)
-            assigned_processes = process_mapping.get(normalized_name, [])
+            assigned_processes = process_mapping.get(
+                normalize_pi_name(pi.address or pi.host), []
+            )
             pi.processes_to_run = [str(p) for p in assigned_processes]
 
         DeploymentOptions.with_preset_pi_addresses(

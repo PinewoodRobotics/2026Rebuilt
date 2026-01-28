@@ -92,6 +92,33 @@ class RaspberryPi(Generic[TProcess]):
         )
         return r.status_code == 200
 
+    def set_processes(
+        self,
+        process_types: Iterable[TProcess] | None = None,
+        *,
+        timeout_s: float = 5.0,
+    ) -> bool:
+        """
+        Set the process list on the Pi via POST /set/processes.
+        If process_types is provided, also updates self.processes_to_run.
+        """
+        import requests
+
+        names = (
+            [_process_to_name(p) for p in process_types]
+            if process_types is not None
+            else list(self.processes_to_run)
+        )
+        payload = {"process_types": names}
+        r = requests.post(
+            f"{self.coms_address}/set/processes", json=payload, timeout=timeout_s
+        )
+        if r.status_code != 200:
+            return False
+        if process_types is not None:
+            self.processes_to_run = names
+        return True
+
     def stop_all_set_config_and_start(
         self,
         raw_config_base64: str,
@@ -99,76 +126,13 @@ class RaspberryPi(Generic[TProcess]):
         new_processes_to_run: Iterable[TProcess] | None = None,
         timeout_s: float = 5.0,
     ) -> bool:
-        """
-        Convenience workflow:
-        1) Stop all processes on the Pi (uses /stop/all/processes)
-        2) Set config
-        3) Optionally replace processes_to_run
-        4) Start processes_to_run
-        """
-
-        # 1) Stop all existing processes (best-effort)
-        _ = self.stop_all_processes(timeout_s=timeout_s)
-
-        # 2) Set config (must succeed)
         if not self.set_config(raw_config_base64, timeout_s=timeout_s):
             return False
 
-        # 3) Replace process list if requested
-        if new_processes_to_run is not None:
-            self.processes_to_run = [_process_to_name(p) for p in new_processes_to_run]
-
-        # 4) Start new set (if any)
-        if not self.processes_to_run:
+        if new_processes_to_run is None:
             return True
-        return self.start_processes(timeout_s=timeout_s)
 
-    def start_processes(self, *, timeout_s: float = 5.0) -> bool:
-        if not self.processes_to_run:
-            return False
-        import requests
-
-        payload = {"process_types": list(self.processes_to_run)}
-        r = requests.post(
-            f"{self.coms_address}/start/process", json=payload, timeout=timeout_s
-        )
-        return r.status_code == 200
-
-    def stop_processes(self, *, timeout_s: float = 5.0) -> bool:
-        import requests
-
-        payload = {"process_types": list(self.processes_to_run)}
-        r = requests.post(
-            f"{self.coms_address}/stop/process", json=payload, timeout=timeout_s
-        )
-        return r.status_code == 200
-
-    def stop_all_processes(self, *, timeout_s: float = 5.0) -> bool:
-        """
-        Stops all processes on the Pi (calls /stop/all/processes endpoint).
-        This is more aggressive than stop_processes() which only stops known processes.
-        """
-        import requests
-
-        r = requests.post(f"{self.coms_address}/stop/all/processes", timeout=timeout_s)
-        return r.status_code == 200
-
-    def stop_process(self, process: TProcess, *, timeout_s: float = 5.0) -> bool:
-        """
-        Stops a specific process and removes it from the local run list
-        (mirrors the Java behavior).
-        """
-        import requests
-
-        name = _process_to_name(process)
-        if name in self.processes_to_run:
-            self.processes_to_run.remove(name)
-
-        payload = {"process_types": [name]}
-        r = requests.post(
-            f"{self.coms_address}/stop/process", json=payload, timeout=timeout_s
-        )
-        return r.status_code == 200
+        return self.set_processes(new_processes_to_run, timeout_s=timeout_s)
 
     @classmethod
     def _from_zeroconf(cls, service: ServiceInfo):
@@ -220,3 +184,53 @@ class RaspberryPi(Generic[TProcess]):
         time.sleep(DISCOVERY_TIMEOUT)
         zc.close()
         return raspberrypis
+
+
+'''
+def start_processes(self, *, timeout_s: float = 5.0) -> bool:
+        if not self.processes_to_run:
+            return False
+        import requests
+
+        payload = {"process_types": list(self.processes_to_run)}
+        r = requests.post(
+            f"{self.coms_address}/start/process", json=payload, timeout=timeout_s
+        )
+        return r.status_code == 200
+
+    def stop_processes(self, *, timeout_s: float = 5.0) -> bool:
+        import requests
+
+        payload = {"process_types": list(self.processes_to_run)}
+        r = requests.post(
+            f"{self.coms_address}/stop/process", json=payload, timeout=timeout_s
+        )
+        return r.status_code == 200
+
+    def stop_all_processes(self, *, timeout_s: float = 5.0) -> bool:
+        """
+        Stops all processes on the Pi (calls /stop/all/processes endpoint).
+        This is more aggressive than stop_processes() which only stops known processes.
+        """
+        import requests
+
+        r = requests.post(f"{self.coms_address}/stop/all/processes", timeout=timeout_s)
+        return r.status_code == 200
+
+    def stop_process(self, process: TProcess, *, timeout_s: float = 5.0) -> bool:
+        """
+        Stops a specific process and removes it from the local run list
+        (mirrors the Java behavior).
+        """
+        import requests
+
+        name = _process_to_name(process)
+        if name in self.processes_to_run:
+            self.processes_to_run.remove(name)
+
+        payload = {"process_types": [name]}
+        r = requests.post(
+            f"{self.coms_address}/stop/process", json=payload, timeout=timeout_s
+        )
+        return r.status_code == 200
+'''
