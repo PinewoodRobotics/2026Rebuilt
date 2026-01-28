@@ -6,8 +6,8 @@ plugins {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_22
+    targetCompatibility = JavaVersion.VERSION_22
 }
 
 ext {
@@ -88,10 +88,8 @@ wpi.sim.addDriverstation()
 
 // Create a fat jar (including all dependencies) and set the manifest for WPILib
 jar {
-    from sourceSets.main.output  // Your classes FIRST
-    from({ configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }) {
-        exclude "proto/**"
-    }
+    from sourceSets.main.output
+    from({ configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } })
     manifest edu.wpi.first.gradlerio.GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
@@ -101,9 +99,46 @@ deployArtifact.jarTask = jar
 wpi.java.configureExecutableTasks(jar)
 wpi.java.configureTestTasks(test)
 
-// Configure the string concatenation setting for inline compilation
-tasks.withType(JavaCompile) {
-    options.compilerArgs.add '-XDstringConcat=inline'
+buildDynamically("./config.ini")
+
+tasks.register("applyBackend") {
+    group = "build"
+    description = "Apply backend"
+    doLast {
+        applyBackend(EXPECTED_NUM_OF_PIS)
+    }
+}
+
+// tasks.deploy.dependsOn(tasks.applyBackend)
+
+tasks.jar.dependsOn(tasks.generateProto)
+tasks.compileJava.dependsOn(tasks.generateProto)
+
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.22.2"
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                java {}
+            }
+        }
+    }
+
+    generatedFilesBaseDir = "$buildDir/generated/source"
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs += "$buildDir/generated/source/proto/main/java"
+        }
+        proto {
+            srcDirs = ['src/proto']
+        }
+    }
 }
 
 // Function to build dependencies dynamically. This calls a python script that clones and builds the dependencies.
@@ -111,61 +146,24 @@ tasks.withType(JavaCompile) {
 def buildDynamically(configFilePath) {
     def stdout = new ByteArrayOutputStream()
     def stderr = new ByteArrayOutputStream()
-    def buildFailed = false
+    
+    project.exec {
+      def javaHome =
+              System.getenv("JAVA_HOME")
+              ?: (project.findProperty("org.gradle.java.home") as String)
+              ?: System.getProperty("java.home")
 
-    try {
-        project.exec {
-          def javaHome =
-                  System.getenv("JAVA_HOME")
-                  ?: (project.findProperty("org.gradle.java.home") as String)
-                  ?: System.getProperty("java.home")
+      environment "JAVA_HOME", javaHome
+      environment "PATH", "${javaHome}/bin:${System.getenv("PATH")}"
 
-          environment "JAVA_HOME", javaHome
-          environment "PATH", "${javaHome}/bin:${System.getenv("PATH")}"
-
-          commandLine "python3", "scripts/clone_and_build_repos.py", "--config-file-path", configFilePath
-          standardOutput = stdout
-          errorOutput = stderr
-          ignoreExitValue = false
-      }
-    } catch (Exception e) {
-        buildFailed = true
-        // ANSI escape code for red: \u001B[31m, reset: \u001B[0m
-        println "\n\n" +
-                "\u001B[31m" +
-                "#############################################################\n" +
-                "#                                                           #\n" +
-                "#                FAILED TO BUILD DEPENDENCIES!              #\n" +
-                "#                                                           #\n" +
-                "#############################################################\n" +
-                "\u001B[0m"
-        println "\u001B[31mExecution failed: ${e.message}\u001B[0m"
+      commandLine "python3", "scripts/clone_and_build_repos.py", "--config-file-path", configFilePath
+      standardOutput = stdout
+      errorOutput = stderr
+      ignoreExitValue = false
     }
 
-    if (stdout.toString().contains("FAILED") || stderr.toString().toLowerCase().contains("error") || buildFailed) {
-        println "\n\n" +
-                "\u001B[31m" +
-                "#############################################################\n" +
-                "#                                                           #\n" +
-                "#                FAILED TO BUILD DEPENDENCIES!              #\n" +
-                "#                                                           #\n" +
-                "#############################################################\n" +
-                "\u001B[0m"
-        println "\u001B[31mError Output:\n${stderr.toString().trim()}\u001B[0m"
-    }
-
-    println "Standard Output:\n${stdout.toString().trim()}"
-    println "Error Output:\n${stderr.toString().trim()}"
-
-    // ANSI escape code for green: \u001B[32m, reset: \u001B[0m
-    println "\n\n" +
-        "\u001B[32m" +
-        "#############################################################\n" +
-        "#                                                           #\n" +
-        "#                BUILT DYNAMIC DEPENDENCIES!                #\n" +
-        "#                                                           #\n" +
-        "#############################################################\n" +
-        "\u001B[0m"
+    println "${stdout.toString().trim()}"
+    println "${stderr.toString().trim()}"
 
     def jarFiles = fileTree(dir: "lib/build", include: '*.jar')
 
@@ -208,72 +206,4 @@ def applyBackend(expectedNumOfPis) {
 
     throw new Exception("Failed to apply backend because it was not deployed on the expected number of Pis (expected " + expectedNumOfPis.toString() + " Pis, deployed " + stdout.toString().split("Deployed on ")[1].split(" Pis")[0] + " Pis)")
   }
-}
-
-buildDynamically("./config.ini")
-
-tasks.register("applyBackend") {
-    group = "build"
-    description = "Apply backend"
-    doLast {
-        applyBackend(EXPECTED_NUM_OF_PIS)
-    }
-}
-
-tasks.register("cleanGeneratedProto") {
-    group = "build"
-    description = "Delete protobuf generated + extracted sources to avoid stale incremental builds"
-    doLast {
-        // Generated Java sources from protoc (your override uses this base dir)
-        delete("$buildDir/generated/source")
-        // Protos extracted from dependencies (Gradle protobuf plugin caches these)
-        delete("$buildDir/extracted-protos")
-        delete("$buildDir/extracted-include-protos")
-    }
-}
-
-tasks.build.dependsOn(tasks.generateProto)
-
-tasks.deploy.dependsOn(tasks.applyBackend)
-
-tasks.jar.dependsOn(tasks.generateProto)
-tasks.compileJava.dependsOn(tasks.generateProto)
-
-tasks.withType(com.google.protobuf.gradle.GenerateProtoTask).configureEach {
-    dependsOn(tasks.cleanGeneratedProto)
-}
-
-
-protobuf {
-    protoc {
-        artifact = "com.google.protobuf:protoc:3.22.2"
-    }
-    generateProtoTasks {
-        all().each { task ->
-            task.builtins {
-                java {
-                    // IMPORTANT:
-                    // Do NOT generate "lite" Java protobufs here.
-                    //
-                    // The Autobahn client dependency expects full protobuf-generated builders
-                    // where methods like `TopicMessage.Builder.build()` have the concrete return
-                    // type. In lite mode, `build()` is inherited from GeneratedMessageLite and
-                    // has an erased return type, which causes a runtime NoSuchMethodError.
-                }
-            }
-        }
-    }
-
-    generatedFilesBaseDir = "$buildDir/generated/source"
-}
-
-sourceSets {
-    main {
-        java {
-            srcDirs += "$buildDir/generated/source/proto/main/java"
-        }
-        proto {
-            srcDirs = ['src/proto']
-        }
-    }
 }
