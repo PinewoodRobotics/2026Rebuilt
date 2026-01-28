@@ -5,6 +5,8 @@ import pytest
 from backend.generated.thrift.config.pos_extrapolator.ttypes import (
     AprilTagConfig,
     TagDisambiguationMode,
+    TagNoiseAdjustConfig,
+    TagNoiseAdjustMode,
     TagUseImuRotation,
 )
 from backend.python.common.util.math import from_theta_to_3x3_mat
@@ -135,6 +137,17 @@ def make_april_tag_preparer(
     )  # type: ignore
 
 
+def make_noise_adjusted_preparer(
+    modes: list[TagNoiseAdjustMode], config: TagNoiseAdjustConfig
+) -> DataPreparer[AprilTagData, AprilTagDataPreparerConfig]:
+    base_config = construct_tag_world()
+    base_config.april_tag_config.tag_noise_adjust_mode = modes
+    base_config.april_tag_config.tag_noise_adjust_config = config
+    return AprilTagDataPreparer(  # pyright: ignore[reportReturnType]
+        AprilTagDataPreparerConfig(base_config)
+    )  # type: ignore
+
+
 def test_april_tag_prep_one():
     """
     Tests the AprilTagDataPreparer with a single tag.
@@ -199,3 +212,57 @@ def test_april_tag_prep_two():
     )
     assert output is not None
     assert len(output.get_input_list()) == 1
+
+
+def test_weight_add_config_distance_mode():
+    preparer = make_noise_adjusted_preparer(
+        [TagNoiseAdjustMode.ADD_WEIGHT_PER_M_DISTANCE_TAG],
+        TagNoiseAdjustConfig(weight_per_m_from_distance_from_tag=2.0),
+    )
+
+    multiplier, add = preparer.get_weight_add_config(
+        np.array([0.0, 0.0, 1.0, 0.0]),
+        None,
+        distance_from_tag_m=3.0,
+        tag_confidence=None,
+    )
+
+    assert multiplier == 1.0
+    assert add == pytest.approx(6.0)
+
+
+def test_weight_add_config_angle_mode():
+    preparer = make_noise_adjusted_preparer(
+        [TagNoiseAdjustMode.ADD_WEIGHT_PER_DEGREE_ERROR_ANGLE_TAG],
+        TagNoiseAdjustConfig(weight_per_degree_from_angle_error_tag=0.5),
+    )
+
+    measurement = np.array([0.0, 0.0, 0.0, 1.0])
+    state = np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0])
+
+    multiplier, add = preparer.get_weight_add_config(
+        measurement,
+        state,
+        distance_from_tag_m=None,
+        tag_confidence=None,
+    )
+
+    assert multiplier == 1.0
+    assert add == pytest.approx(45.0 * 0.5)
+
+
+def test_weight_add_config_confidence_mode():
+    preparer = make_noise_adjusted_preparer(
+        [TagNoiseAdjustMode.ADD_WEIGHT_PER_TAG_CONFIDENCE],
+        TagNoiseAdjustConfig(weight_per_confidence_tag=4.0),
+    )
+
+    multiplier, add = preparer.get_weight_add_config(
+        np.array([0.0, 0.0, 1.0, 0.0]),
+        None,
+        distance_from_tag_m=None,
+        tag_confidence=2.0,
+    )
+
+    assert multiplier == 1.0
+    assert add == pytest.approx(8.0)

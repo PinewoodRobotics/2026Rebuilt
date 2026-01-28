@@ -11,10 +11,10 @@ export const kalman_filter: KalmanFilterConfig = {
     1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
   ]),
   uncertainty_matrix: MatrixUtil.buildMatrixFromDiagonal([
-    10.0, 10.0, 2.0, 2.0, 1.0, 1.0, 1.0,
+    10.0, 10.0, 1.0, 1.0, 1.0, 1.0, 1.0,
   ]),
   process_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
-    0.001, 0.001, 0.1, 0.1, 0.001, 0.001, 0.001,
+    0.1, 0.1, 0.001, 0.001, 0.001, 0.001, 0.001,
   ]),
   dim_x_z: [7, 7],
   sensors: {
@@ -76,7 +76,7 @@ export const kalman_filter: KalmanFilterConfig = {
           1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
         ]),
         measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
-          5, 5, 0.01, 0.01,
+          5, 5, 0.001, 0.001,
         ]), // 5, 5,
       },
     },

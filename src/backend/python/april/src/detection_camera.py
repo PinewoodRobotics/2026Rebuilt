@@ -95,6 +95,7 @@ class DetectionCamera:
                     pose_t=to_float_list(t),
                     positionWPILib=convert_to_wpi_position(t),
                     rotationWPILib=convert_to_wpi_rotation(R),
+                    confidence=tag.confidence,
                 )
             )
 

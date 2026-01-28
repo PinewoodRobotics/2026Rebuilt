@@ -84,6 +84,7 @@ def post_process_detection(
         UnprocessedTag(
             id=det.tag_id,
             corners=get_tag_corners_undistorted(det, camera_matrix, dist_coeff),
+            confidence=det.decision_margin,
         )
         for det in detection
     ]

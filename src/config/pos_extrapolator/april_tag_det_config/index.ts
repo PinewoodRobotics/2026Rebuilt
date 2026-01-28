@@ -1,6 +1,7 @@
 import {
   AprilTagConfig,
   TagDisambiguationMode,
+  TagNoiseAdjustMode,
   TagUseImuRotation,
 } from "generated/thrift/gen-nodejs/pos_extrapolator_types";
 import { reefscape_field } from "../tag_config/reefscape";
@@ -30,6 +31,15 @@ const april_tag_pos_config: AprilTagConfig = {
   tag_use_imu_rotation: TagUseImuRotation.UNTIL_FIRST_NON_TAG_ROTATION,
   disambiguation_time_window_s: 0.05,
   tag_disambiguation_mode: TagDisambiguationMode.LEAST_ANGLE_AND_DISTANCE,
+  tag_noise_adjust_mode: [
+    TagNoiseAdjustMode.ADD_WEIGHT_PER_M_DISTANCE_TAG,
+    TagNoiseAdjustMode.ADD_WEIGHT_PER_DEGREE_ERROR_ANGLE_TAG,
+  ],
+  tag_noise_adjust_config: {
+    weight_per_m_from_distance_from_tag: 0.5,
+    weight_per_degree_from_angle_error_tag: 0.05,
+    weight_per_confidence_tag: 0.7,
+  },
 };
 
 export default april_tag_pos_config;
