@@ -183,9 +183,9 @@ sourceSets {
     }
 }
 
-tasks.register("applyBackend") {
+tasks.register("deployBackend") {
     group = "build"
-    description = "Apply backend"
+    description = "Deploy backend"
     doLast {
         def stdout = new ByteArrayOutputStream()
         def stderr = new ByteArrayOutputStream()
