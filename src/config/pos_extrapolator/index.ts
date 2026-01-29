@@ -20,7 +20,7 @@ export const pose_extrapolator: PosExtrapolator = {
   imu_config: nav_x_config,
   kalman_filter_config: kalman_filter,
   time_s_between_position_sends: 0.015,
-  future_position_prediction_margin_s: 0.0,
+  future_position_prediction_margin_s: 0.2,
   april_tag_config: april_tag_det_config,
 };
 

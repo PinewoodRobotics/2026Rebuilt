@@ -48,8 +48,8 @@ public final class PathPlannerSetup {
         PathPlannerSetup::getRobotRelativeSpeeds,
         (speeds, feedforwards) -> SwerveSubsystem.GetInstance().drive(speeds, SwerveSubsystem.DriveType.RAW),
         new PPHolonomicDriveController(
-            new PIDConstants(5.0, 0.0, 0.1), // translation PID (initial: match ExecuteTrajectory)
-            new PIDConstants(1.0, 0.0, 0.5) // rotation PID (initial: match ExecuteTrajectory theta P)
+            new PIDConstants(5.0, 0.0, 0.15), // translation PID (initial: match ExecuteTrajectory)
+            new PIDConstants(1.0, 0.0, 0.7) // rotation PID (initial: match ExecuteTrajectory theta P)
         ),
         config,
         PathPlannerSetup::shouldFlipForAlliance,

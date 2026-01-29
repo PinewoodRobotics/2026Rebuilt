@@ -14,7 +14,13 @@ export const kalman_filter: KalmanFilterConfig = {
     5.0, 5.0, 1.0, 1.0, 1.0, 1.0, 1.0,
   ]),
   process_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
-    1, 1, 0.001, 0.001, 0.001, 0.001, 0.001,
+    0.001,
+    0.001,
+    0.001,
+    0.001,
+    0.001,
+    0.001,
+    0.001, // lower is worse BTW
   ]),
   dim_x_z: [7, 7],
   sensors: {
