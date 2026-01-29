@@ -195,4 +195,5 @@ class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInher
 
 
 def add_to_diagonal(mat: NDArray[np.float64], num: float):
-    pass
+    for i in range(min(mat.shape[0], mat.shape[1])):
+        mat[i, i] += num

@@ -88,6 +88,8 @@ public class OdometrySubsystem extends SubsystemBase implements IDataClass {
         .setY((float) SwerveSubsystem.GetInstance().getChassisSpeeds().vyMetersPerSecond)
         .build();
 
+    Logger.recordOutput("Swerve/Velocity", SwerveSubsystem.GetInstance().getChassisSpeeds());
+
     var positionChangeVec = Vector2.newBuilder().setX((float) positionChange.getX()).setY((float) positionChange.getY())
         .build();
 

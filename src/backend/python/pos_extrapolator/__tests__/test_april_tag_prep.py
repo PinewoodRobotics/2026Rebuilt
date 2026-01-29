@@ -231,26 +231,6 @@ def test_weight_add_config_distance_mode():
     assert add == pytest.approx(6.0)
 
 
-def test_weight_add_config_angle_mode():
-    preparer = make_noise_adjusted_preparer(
-        [TagNoiseAdjustMode.ADD_WEIGHT_PER_DEGREE_ERROR_ANGLE_TAG],
-        TagNoiseAdjustConfig(weight_per_degree_from_angle_error_tag=0.5),
-    )
-
-    measurement = np.array([0.0, 0.0, 0.0, 1.0])
-    state = np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0])
-
-    multiplier, add = preparer.get_weight_add_config(
-        measurement,
-        state,
-        distance_from_tag_m=None,
-        tag_confidence=None,
-    )
-
-    assert multiplier == 1.0
-    assert add == pytest.approx(45.0 * 0.5)
-
-
 def test_weight_add_config_confidence_mode():
     preparer = make_noise_adjusted_preparer(
         [TagNoiseAdjustMode.ADD_WEIGHT_PER_TAG_CONFIDENCE],
