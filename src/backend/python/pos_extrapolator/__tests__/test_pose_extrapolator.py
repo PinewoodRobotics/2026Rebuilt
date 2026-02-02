@@ -99,7 +99,8 @@ def make_min_config(
 
     imu_config = {
         imu_sensor_id: ImuConfig(
-            use_rotation=imu_use_rotation,
+            use_rotation_absolute=imu_use_rotation,
+            use_rotation_velocity=imu_use_rotation,
             use_position=False,
             use_velocity=True,
         )

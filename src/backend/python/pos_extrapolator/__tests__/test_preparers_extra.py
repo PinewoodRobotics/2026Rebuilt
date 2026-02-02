@@ -85,7 +85,8 @@ def test_imu_preparer_value_selection_and_shapes(
         ImuDataPreparerConfig(
             {
                 "imu0": ImuConfig(
-                    use_rotation=use_rotation,
+                    use_rotation_absolute=use_rotation,
+                    use_rotation_velocity=use_rotation,
                     use_position=use_position,
                     use_velocity=use_velocity,
                 )
@@ -117,7 +118,8 @@ def test_imu_preparer_missing_sensor_id_raises_keyerror():
         ImuDataPreparerConfig(
             {
                 "imu0": ImuConfig(
-                    use_rotation=True,
+                    use_rotation_absolute=True,
+                    use_rotation_velocity=True,
                     use_position=False,
                     use_velocity=True,
                 )

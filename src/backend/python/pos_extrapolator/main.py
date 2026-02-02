@@ -152,8 +152,10 @@ async def main():
             position_extrapolator.insert_sensor_data(
                 data.__getattribute__(one_of_name), data.sensor_id
             )
-        except:
-            error("Something went wrong when inserting data into Position Extrapolator")
+        except Exception as e:
+            error(
+                f"Something went wrong when inserting data into Position Extrapolator: {e}"
+            )
 
     if (
         hasattr(config.pos_extrapolator, "composite_publish_topic")

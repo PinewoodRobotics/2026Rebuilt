@@ -59,7 +59,8 @@ def test_data_prep():
         ImuDataPreparerConfig(
             {
                 "0": ImuConfig(
-                    use_rotation=True,
+                    use_rotation_absolute=True,
+                    use_rotation_velocity=True,
                     use_position=False,
                     use_velocity=True,
                 )
@@ -134,7 +135,8 @@ def test_get_config():
         ImuDataPreparerConfig(
             {
                 "0": ImuConfig(
-                    use_rotation=True,
+                    use_rotation_absolute=True,
+                    use_rotation_velocity=True,
                     use_position=False,
                     use_velocity=True,
                 )

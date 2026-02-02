@@ -39,9 +39,9 @@ class ImuDataPreparer(DataPreparer[ImuData, ImuDataPreparerConfig]):
         used_indices: list[bool] = []
         used_indices.extend([self.config.config[sensor_id].use_position] * 2)
         used_indices.extend([self.config.config[sensor_id].use_velocity] * 2)
-        used_indices.extend([self.config.config[sensor_id].use_rotation] * 2)
+        used_indices.extend([self.config.config[sensor_id].use_rotation_absolute] * 2)
         # Include angular velocity (last state index) when rotation is used
-        used_indices.extend([self.config.config[sensor_id].use_rotation])
+        used_indices.extend([self.config.config[sensor_id].use_rotation_velocity])
         return used_indices
 
     def jacobian_h(self, x: NDArray[np.float64], sensor_id: str) -> NDArray[np.float64]:
@@ -62,10 +62,11 @@ class ImuDataPreparer(DataPreparer[ImuData, ImuDataPreparerConfig]):
         if config.use_velocity:
             values.append(data.velocity.x)
             values.append(data.velocity.y)
-        if config.use_rotation:
+        if config.use_rotation_absolute:
             values.append(data.position.direction.x)
             values.append(data.position.direction.y)
 
+        if config.use_rotation_velocity:
             # Use yaw rate (Z axis) in radians per second
             values.append(data.angularVelocityXYZ.z)
 

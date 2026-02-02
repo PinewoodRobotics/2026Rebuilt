@@ -122,7 +122,7 @@ def _deploy_backend_to_pi(
         "rsync",
         "-av",
         "--progress",
-        "--rsync-path=sudo rsync",
+        "--rsync-path=rsync",
         "--include=libs/***",
         "--exclude-from=" + GITIGNORE_PATH,
         "-e",
@@ -156,7 +156,7 @@ def _deploy_binaries(pi: _RaspberryPi, local_binaries_path: str):
         "-p",
         str(pi.ssh_port),
         f"ubuntu@{pi.address}",
-        f"sudo rm -rf {remote_full_path}",
+        f"rm -rf {remote_full_path}",
     ]
 
     rmrf_proc = subprocess.run(rmrf_cmd)
@@ -174,7 +174,7 @@ def _deploy_binaries(pi: _RaspberryPi, local_binaries_path: str):
         "-p",
         str(pi.ssh_port),
         f"ubuntu@{pi.address}",
-        f"sudo mkdir -p {remote_full_path}",
+        f"mkdir -p {remote_full_path}",
     ]
 
     mkdir_proc = subprocess.run(mkdir_cmd)
@@ -191,7 +191,7 @@ def _deploy_binaries(pi: _RaspberryPi, local_binaries_path: str):
         "rsync",
         "-av",
         "--progress",
-        "--rsync-path=sudo rsync",
+        "--rsync-path=rsync",
         "-e",
         f"ssh -p {getattr(pi, 'port', 22)} -o StrictHostKeyChecking=no",
         local_binaries_path,
