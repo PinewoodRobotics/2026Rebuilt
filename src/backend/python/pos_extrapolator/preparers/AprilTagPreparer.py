@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import math
 import numpy as np
 from numpy.typing import NDArray
+from backend.python.common.debug.logger import debug
 from backend.python.common.util.math import (
     create_transformation_matrix,
     from_float_list,
@@ -41,6 +42,21 @@ from backend.python.pos_extrapolator.filters.gate.mahalanobis import (
 from backend.python.pos_extrapolator.position_extrapolator import PositionExtrapolator
 
 
+def _angle_difference_deg(x_hat: NDArray[np.float64], x: NDArray[np.float64]) -> float:
+    measured_angle = math.atan2(float(x_hat[3]), float(x_hat[2]))
+    state_angle = math.atan2(float(x[5]), float(x[4]))
+    diff = measured_angle - state_angle
+    while diff > math.pi:
+        diff -= 2 * math.pi
+    while diff < -math.pi:
+        diff += 2 * math.pi
+    return abs(math.degrees(diff))
+
+
+def _distance_difference_m(x_hat: NDArray[np.float64], x: NDArray[np.float64]) -> float:
+    return np.sqrt((x_hat[0] - x[0]) ** 2 + (x_hat[1] - x[1]) ** 2)
+
+
 @dataclass
 class AprilTagPreparerConfig:
     tags_in_world: dict[int, Point3]
@@ -57,21 +73,6 @@ class AprilTagDataPreparerConfig(ConfigProvider[AprilTagPreparerConfig]):
         return self.config
 
 
-def angle_difference_deg(x_hat: NDArray[np.float64], x: NDArray[np.float64]) -> float:
-    measured_angle = math.atan2(float(x_hat[3]), float(x_hat[2]))
-    state_angle = math.atan2(float(x[5]), float(x[4]))
-    diff = measured_angle - state_angle
-    while diff > math.pi:
-        diff -= 2 * math.pi
-    while diff < -math.pi:
-        diff += 2 * math.pi
-    return abs(math.degrees(diff))
-
-
-def distance_difference_m(x_hat: NDArray[np.float64], x: NDArray[np.float64]) -> float:
-    return np.sqrt((x_hat[0] - x[0]) ** 2 + (x_hat[1] - x[1]) ** 2)
-
-
 @DataPreparerManager.register(proto_type=AprilTagData)
 class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig]):
     def __init__(self, config: AprilTagDataPreparerConfig):
@@ -79,41 +80,20 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
         self.config: AprilTagDataPreparerConfig = config
 
         conf = self.config.get_config()
+
         self.tags_in_world: dict[int, Point3] = conf.tags_in_world
         self.cameras_in_robot: dict[str, Point3] = conf.cameras_in_robot
         self.use_imu_rotation: TagUseImuRotation = conf.use_imu_rotation
         self.april_tag_config: AprilTagConfig = conf.april_tag_config
 
-        noise_modes = self.april_tag_config.tag_noise_adjust_mode
-        if noise_modes is None:
-            self.tag_noise_adjust_mode: list[TagNoiseAdjustMode] = []
-        else:
-            self.tag_noise_adjust_mode = [
-                (
-                    mode
-                    if isinstance(mode, TagNoiseAdjustMode)
-                    else TagNoiseAdjustMode(mode)
-                )
-                for mode in noise_modes
-            ]
+        self.tag_noise_adjust_mode = self.april_tag_config.tag_noise_adjust_mode
 
-        self.tag_noise_adjust_config: TagNoiseAdjustConfig | None = (
+        self.tag_noise_adjust_config: TagNoiseAdjustConfig = (
             self.april_tag_config.tag_noise_adjust_config
         )
 
     def get_data_type(self) -> type[AprilTagData]:
         return AprilTagData
-
-    def get_avg_pose(self, input_list: list[list[float]]) -> NDArray[np.float64]:
-        output: list[float] = []
-        for i in range(len(input_list[0])):
-            output.append(
-                np.mean(
-                    [input[i] for input in input_list]
-                )  # pyright: ignore[reportArgumentType]
-            )  # pyright: ignore[reportArgumentType]
-
-        return np.array(output)
 
     def get_used_indices(self) -> list[bool]:
         used_indices: list[bool] = []
@@ -145,38 +125,29 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
 
     def get_weight_add_config(
         self,
+        *,
         x_hat: NDArray[np.float64],
         x: NDArray[np.float64] | None,
-        *,
-        distance_from_tag_m: float | None,
-        tag_confidence: float | None,
+        distance_from_tag_m: float,
+        tag_confidence: float,
     ) -> tuple[float, float]:
-        if not self.tag_noise_adjust_mode or self.tag_noise_adjust_config is None:
-            return 1.0, 0.0
-
         add = 0.0
         multiplier = 1.0
 
         for mode in self.tag_noise_adjust_mode:
-            if (
-                mode == TagNoiseAdjustMode.ADD_WEIGHT_PER_M_DISTANCE_TAG
-                and distance_from_tag_m is not None
-            ):
+            if mode == TagNoiseAdjustMode.ADD_WEIGHT_PER_M_DISTANCE_TAG:
                 weight = (
                     self.tag_noise_adjust_config.weight_per_m_from_distance_from_tag
                 )
-                if weight is not None and np.isfinite(distance_from_tag_m):
+                if weight is not None:
                     add += distance_from_tag_m * weight
 
-            elif (
-                mode == TagNoiseAdjustMode.ADD_WEIGHT_PER_DEGREE_ERROR_ANGLE_TAG
-                and x is not None
-            ):
+            elif mode == TagNoiseAdjustMode.ADD_WEIGHT_PER_DEGREE_ERROR_ANGLE_TAG:
                 weight = (
                     self.tag_noise_adjust_config.weight_per_degree_from_angle_error_tag
                 )
-                if weight is not None:
-                    add += angle_difference_deg(x_hat, x) * weight
+                if weight is not None and x is not None:
+                    add += _angle_difference_deg(x_hat, x) * weight
 
             elif mode == TagNoiseAdjustMode.ADD_WEIGHT_PER_TAG_CONFIDENCE:
                 weight = self.tag_noise_adjust_config.weight_per_confidence_tag
@@ -187,6 +158,12 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
                 ):
                     confidence_term = max(0.0, float(tag_confidence))
                     add += confidence_term * weight
+            elif mode == TagNoiseAdjustMode.MULTIPLY_POW_BY_M_DISTANCE_FROM_TAG:
+                multiplier += (
+                    distance_from_tag_m
+                    ** self.tag_noise_adjust_config.pow_distance_from_tag_coef
+                    * self.tag_noise_adjust_config.multiply_coef_m_distance_from_tag
+                )
 
         return multiplier, add
 
@@ -267,14 +244,10 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
                 ]
             )
 
-            distance_from_tag = float(np.linalg.norm(tag_in_camera_pose))
-            if not np.isfinite(distance_from_tag):
-                distance_from_tag = None
-
             multiplier, add = self.get_weight_add_config(
-                datapoint,
-                context.x if context is not None else None,
-                distance_from_tag_m=distance_from_tag,
+                x_hat=datapoint,
+                x=context.x if context is not None else None,
+                distance_from_tag_m=float(np.linalg.norm(tag_in_camera_pose)),
                 tag_confidence=tag.confidence,
             )
 

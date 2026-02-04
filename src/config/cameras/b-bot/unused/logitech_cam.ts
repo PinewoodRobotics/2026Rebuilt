@@ -2,7 +2,7 @@ import {
   CameraType,
   type CameraParameters,
 } from "generated/thrift/gen-nodejs/camera_types";
-import { MatrixUtil, VectorUtil } from "../../util/math";
+import { MatrixUtil, VectorUtil } from "../../../util/math";
 
 const logitech_cam: CameraParameters = {
   pi_to_run_on: "agatha-king",

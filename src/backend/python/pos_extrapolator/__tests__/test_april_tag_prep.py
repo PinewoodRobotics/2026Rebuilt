@@ -207,6 +207,7 @@ def test_april_tag_prep_two():
         "camera_1",
         ExtrapolationContext(
             x=np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
+            P=np.eye(7),
             has_gotten_rotation=False,
         ),
     )
@@ -221,10 +222,10 @@ def test_weight_add_config_distance_mode():
     )
 
     multiplier, add = preparer.get_weight_add_config(
-        np.array([0.0, 0.0, 1.0, 0.0]),
-        None,
+        x_hat=np.array([0.0, 0.0, 1.0, 0.0]),
+        x=None,
         distance_from_tag_m=3.0,
-        tag_confidence=None,
+        tag_confidence=0.0,
     )
 
     assert multiplier == 1.0
@@ -238,9 +239,9 @@ def test_weight_add_config_confidence_mode():
     )
 
     multiplier, add = preparer.get_weight_add_config(
-        np.array([0.0, 0.0, 1.0, 0.0]),
-        None,
-        distance_from_tag_m=None,
+        x_hat=np.array([0.0, 0.0, 1.0, 0.0]),
+        x=None,
+        distance_from_tag_m=0.0,
         tag_confidence=2.0,
     )
 

@@ -9,7 +9,7 @@ import front_right from "./cameras/b-bot/front_right";
 import rear_left from "./cameras/b-bot/rear_left";
 import rear_right from "./cameras/b-bot/rear_right";
 import jetson_cam from "./cameras/jetson_cam";
-import logitech_cam from "./cameras/b-bot/logitech_cam";
+import logitech_cam from "./cameras/b-bot/unused/logitech_cam";
 
 const config: Config = {
   pos_extrapolator: pose_extrapolator,

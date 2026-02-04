@@ -31,11 +31,13 @@ const april_tag_pos_config: AprilTagConfig = {
   tag_use_imu_rotation: TagUseImuRotation.UNTIL_FIRST_NON_TAG_ROTATION,
   disambiguation_time_window_s: 0.05,
   tag_disambiguation_mode: TagDisambiguationMode.LEAST_ANGLE_AND_DISTANCE,
-  tag_noise_adjust_mode: [TagNoiseAdjustMode.ADD_WEIGHT_PER_M_DISTANCE_TAG],
+  tag_noise_adjust_mode: [],
   tag_noise_adjust_config: {
-    weight_per_m_from_distance_from_tag: 10,
+    weight_per_m_from_distance_from_tag: 10, // multiply by meters
     weight_per_degree_from_angle_error_tag: 0.05,
     weight_per_confidence_tag: 0.8,
+    multiply_coef_m_distance_from_tag: 1.0,
+    pow_distance_from_tag_coef: 2.0,
   },
 };
 

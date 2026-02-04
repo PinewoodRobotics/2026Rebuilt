@@ -82,16 +82,17 @@ def test_data_prep():
 
     # 7D state: [x, y, vx, vy, cos, sin, omega]
     context_x = np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0])
+    context_P = np.eye(7)
 
     imu_input = data_preparer_manager.prepare_data(
         imu_data,
         "0",
-        ExtrapolationContext(x=context_x, has_gotten_rotation=False),
+        ExtrapolationContext(x=context_x, P=context_P, has_gotten_rotation=False),
     )
     odometry_input = data_preparer_manager.prepare_data(
         odometry_data,
         "odom",
-        ExtrapolationContext(x=context_x, has_gotten_rotation=False),
+        ExtrapolationContext(x=context_x, P=context_P, has_gotten_rotation=False),
     )
 
     assert imu_input is not None and odometry_input is not None
@@ -147,6 +148,7 @@ def test_get_config():
     imu = sample_imu_data()
     ctx = ExtrapolationContext(
         x=np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
+        P=np.eye(7),
         has_gotten_rotation=False,
     )
     imu_input = preparer_manager.prepare_data(imu, "0", ctx)

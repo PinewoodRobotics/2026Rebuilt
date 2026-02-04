@@ -35,6 +35,7 @@ class KalmanFilterInput:
 @dataclass
 class ExtrapolationContext:
     x: NDArray[np.float64]
+    P: NDArray[np.float64]
     has_gotten_rotation: bool
 
 

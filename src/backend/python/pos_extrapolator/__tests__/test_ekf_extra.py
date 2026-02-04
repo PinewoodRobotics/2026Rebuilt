@@ -26,35 +26,30 @@ def make_cfg(*, include_sensors: bool = True) -> KalmanFilterConfig:
     dim_z = 5
 
     state_vector = GenericVector(values=[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0], size=dim_x)
-    F = GenericMatrix(values=_eye(dim_x), rows=dim_x, cols=dim_x)
     P = GenericMatrix(values=_eye(dim_x), rows=dim_x, cols=dim_x)
     Q = GenericMatrix(values=_eye(dim_x), rows=dim_x, cols=dim_x)
     R = GenericMatrix(values=_eye(dim_z), rows=dim_z, cols=dim_z)
-    H = GenericMatrix(values=_eye(dim_z), rows=dim_z, cols=dim_z)
 
     sensors = {}
     if include_sensors:
         sensors = {
             KalmanFilterSensorType.IMU: {
-                "imu0": KalmanFilterSensorConfig(
-                    measurement_noise_matrix=R,
-                    measurement_conversion_matrix=H,
-                )
+                "imu0": KalmanFilterSensorConfig(measurement_noise_matrix=R)
             }
         }
 
     return KalmanFilterConfig(
         state_vector=state_vector,
-        state_transition_matrix=F,
         uncertainty_matrix=P,
         process_noise_matrix=Q,
-        time_step_initial=0.05,
         sensors=sensors,
         dim_x_z=[dim_x, dim_z],
     )
 
 
-def make_kfi(*, sensor_type: KalmanFilterSensorType, sensor_id: str) -> KalmanFilterInput:
+def make_kfi(
+    *, sensor_type: KalmanFilterSensorType, sensor_id: str
+) -> KalmanFilterInput:
     return KalmanFilterInput(
         input=ProcessedData(data=np.array([0.0, 0.0, 1.0, 0.0, 0.0])),
         sensor_id=sensor_id,
@@ -73,7 +68,9 @@ def test_insert_data_warns_and_skips_unknown_sensor_type():
     ekf = ExtendedKalmanFilterStrategy(make_cfg(), fake_dt=0.1)
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        ekf.insert_data(make_kfi(sensor_type=KalmanFilterSensorType.ODOMETRY, sensor_id="odom"))
+        ekf.insert_data(
+            make_kfi(sensor_type=KalmanFilterSensorType.ODOMETRY, sensor_id="odom")
+        )
         assert any("Sensor type" in str(x.message) for x in w)
 
 
@@ -81,7 +78,9 @@ def test_insert_data_warns_and_skips_unknown_sensor_id():
     ekf = ExtendedKalmanFilterStrategy(make_cfg(), fake_dt=0.1)
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        ekf.insert_data(make_kfi(sensor_type=KalmanFilterSensorType.IMU, sensor_id="missing"))
+        ekf.insert_data(
+            make_kfi(sensor_type=KalmanFilterSensorType.IMU, sensor_id="missing")
+        )
         assert any("Sensor id" in str(x.message) for x in w)
 
 

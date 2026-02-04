@@ -33,7 +33,6 @@ class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInher
         self.x = get_np_from_vector(config.state_vector)
         self.P = get_np_from_matrix(config.uncertainty_matrix)
         self.Q = get_np_from_matrix(config.process_noise_matrix)
-        self.F = get_np_from_matrix(config.state_transition_matrix)
         self.config = config
         self.R_sensors = self.get_R_sensors(config)
         self.last_update_time = time.time()
@@ -56,6 +55,9 @@ class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInher
 
     def jacobian_h(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         return np.eye(7)
+
+    def get_R(self) -> NDArray[np.float64]:
+        return self.R
 
     def hx(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         return x
@@ -100,6 +102,9 @@ class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInher
                 data.hx if data.hx is not None else self.hx,
                 R=R,
             )
+
+    def get_P(self) -> NDArray[np.float64]:
+        return self.P
 
     def predict_x_no_update(self, dt: float) -> NDArray[np.float64]:
         self._update_transformation_delta_t_with_size(dt)

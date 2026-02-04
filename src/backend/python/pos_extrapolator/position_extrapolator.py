@@ -44,6 +44,7 @@ class PositionExtrapolator:
     def insert_sensor_data(self, data: object, sensor_id: str) -> None:
         context = ExtrapolationContext(
             x=self.filter_strategy.get_state(),
+            P=self.filter_strategy.get_P(),
             has_gotten_rotation=self.has_gotten_rotation,
         )
 

@@ -5,15 +5,29 @@ pub fn filter_points_rect(
     bottom_left: nalgebra::Vector3<f32>,
     top_right: nalgebra::Vector3<f32>,
 ) -> Vec<Vector3> {
+    // `bottom_left` and `top_right` are treated as two opposite corners of an axis-aligned box.
+    // They may not be ordered component-wise (e.g. bottom_left.y can be > top_right.y), so we
+    // compute min/max bounds per axis.
+    let min = nalgebra::Vector3::new(
+        bottom_left.x.min(top_right.x),
+        bottom_left.y.min(top_right.y),
+        bottom_left.z.min(top_right.z),
+    );
+    let max = nalgebra::Vector3::new(
+        bottom_left.x.max(top_right.x),
+        bottom_left.y.max(top_right.y),
+        bottom_left.z.max(top_right.z),
+    );
+
     points
         .into_iter()
         .filter(|point| {
-            point.x >= bottom_left.x
-                && point.x <= top_right.x
-                && point.y >= bottom_left.y
-                && point.y <= top_right.y
-                && point.z >= bottom_left.z
-                && point.z <= top_right.z
+            point.x >= min.x
+                && point.x <= max.x
+                && point.y >= min.y
+                && point.y <= max.y
+                && point.z >= min.z
+                && point.z <= max.z
         })
         .collect()
 }

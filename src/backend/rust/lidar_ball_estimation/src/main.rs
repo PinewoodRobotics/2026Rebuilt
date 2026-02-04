@@ -18,7 +18,7 @@ const PUB_TOPIC: &str = "lidar3d/pointcloud";
 const AUTOBAHN_HOST: &str = "localhost";
 const AUTOBAHN_PORT: u16 = 8080;
 
-const CLOUD_SCAN_NUM: u32 = 28;
+const CLOUD_SCAN_NUM: u32 = 10;
 const PORT: &str = "/dev/ttyUSB0";
 const BAUD_RATE: u32 = 2000000;
 const MIN_DISTANCE_METERS: f64 = 0.0;
@@ -26,10 +26,10 @@ const MAX_DISTANCE_METERS: f64 = 40.0;
 
 const LIDAR_NAME: &str = "lidar-1";
 
-const BOTTOM_RIGHT_CORNER_WORLD: nalgebra::Vector3<f32> = nalgebra::Vector3::new(0.0, 0.0, 0.0);
-const HEIGHT: f32 = 20.0;
-const WIDTH: f32 = 20.0;
-const LENGTH: f32 = 20.0;
+const BOTTOM_RIGHT_CORNER_WORLD: nalgebra::Vector3<f32> = nalgebra::Vector3::new(-3.0, 0.0, 0.0);
+const HEIGHT: f32 = 10.0;
+const WIDTH: f32 = 10.0;
+const LENGTH: f32 = 10.0;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -66,11 +66,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         z: point.z,
                     })
                     .collect::<Vec<_>>();
-                /*let points = math::filter_points_rect(
+
+                let raw_count = points.len();
+                let points = math::filter_points_rect(
                     points,
                     bottom_left_corner_world,
                     top_right_corner_world,
-                );*/
+                );
+                let filtered_count = points.len();
+                if raw_count > 0 && filtered_count == 0 {
+                    eprintln!(
+                        "filter_points_rect removed all points (raw_count={raw_count}). corners=({:?}, {:?})",
+                        bottom_left_corner_world, top_right_corner_world
+                    );
+                }
 
                 let now = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
@@ -95,7 +104,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .publish(&PUB_TOPIC, general_sensor_data.encode_to_vec())
                     .await;
 
-                println!("Published point cloud");
+                println!("Published point cloud (raw={raw_count} filtered={filtered_count})");
 
                 /*if status == ball_tracker::UpdateStatus::Landed {
                     if let Some(summary) = tracker.take_summary() {

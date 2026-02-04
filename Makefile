@@ -20,7 +20,7 @@ initialize:
 	make test
 
 test:
-	PYTHONPATH=src pytest
+	PYTHONPATH=src $(VENV_PYTHON) -m pytest
 
 generate-proto-python:
 	mkdir -p $(PROTO_PY_GEN_DIR)

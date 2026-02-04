@@ -4,7 +4,11 @@ import pytest
 from backend.generated.proto.python.sensor.apriltags_pb2 import AprilTagData, WorldTags
 from backend.generated.proto.python.sensor.imu_pb2 import ImuData
 from backend.generated.proto.python.sensor.odometry_pb2 import OdometryData
-from backend.generated.thrift.config.common.ttypes import GenericMatrix, GenericVector, Point3
+from backend.generated.thrift.config.common.ttypes import (
+    GenericMatrix,
+    GenericVector,
+    Point3,
+)
 from backend.generated.thrift.config.pos_extrapolator.ttypes import (
     AprilTagConfig,
     ImuConfig,
@@ -14,13 +18,18 @@ from backend.generated.thrift.config.pos_extrapolator.ttypes import (
     TagUseImuRotation,
 )
 from backend.python.common.util.math import from_theta_to_3x3_mat
-from backend.python.pos_extrapolator.data_prep import DataPreparerManager, ExtrapolationContext
+from backend.python.pos_extrapolator.data_prep import (
+    DataPreparerManager,
+    ExtrapolationContext,
+)
 from backend.python.pos_extrapolator.preparers.AprilTagPreparer import (
     AprilTagDataPreparer,
     AprilTagDataPreparerConfig,
     AprilTagPreparerConfig,
 )
-from backend.python.pos_extrapolator.preparers.ImuDataPreparer import ImuDataPreparerConfig
+from backend.python.pos_extrapolator.preparers.ImuDataPreparer import (
+    ImuDataPreparerConfig,
+)
 from backend.python.pos_extrapolator.preparers.OdomDataPreparer import (
     OdomDataPreparerConfig,
 )
@@ -97,6 +106,7 @@ def test_imu_preparer_value_selection_and_shapes(
     mgr = DataPreparerManager()
     ctx = ExtrapolationContext(
         x=np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
+        P=np.eye(7),
         has_gotten_rotation=False,
     )
     out = mgr.prepare_data(sample_imu(), "imu0", ctx)
@@ -129,6 +139,7 @@ def test_imu_preparer_missing_sensor_id_raises_keyerror():
     mgr = DataPreparerManager()
     ctx = ExtrapolationContext(
         x=np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
+        P=np.eye(7),
         has_gotten_rotation=False,
     )
     with pytest.raises(KeyError):
@@ -139,13 +150,16 @@ def test_odom_preparer_absolute_includes_position_and_rotates_velocity():
     DataPreparerManager.set_config(
         OdometryData,
         OdomDataPreparerConfig(
-            OdomConfig(position_source=OdometryPositionSource.ABSOLUTE, use_rotation=False)
+            OdomConfig(
+                position_source=OdometryPositionSource.ABSOLUTE, use_rotation=False
+            )
         ),
     )
     mgr = DataPreparerManager()
     # 90 deg rotation: cos=0,sin=1 rotates (vx,vy) -> (-vy, vx)
     ctx = ExtrapolationContext(
         x=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]),
+        P=np.eye(7),
         has_gotten_rotation=False,
     )
 
@@ -163,12 +177,15 @@ def test_odom_preparer_abs_change_updates_position_by_delta():
     DataPreparerManager.set_config(
         OdometryData,
         OdomDataPreparerConfig(
-            OdomConfig(position_source=OdometryPositionSource.ABS_CHANGE, use_rotation=False)
+            OdomConfig(
+                position_source=OdometryPositionSource.ABS_CHANGE, use_rotation=False
+            )
         ),
     )
     mgr = DataPreparerManager()
     ctx = ExtrapolationContext(
         x=np.array([100.0, 200.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
+        P=np.eye(7),
         has_gotten_rotation=False,
     )
     out = mgr.prepare_data(sample_odom(), "odom", ctx)
@@ -186,13 +203,16 @@ def test_odom_preparer_abs_change_should_rotate_position_delta():
     DataPreparerManager.set_config(
         OdometryData,
         OdomDataPreparerConfig(
-            OdomConfig(position_source=OdometryPositionSource.ABS_CHANGE, use_rotation=False)
+            OdomConfig(
+                position_source=OdometryPositionSource.ABS_CHANGE, use_rotation=False
+            )
         ),
     )
     mgr = DataPreparerManager()
     # 90 deg rotation: (dx,dy) in robot frame should rotate to (-dy, dx)
     ctx = ExtrapolationContext(
         x=np.array([100.0, 200.0, 0.0, 0.0, 0.0, 1.0, 0.0]),
+        P=np.eye(7),
         has_gotten_rotation=False,
     )
     odom = sample_odom()
@@ -207,7 +227,9 @@ def test_odom_preparer_abs_change_should_rotate_position_delta():
 
 def test_april_tag_preparer_raises_on_raw_tags():
     tags_in_world = {0: _point3(np.array([0.0, 0.0, 0.0]), from_theta_to_3x3_mat(0))}
-    cameras_in_robot = {"cam0": _point3(np.array([0.0, 0.0, 0.0]), from_theta_to_3x3_mat(0))}
+    cameras_in_robot = {
+        "cam0": _point3(np.array([0.0, 0.0, 0.0]), from_theta_to_3x3_mat(0))
+    }
 
     april_tag_cfg = AprilTagConfig(
         tag_position_config=tags_in_world,
@@ -236,7 +258,9 @@ def test_april_tag_preparer_raises_on_raw_tags():
 
 def test_april_tag_preparer_skips_unknown_tag_ids_and_returns_empty_input_list():
     tags_in_world = {0: _point3(np.array([0.0, 0.0, 0.0]), from_theta_to_3x3_mat(0))}
-    cameras_in_robot = {"cam0": _point3(np.array([0.0, 0.0, 0.0]), from_theta_to_3x3_mat(0))}
+    cameras_in_robot = {
+        "cam0": _point3(np.array([0.0, 0.0, 0.0]), from_theta_to_3x3_mat(0))
+    }
     april_tag_cfg = AprilTagConfig(
         tag_position_config=tags_in_world,
         tag_disambiguation_mode=TagDisambiguationMode.NONE,
@@ -267,7 +291,9 @@ def test_april_tag_preparer_skips_unknown_tag_ids_and_returns_empty_input_list()
 )
 def test_april_tag_preparer_until_first_non_tag_rotation_should_use_imu_before_non_tag_rotation():
     tags_in_world = {0: _point3(np.array([0.0, 0.0, 0.0]), from_theta_to_3x3_mat(0))}
-    cameras_in_robot = {"cam0": _point3(np.array([0.0, 0.0, 0.0]), from_theta_to_3x3_mat(0))}
+    cameras_in_robot = {
+        "cam0": _point3(np.array([0.0, 0.0, 0.0]), from_theta_to_3x3_mat(0))
+    }
     april_tag_cfg = AprilTagConfig(
         tag_position_config=tags_in_world,
         tag_disambiguation_mode=TagDisambiguationMode.NONE,
@@ -287,6 +313,7 @@ def test_april_tag_preparer_until_first_non_tag_rotation_should_use_imu_before_n
     )
     ctx = ExtrapolationContext(
         x=np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
+        P=np.eye(7),
         has_gotten_rotation=False,
     )
     assert preparer.should_use_imu_rotation(ctx) is True

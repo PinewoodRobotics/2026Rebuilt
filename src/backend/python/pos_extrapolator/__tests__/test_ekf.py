@@ -24,7 +24,6 @@ def make_test_kalman_filter_config() -> KalmanFilterConfig:
     dim_z = 5  # [vx, vy, cos, sin, omega]
 
     state_vector = GenericVector(values=[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0], size=dim_x)
-    F = GenericMatrix(values=_eye(dim_x), rows=dim_x, cols=dim_x)
     P = GenericMatrix(values=_eye(dim_x), rows=dim_x, cols=dim_x)
     Q = GenericMatrix(
         values=[[0.01 if i == j else 0.0 for j in range(dim_x)] for i in range(dim_x)],
@@ -33,22 +32,16 @@ def make_test_kalman_filter_config() -> KalmanFilterConfig:
     )
 
     R = GenericMatrix(values=_eye(dim_z), rows=dim_z, cols=dim_z)
-    H = GenericMatrix(values=_eye(dim_z), rows=dim_z, cols=dim_z)
     sensors = {
         KalmanFilterSensorType.IMU: {
-            "0": KalmanFilterSensorConfig(
-                measurement_noise_matrix=R,
-                measurement_conversion_matrix=H,
-            )
+            "0": KalmanFilterSensorConfig(measurement_noise_matrix=R)
         }
     }
 
     return KalmanFilterConfig(
         state_vector=state_vector,
-        state_transition_matrix=F,
         uncertainty_matrix=P,
         process_noise_matrix=Q,
-        time_step_initial=0.05,
         sensors=sensors,
         dim_x_z=[dim_x, dim_z],
     )

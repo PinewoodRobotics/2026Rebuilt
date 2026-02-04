@@ -1,6 +1,9 @@
 import os
 import time
 from pathlib import Path
+
+from _pytest.capture import capsys
+from backend.python.common.debug.pubsub_replay import autolog
 from backend.python.common.debug.replay_recorder import (
     GLOBAL_INSTANCE,
     Recorder,
@@ -258,38 +261,41 @@ def test_init_replay_recorder_latest_uses_folder(tmp_path, monkeypatch):
     replay_recorder.close()
 
 
-def test_write_duration_per_call(tmp_path):
+def test_write_duration_per_call(tmp_path, capsys: pytest.CaptureFixture[str]):
     """Measure how long each Recorder.write() takes and assert timings are sane."""
-    db_path = tmp_path / "write_timing.db"
-    recorder = replay_recorder.Recorder(str(db_path))
+    with capsys.disabled():
+        db_path = tmp_path / "write_timing.db"
+        recorder = replay_recorder.Recorder(str(db_path))
 
-    # Payloads of different sizes to see if duration scales with size
-    payloads = [
-        (b"tiny", "tiny"),
-        (b"x" * 100, "100B"),
-        (b"x" * 10_000, "10KB"),
-        (b"x" * 100_000, "100KB"),
-    ]
+        # Payloads of different sizes to see if duration scales with size
+        payloads = [
+            (b"tiny", "tiny"),
+            (b"x" * 100, "100B"),
+            (b"x" * 10_000, "10KB"),
+            (b"x" * 100_000, "100KB"),
+        ]
 
-    durations_seconds: list[tuple[str, float]] = []
+        durations_seconds: list[tuple[str, float]] = []
 
-    for data, label in payloads:
-        t0 = time.perf_counter()
-        recorder.write(f"key_{label}", "bytes", data)
-        elapsed = time.perf_counter() - t0
-        durations_seconds.append((label, elapsed))
-        print(f"Write for {label}: {elapsed:.6f} seconds.")
+        for data, label in payloads:
+            t0 = time.perf_counter()
+            recorder.write(f"key_{label}", "bytes", data)
+            elapsed = time.perf_counter() - t0
+            durations_seconds.append((label, elapsed))
+            print(f"Write for {label}: {elapsed:.6f} seconds.")
 
-    recorder.close()
+        recorder.close()
 
-    # Each write must complete in finite time
-    for label, duration in durations_seconds:
-        print(f"Asserting duration for {label}: {duration:.6f} seconds.")
-        assert duration >= 0, f"write ({label}) reported negative duration"
-        assert duration < 5.0, f"write ({label}) took {duration:.3f}s (sanity cap 5s)"
+        # Each write must complete in finite time
+        for label, duration in durations_seconds:
+            print(f"Asserting duration for {label}: {duration:.6f} seconds.")
+            assert duration >= 0, f"write ({label}) reported negative duration"
+            assert (
+                duration < 5.0
+            ), f"write ({label}) took {duration:.3f}s (sanity cap 5s)"
 
-    # Optional: ensure we actually measured something (at least one write took > 0 or we have 4 timings)
-    print(
-        f"Total measured write durations: {len(durations_seconds)} (expected {len(payloads)})"
-    )
-    assert len(durations_seconds) == len(payloads)
+        # Optional: ensure we actually measured something (at least one write took > 0 or we have 4 timings)
+        print(
+            f"Total measured write durations: {len(durations_seconds)} (expected {len(payloads)})"
+        )
+        assert len(durations_seconds) == len(payloads)
