@@ -1,3 +1,5 @@
+from backend.deployment.compilation_util import CPPBuildConfig, CPPLibrary
+from backend.deployment.system_types import SystemType
 from backend.deployment.util import (
     _WeightedProcess,
     ModuleTypes,
@@ -55,6 +57,37 @@ def get_modules() -> list[_Module]:
             local_main_file_path="main.py",
             extra_run_args=[],
             equivalent_run_definition=ProcessType.FAN_COLOR.get_name(),
+        ),
+        ModuleTypes.CPPLibraryModule(
+            name="cuda-tags-lib",
+            project_root_folder_path="cpp/CudaTags",
+            build_for_platforms=[SystemType.JETPACK_L4T_R36_2],
+            compilation_config=CPPBuildConfig.with_cmake(
+                clean_build_dir=False,
+                cmake_args=[
+                    "-DCUDATAGS_BUILD_PYTHON=ON",
+                ],
+                compiler_args=[],
+                libs=[
+                    CPPLibrary(name="python3"),
+                    CPPLibrary(name="python3-dev"),
+                    CPPLibrary(name="python-is-python3"),
+                    CPPLibrary(name="python3-numpy"),
+                    CPPLibrary(name="python3-pip"),
+                    CPPLibrary(name="python3-distutils"),
+                    CPPLibrary(name="pybind11-dev"),
+                    CPPLibrary(name="libopencv-dev"),
+                    CPPLibrary(name="openjdk-11-jdk"),
+                    CPPLibrary(name="default-jdk"),
+                    CPPLibrary(name="cmake"),
+                    CPPLibrary(name="ninja-build"),
+                    CPPLibrary(name="pkg-config"),
+                    CPPLibrary(name="git"),
+                    CPPLibrary(name="build-essential"),
+                    CPPLibrary(name="libssl-dev"),
+                ],
+                extra_docker_commands=[],
+            ),
         ),
     ]
 

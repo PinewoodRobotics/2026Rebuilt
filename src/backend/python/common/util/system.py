@@ -10,6 +10,8 @@ import re
 from pydantic import BaseModel
 import netifaces
 import socket
+import os
+import platform
 
 from backend.python.common.config import from_uncertainty_config
 from backend.generated.thrift.config.ttypes import Config
@@ -142,15 +144,69 @@ def load_configs() -> tuple[BasicSystemConfig, Config]:
     return basic_system_config, config
 
 
+def get_glibc_version() -> str:
+    """
+    Returns the system's glibc version as a string, e.g., "2.35".
+    """
+    try:
+        # Parse output from ldd --version (first line, after 'ldd (GNU libc) X.Y[.Z]')
+        output = subprocess.check_output(
+            ["ldd", "--version"], encoding="utf-8", errors="ignore"
+        )
+        for line in output.splitlines():
+            if "GNU libc" in line or "GLIBC" in line or "GLIBC" in line:
+                parts = line.strip().split()
+                for part in parts:
+                    if part[0].isdigit():
+                        return part
+            if line.strip() and line.strip()[0].isdigit():
+                vers_part = line.strip().split()[0]
+                if vers_part[0].isdigit():
+                    return vers_part
+        # Fallback: try to find a digit group in first line
+        first_line = output.splitlines()[0]
+        for s in first_line.split():
+            if s[0].isdigit():
+                return s
+    except Exception:
+        pass
+    # As a fallback, try to load from libc.so version string
+    try:
+        import ctypes
+
+        libc = ctypes.CDLL("libc.so.6")
+        get_ver = libc.gnu_get_libc_version
+        get_ver.restype = ctypes.c_char_p
+        return get_ver().decode("utf-8")
+    except Exception:
+        pass
+    raise RuntimeError("Could not determine glibc version")
+
+
+def get_local_binary_path() -> str:
+    """
+    Returns the path to the local binary directory based on the detected C library (glibc) version and system architecture.
+    Example: /opt/blitz/B.L.I.T.Z/build/release/2.35/aarch64/
+    """
+    clib_version = get_glibc_version()
+    arch = platform.machine()  # e.g., 'x86_64', 'aarch64'
+    path = f"/opt/blitz/B.L.I.T.Z/build/release/{clib_version}/{arch}/"
+    return path
+
+
 def setup_shared_library_python_extension(
     *,
     module_name: str,
     py_lib_searchpath: str,
     module_basename: str | None = None,
 ) -> ModuleType:
+    binary_path = get_local_binary_path()
+
     module_basename = module_basename if module_basename else module_name
 
-    module_parent = str(os.path.dirname(str(py_lib_searchpath)))
+    module_parent = str(
+        os.path.dirname(os.path.join(binary_path, str(py_lib_searchpath)))
+    )
     if module_parent not in sys.path:
         sys.path.insert(0, module_parent)
 
