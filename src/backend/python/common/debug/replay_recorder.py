@@ -128,9 +128,7 @@ class Recorder(iPod):
     def _record_bytes(self, key: str, data: bytes):
         self.write(key, "bytes", data)
 
-    def write(
-        self, key: str, data_type: str, data: bytes, time: float | None = None
-    ):
+    def write(self, key: str, data_type: str, data: bytes, time: float | None = None):
         if time is None:
             time = time_module.time()
         ReplayDB.create(key=key, timestamp=time, data_type=data_type, data=data)
@@ -197,6 +195,8 @@ def find_latest_replay(dir: str) -> str:
 
 
 def init_replay_recorder(
+    process_name: str,
+    *,
     replay_path: str | Literal["latest"] = "replay-"
     + time.strftime("%Y-%m-%d_%H-%M-%S")
     + ".db",
@@ -204,9 +204,19 @@ def init_replay_recorder(
     folder_path: str = "replays",
 ):
     global GLOBAL_INSTANCE
+
+    base_folder = os.path.join(os.getcwd(), folder_path)
+    folder_path = os.path.join(
+        base_folder, process_name
+    )  # intended ..../blitz/B.L.I.T.Z/replays/pose_extrapolator/...
+
     if replay_path == "latest" and mode == "r":
-        replay_path = find_latest_replay(os.path.join(os.getcwd(), folder_path))
+        if os.path.isdir(folder_path):
+            replay_path = find_latest_replay(folder_path)
+        else:
+            replay_path = find_latest_replay(base_folder)
     else:
+        os.makedirs(folder_path, exist_ok=True)
         replay_path = os.path.join(folder_path, replay_path)
 
     if mode == "w":

@@ -10,7 +10,7 @@ from backend.python.common.debug.replay_recorder import (
 
 
 def test_autolog():
-    init_replay_recorder("test.db", mode="w")
+    init_replay_recorder("autolog_test", replay_path="test.db", mode="w")
 
     @autolog("test")
     async def test_func(data: bytes):
@@ -24,7 +24,7 @@ def test_autolog():
 
     close()
 
-    init_replay_recorder("test.db", mode="r")
+    init_replay_recorder("autolog_test", replay_path="test.db", mode="r")
 
     first = get_next_replay()
     second = get_next_replay()
@@ -130,7 +130,9 @@ def test_replay_autobahn_drives_callbacks_with_infinite_stream(monkeypatch):
         nonlocal i
         i += 1
         # Force the loop to "sleep" each iteration via the clamped branch.
-        return Replay(key="t", data_type="bytes", time=float(i * 1000), data=f"p{i}".encode())
+        return Replay(
+            key="t", data_type="bytes", time=float(i * 1000), data=f"p{i}".encode()
+        )
 
     monkeypatch.setattr(pubsub_replay, "get_next_replay", infinite_replay)
 

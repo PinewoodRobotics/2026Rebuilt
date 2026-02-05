@@ -96,7 +96,7 @@ def test_replay_api(tmp_path):
     replay_dir = tmp_path
     replay_path = os.path.join(replay_dir, "replay-test.db")
 
-    path = init_replay_recorder(replay_path, mode="w")
+    path = init_replay_recorder("replay_api_test", replay_path=replay_path, mode="w")
     assert os.path.exists(path)
 
     record_output("foo", "bar")
@@ -105,7 +105,7 @@ def test_replay_api(tmp_path):
     record_output("flt", 3.14)
 
     close()
-    init_replay_recorder(replay_path, mode="r")
+    init_replay_recorder("replay_api_test", replay_path=replay_path, mode="r")
     assert os.path.exists(replay_path)
 
     replay1 = get_next_replay()
@@ -129,11 +129,11 @@ def test_replay_api(tmp_path):
 
 
 def test_replay_latest():
-    init_replay_recorder(mode="w")
+    init_replay_recorder("replay_latest_test", mode="w")
     record_output("test", "test")
     close()
 
-    init_replay_recorder("latest", mode="r")
+    init_replay_recorder("replay_latest_test", replay_path="latest", mode="r")
     current_replay = get_next_replay()
     assert current_replay is not None
     assert current_replay.key == "test"
@@ -167,7 +167,9 @@ def test_record_output_uses_current_time_each_call(tmp_path, monkeypatch):
 
 def test_record_output_encodes_supported_types(tmp_path):
     db_path = tmp_path / "types.db"
-    replay_recorder.init_replay_recorder(str(db_path), mode="w")
+    replay_recorder.init_replay_recorder(
+        "record_output_encodes_supported_types", replay_path=str(db_path), mode="w"
+    )
 
     replay_recorder.record_output("s", "hello")
     replay_recorder.record_output("i", 123)
@@ -175,7 +177,9 @@ def test_record_output_encodes_supported_types(tmp_path):
     replay_recorder.record_output("b", b"\x00\x01")
 
     replay_recorder.close()
-    replay_recorder.init_replay_recorder(str(db_path), mode="r")
+    replay_recorder.init_replay_recorder(
+        "record_output_encodes_supported_types", replay_path=str(db_path), mode="r"
+    )
 
     replays = []
     while True:
@@ -253,7 +257,10 @@ def test_init_replay_recorder_latest_uses_folder(tmp_path, monkeypatch):
     latest.write_bytes(b"")
 
     path = replay_recorder.init_replay_recorder(
-        "latest", mode="r", folder_path="replays"
+        "init_replay_recorder_latest_uses_folder",
+        replay_path="latest",
+        mode="r",
+        folder_path="replays",
     )
     assert Path(path) == latest
     assert isinstance(replay_recorder.GLOBAL_INSTANCE, replay_recorder.Player)

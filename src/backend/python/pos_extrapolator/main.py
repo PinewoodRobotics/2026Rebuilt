@@ -65,9 +65,11 @@ def init_utilities(
     )
 
     if get_system_status() == SystemStatus.SIMULATION:
-        init_replay_recorder(replay_path="latest", mode="r")
+        init_replay_recorder(
+            process_name="pose_extrapolator", replay_path="latest", mode="r"
+        )
     else:
-        init_replay_recorder(mode="w")
+        init_replay_recorder(process_name="pose_extrapolator", mode="w")
 
 
 def get_autobahn_server(system_config: BasicSystemConfig):
