@@ -10,11 +10,11 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robot;
-import frc.robot.constant.PiConstants;
+import frc.robot.constant.TopicConstants;
 import proto.util.Position.RobotPosition;
 
 public class GlobalPosition extends SubsystemBase {
-  private static long lastUpdateTime = 0;
+  private static volatile long lastUpdateTime;
   private static GlobalPosition self;
   private static Pose2d position;
   private static ChassisSpeeds positionVelocity;
@@ -27,7 +27,7 @@ public class GlobalPosition extends SubsystemBase {
   }
 
   public GlobalPosition() {
-    Robot.getCommunicationClient().subscribe(PiConstants.AutobahnConfig.poseSubscribeTopic,
+    Robot.getCommunicationClient().subscribe(TopicConstants.kPoseSubscribeTopic,
         NamedCallback.FromConsumer(this::subscription));
   }
 
@@ -46,11 +46,7 @@ public class GlobalPosition extends SubsystemBase {
       positionVelocity = new ChassisSpeeds(velocity.getX(), velocity.getY(),
           rotationSpeed);
 
-      lastUpdateTime = (long) position.getTimestamp();
-      long currentTimeMillis = System.currentTimeMillis();
-
-      // Logger.recordOutput("Global/transportTime", currentTimeMillis -
-      // lastUpdateTime);
+      lastUpdateTime = (long) System.currentTimeMillis();
     } catch (InvalidProtocolBufferException e) {
       e.printStackTrace();
       return;
@@ -69,5 +65,6 @@ public class GlobalPosition extends SubsystemBase {
   public void periodic() {
     Logger.recordOutput("Global/pose", position);
     Logger.recordOutput("Global/velocity", positionVelocity);
+    Logger.recordOutput("Global/lastUpdateTime", lastUpdateTime);
   }
 }

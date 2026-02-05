@@ -1,12 +1,11 @@
 package frc.robot;
 
-import org.littletonrobotics.junction.Logger;
-
 import com.pathplanner.lib.commands.PathPlannerAuto;
 
 import edu.wpi.first.wpilibj2.command.Command;
 
 import frc.robot.command.SwerveMoveTeleop;
+import frc.robot.constant.BotConstants;
 import frc.robot.hardware.AHRSGyro;
 import frc.robot.subsystem.CameraSubsystem;
 import frc.robot.subsystem.GlobalPosition;
@@ -31,11 +30,11 @@ public class RobotContainer {
   static final String kPathPlannerAutoName = "Ball Shooter Left";
 
   public RobotContainer() {
-    CameraSubsystem.GetInstance();
     GlobalPosition.GetInstance();
     OdometrySubsystem.GetInstance();
     AHRSGyro.GetInstance();
     SwerveSubsystem.GetInstance();
+    CameraSubsystem.GetInstance();
 
     // Initialize publication subsystem for sending data to Pi
     PublicationSubsystem.GetInstance(Robot.getCommunicationClient());
@@ -65,11 +64,12 @@ public class RobotContainer {
     if (position != null) {
       AHRSGyro.GetInstance().setAngleAdjustment(position.getRotation().getDegrees());
       OdometrySubsystem.GetInstance().setOdometryPosition(position);
-      // SwerveSubsystem.GetInstance().resetGyro(0);
     }
 
-    PublicationSubsystem.addDataClasses(
-        OdometrySubsystem.GetInstance(),
-        AHRSGyro.GetInstance());
+    if (BotConstants.currentMode == BotConstants.Mode.REAL) {
+      PublicationSubsystem.addDataClasses(
+          OdometrySubsystem.GetInstance(),
+          AHRSGyro.GetInstance());
+    }
   }
 }
