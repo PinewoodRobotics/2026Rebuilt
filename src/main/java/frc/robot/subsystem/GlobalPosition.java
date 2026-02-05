@@ -11,7 +11,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robot;
 import frc.robot.constant.TopicConstants;
-import proto.util.Position.RobotPosition;
+import frc4765.proto.util.Position.RobotPosition;
 
 public class GlobalPosition extends SubsystemBase {
   private static volatile long lastUpdateTime;

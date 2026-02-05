@@ -20,9 +20,9 @@ import frc.robot.constant.TopicConstants;
 import frc.robot.util.CustomUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import proto.sensor.Apriltags.AprilTagData;
-import proto.sensor.GeneralSensorDataOuterClass.GeneralSensorData;
-import proto.sensor.GeneralSensorDataOuterClass.SensorName;;
+import frc4765.proto.sensor.Apriltags.AprilTagData;
+import frc4765.proto.sensor.GeneralSensorDataOuterClass.GeneralSensorData;
+import frc4765.proto.sensor.GeneralSensorDataOuterClass.SensorName;;
 
 public class CameraSubsystem extends SubsystemBase {
 

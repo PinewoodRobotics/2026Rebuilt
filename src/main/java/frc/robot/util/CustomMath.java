@@ -17,7 +17,7 @@ import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.TrajectoryConfig;
 import edu.wpi.first.math.trajectory.TrajectoryGenerator;
 import edu.wpi.first.math.trajectory.TrajectoryGenerator.ControlVectorList;
-import proto.pathfind.Pathfind.PathfindResult;
+import frc4765.proto.pathfind.Pathfind.PathfindResult;
 
 /**
  * @note MathFun = Math Functions

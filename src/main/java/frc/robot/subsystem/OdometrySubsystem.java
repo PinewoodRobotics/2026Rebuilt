@@ -8,10 +8,10 @@ import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constant.TopicConstants;
 import frc.robot.hardware.AHRSGyro;
-import proto.sensor.GeneralSensorDataOuterClass.GeneralSensorData;
-import proto.sensor.Odometry.OdometryData;
-import proto.util.Position.Position2d;
-import proto.util.Vector.Vector2;
+import frc4765.proto.sensor.GeneralSensorDataOuterClass.GeneralSensorData;
+import frc4765.proto.sensor.Odometry.OdometryData;
+import frc4765.proto.util.Position.Position2d;
+import frc4765.proto.util.Vector.Vector2;
 import pwrup.frc.core.hardware.sensor.IGyroscopeLike;
 import pwrup.frc.core.proto.IDataClass;
 
