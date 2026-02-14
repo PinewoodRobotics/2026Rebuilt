@@ -24,9 +24,7 @@ def make_transformation_matrix_p_d(
     z_axis: NDArray[np.float64] = np.array([0, 0, 1]),
 ) -> NDArray[np.float64]:
     x_axis = normalize_vector(direction_vector)
-    y_axis = normalize_vector(
-        np.cross(z_axis, x_axis)
-    )  # pyright: ignore[reportArgumentType]
+    y_axis = normalize_vector(cast(NDArray[np.float64], np.cross(z_axis, x_axis)))
     return create_transformation_matrix(
         rotation_matrix=np.column_stack((x_axis, y_axis, z_axis)),
         translation_vector=np.array([position[0], position[1], position[2]]),

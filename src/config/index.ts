@@ -4,12 +4,12 @@ import prod1 from "./cameras/prod_1";
 import lidar_configs from "./lidar";
 import pathfinding_config from "./pathfinding";
 import { pose_extrapolator } from "./pos_extrapolator";
-import front_left from "./cameras/front_left";
-import front_right from "./cameras/front_right";
-import rear_left from "./cameras/rear_left";
-import rear_right from "./cameras/rear_right";
+import front_left from "./cameras/b-bot/front_left";
+import front_right from "./cameras/b-bot/front_right";
+import rear_left from "./cameras/b-bot/rear_left";
+import rear_right from "./cameras/b-bot/rear_right";
 import jetson_cam from "./cameras/jetson_cam";
-import logitech_cam from "./cameras/logitech_cam";
+import logitech_cam from "./cameras/b-bot/unused/logitech_cam";
 
 const config: Config = {
   pos_extrapolator: pose_extrapolator,

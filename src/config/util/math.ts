@@ -33,16 +33,16 @@ export function fromQuaternionNoRoll_ZYX(q: number[]): GenericMatrix {
   const r33 = 1 - 2 * (x * x + y * y);
 
   return MatrixUtil.buildMatrix([
-    [r11, r12, r13],
-    [r21, r22, r23],
-    [r31, r32, r33],
+    [r11, -r12, r13],
+    [r21, -r22, r23],
+    [r31, -r32, r33],
   ]);
 }
 
 export class MatrixUtil {
   static createTransformationMatrix3D(
     rotation: GenericMatrix,
-    translation: GenericVector
+    translation: GenericVector,
   ): GenericMatrix {
     return {
       values: [
@@ -103,7 +103,7 @@ export class MatrixUtil {
   static buildMatrixFromDiagonal(diagonal: number[]): GenericMatrix {
     const size = diagonal.length;
     const values = Array.from({ length: size }, (_, i) =>
-      Array.from({ length: size }, (_, j) => (i === j ? diagonal[i] : 0))
+      Array.from({ length: size }, (_, j) => (i === j ? diagonal[i] : 0)),
     );
     return {
       values,

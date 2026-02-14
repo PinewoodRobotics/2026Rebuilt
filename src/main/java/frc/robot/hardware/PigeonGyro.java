@@ -6,12 +6,12 @@ import com.ctre.phoenix6.hardware.Pigeon2;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.util.LocalMath;
-import proto.sensor.GeneralSensorDataOuterClass.GeneralSensorData;
-import proto.sensor.GeneralSensorDataOuterClass.SensorName;
-import proto.sensor.Imu.ImuData;
-import proto.util.Position.Position3d;
-import proto.util.Vector.Vector3;
+import frc.robot.util.CustomMath;
+import frc4765.proto.sensor.GeneralSensorDataOuterClass.GeneralSensorData;
+import frc4765.proto.sensor.GeneralSensorDataOuterClass.SensorName;
+import frc4765.proto.sensor.Imu.ImuData;
+import frc4765.proto.util.Position.Position3d;
+import frc4765.proto.util.Vector.Vector3;
 import pwrup.frc.core.hardware.sensor.IGyroscopeLike;
 import pwrup.frc.core.proto.IDataClass;
 
