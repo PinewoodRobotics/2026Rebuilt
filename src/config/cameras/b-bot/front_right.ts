@@ -2,33 +2,35 @@ import {
   CameraParameters,
   CameraType,
 } from "generated/thrift/gen-nodejs/camera_types";
-import { MatrixUtil, VectorUtil } from "../util/math";
+import { MatrixUtil, VectorUtil } from "../../util/math";
 
 const front_right: CameraParameters = {
   pi_to_run_on: "tynan",
   name: "front_right",
-  camera_path: "/dev/usb_cam2",
+  camera_path: "/dev/usb_cam3",
   flags: 0,
   width: 800,
   height: 600,
   max_fps: 100,
   camera_matrix: MatrixUtil.buildMatrix([
-    [685.1818937239501, 0.0, 414.2897986078692],
-    [0.0, 685.3366953090806, 307.27153822775506],
+    [456.4566091243219, 0.0, 403.4510675692207],
+    [0.0, 456.4929611660038, 320.254620681183],
     [0.0, 0.0, 1.0],
   ]),
   dist_coeff: VectorUtil.fromArray([
-    0.03841168751857183, -0.03836398867353221, 0.00011911539228647425,
-    -0.00047135490659979865, -0.011145047269650642,
+    0.05147776259797679, -0.08376762888571426, -0.0005087791220038304,
+    -5.9848176245483235e-5, 0.020125747371733234,
   ]),
   exposure_time: 10,
   camera_type: CameraType.OV2311,
   video_options: {
-    send_feed: false,
+    send_feed: true,
     do_compression: true,
-    overlay_tags: false,
-    compression_quality: 30,
+    publication_topic: "camera/front_right/video",
+    overlay_tags: true,
+    compression_quality: 20,
   },
+  do_detection: true,
 };
 
 export default front_right;

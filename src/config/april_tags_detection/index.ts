@@ -19,8 +19,7 @@ export const april_tag_detection_config: AprilDetectionConfig = {
   pi_name_to_special_detector_config: {
     jetson1: {
       type: SpecialDetectorType.GPU_CUDA,
-      py_lib_searchpath:
-        "/opt/blitz/B.L.I.T.Z/build/release/2.35/aarch64/cpp/cuda-tags-lib/",
+      py_lib_searchpath: "cpp/cuda-tags-lib/",
     },
   },
 };

@@ -3,7 +3,8 @@ import { MatrixUtil, VectorUtil } from "../../util/math";
 export const nav_x_config = {
   "0": {
     use_position: false,
-    use_rotation: true,
+    use_rotation_absolute: true,
+    use_rotation_velocity: true,
     use_velocity: false,
     imu_robot_position: {
       position: VectorUtil.fromArray([0.0, 0.0, 0.0]),
@@ -16,7 +17,8 @@ export const nav_x_config = {
   },
   "1": {
     use_position: false,
-    use_rotation: true,
+    use_rotation_absolute: true,
+    use_rotation_velocity: true,
     use_velocity: false,
     imu_robot_position: {
       position: VectorUtil.fromArray([0.0, 0.0, 0.0]),
