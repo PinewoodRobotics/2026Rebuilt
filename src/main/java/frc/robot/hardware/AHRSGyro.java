@@ -6,7 +6,7 @@ import com.kauailabs.navx.frc.AHRS;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.I2C;
-import frc.robot.util.CustomMath;
+import frc.robot.util.LocalMath;
 import frc4765.proto.sensor.GeneralSensorDataOuterClass.GeneralSensorData;
 import frc4765.proto.sensor.GeneralSensorDataOuterClass.SensorName;
 import frc4765.proto.sensor.Imu.ImuData;

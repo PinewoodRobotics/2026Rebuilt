@@ -22,7 +22,7 @@ import frc.robot.hardware.AHRSGyro;
 import frc.robot.hardware.WheelMoverBase;
 import frc.robot.hardware.WheelMoverSpark;
 import frc.robot.hardware.WheelMoverTalonFX;
-import frc.robot.util.CustomMath;
+import frc.robot.util.LocalMath;
 import pwrup.frc.core.hardware.sensor.IGyroscopeLike;
 
 /**
@@ -233,7 +233,7 @@ public class SwerveSubsystem extends SubsystemBase {
   }
 
   public double getSwerveGyroAngle() {
-    return Math.toRadians(CustomMath.wrapTo180(m_gyro.getYaw() + gyroOffset));
+    return Math.toRadians(LocalMath.wrapTo180(m_gyro.getYaw() + gyroOffset));
   }
 
   public void setShouldWork(boolean value) {

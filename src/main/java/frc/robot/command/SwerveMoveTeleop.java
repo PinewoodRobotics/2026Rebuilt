@@ -6,7 +6,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constant.ControllerConstants;
 import frc.robot.constant.swerve.SwerveConstants;
 import frc.robot.subsystem.SwerveSubsystem;
-import frc.robot.util.CustomMath;
+import frc.robot.util.LocalMath;
 import pwrup.frc.core.controller.FlightModule;
 import pwrup.frc.core.controller.FlightStick;
 
@@ -28,19 +28,19 @@ public class SwerveMoveTeleop extends Command {
 
   @Override
   public void execute() {
-    double r = CustomMath.deadband(
+    double r = LocalMath.deadband(
         controller.leftFlightStick.getRawAxis(
             FlightStick.AxisEnum.JOYSTICKROTATION.value) * -1,
         ControllerConstants.kRotDeadband,
         ControllerConstants.kRotMinValue);
 
-    double x = CustomMath.deadband(
+    double x = LocalMath.deadband(
         controller.rightFlightStick.getRawAxis(
             FlightStick.AxisEnum.JOYSTICKY.value),
         ControllerConstants.kXSpeedDeadband,
         ControllerConstants.kXSpeedMinValue);
 
-    double y = CustomMath.deadband(
+    double y = LocalMath.deadband(
         controller.rightFlightStick.getRawAxis(
             FlightStick.AxisEnum.JOYSTICKX.value),
         ControllerConstants.kYSpeedDeadband,

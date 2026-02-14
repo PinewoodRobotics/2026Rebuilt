@@ -60,37 +60,48 @@ public class ContinuousAimCommand extends Command {
     Translation3d targetGlobal = targetGlobalPoseSupplier.get();
     Translation2d selfTranslation = selfPose.getTranslation();
     Translation2d targetTranslation = targetGlobal.toTranslation2d();
-    Translation2d target = LocalMath.fromGlobalToRelative(selfTranslation, targetTranslation);
-    Translation2d velocity = currentRobotVelocitySupplier.get();
-
-    double t_f = calculateTf(target.getNorm(), targetGlobal.getZ(), TurretConstants.kTurretTheta);
-
-    // Predict where the target appears in the robot frame at impact time:
-    // T_new = target - v_r * t_f - L
-    // T_robot = R(w * t_f) * T_new
-    // ------------------------------------------------------------
-    Translation2d T_new = target
-        .minus(velocity.times(t_f))
-        .minus(TurretConstants.turretPositionInRobot);
-
-    Matrix<N2, N2> R = fromAngularVelToMat(currentRobotYawVelocitySupplier.get(), t_f);
-    Matrix<N2, N1> T_robot = R.times(T_new.toVector());
-    Translation2d aimPoint = new Translation2d(T_robot.get(0, 0), T_robot.get(1, 0));
-    // ------------------------------------------------------------
-
-    Angle newAngle = Units.Radians.of(aimPoint.getAngle().getRadians());
-
-    AngularVelocity newAngleRate = calculateAimAngleRate(target.getNorm(), targetGlobal.getZ(),
-        TurretConstants.kTurretTheta, velocity,
-        target, TurretConstants.turretPositionInRobot, currentRobotAccelerationSupplier.get(),
-        currentRobotYawVelocitySupplier.get(), currentRobotYawAccelerationSupplier.get());
-
-    double feedForwardV = newAngleRate.in(Units.RadiansPerSecond) * TurretConstants.feedForwardFactor;
-
-    turretSubsystem.setTurretPosition(newAngle, Units.Volts.of(feedForwardV));
-
-    logEverything(selfPose, targetGlobal, target, velocity, aimPoint, newAngle);
+    // Translation2d target = LocalMath.fromGlobalToRelative(selfTranslation,
+    // targetTranslation);
   }
+
+  /*
+   * Translation2d velocity = currentRobotVelocitySupplier.get();
+   * 
+   * double t_f = calculateTf(target.getNorm(), targetGlobal.getZ(),
+   * TurretConstants.kTurretTheta);
+   * 
+   * // Predict where the target appears in the robot frame at impact time:
+   * // T_new = target - v_r * t_f - L
+   * // T_robot = R(w * t_f) * T_new
+   * // ------------------------------------------------------------
+   * Translation2d T_new = target
+   * .minus(velocity.times(t_f))
+   * .minus(TurretConstants.turretPositionInRobot);
+   * 
+   * Matrix<N2, N2> R = fromAngularVelToMat(currentRobotYawVelocitySupplier.get(),
+   * t_f);
+   * Matrix<N2, N1> T_robot = R.times(T_new.toVector());
+   * Translation2d aimPoint = new Translation2d(T_robot.get(0, 0), T_robot.get(1,
+   * 0));
+   * // ------------------------------------------------------------
+   * 
+   * Angle newAngle = Units.Radians.of(aimPoint.getAngle().getRadians());
+   * 
+   * AngularVelocity newAngleRate = calculateAimAngleRate(target.getNorm(),
+   * targetGlobal.getZ(),
+   * TurretConstants.kTurretTheta, velocity,
+   * target, TurretConstants.turretPositionInRobot,
+   * currentRobotAccelerationSupplier.get(),
+   * currentRobotYawVelocitySupplier.get(),
+   * currentRobotYawAccelerationSupplier.get());
+   * 
+   * double feedForwardV = newAngleRate.in(Units.RadiansPerSecond) *
+   * TurretConstants.feedForwardFactor;
+   * 
+   * turretSubsystem.setTurretPosition(newAngle, Units.Volts.of(feedForwardV));
+   * 
+   * logEverything(selfPose, targetGlobal, target, velocity, aimPoint, newAngle);
+   */
 
   private Matrix<N2, N2> fromAngularVelToMat(AngularVelocity w, double time) {
     double delta = w.in(Units.RadiansPerSecond) * time;
