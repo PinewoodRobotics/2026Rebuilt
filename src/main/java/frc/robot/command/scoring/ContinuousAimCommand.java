@@ -8,6 +8,7 @@ import org.littletonrobotics.junction.Logger;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.numbers.N1;
@@ -18,50 +19,50 @@ import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constant.TurretConstants;
+import frc.robot.hardware.AHRSGyro;
 import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.TurretSubsystem;
-import frc.robot.util.LocalMath;
 
 public class ContinuousAimCommand extends Command {
   private final TurretSubsystem turretSubsystem;
   private final Supplier<Translation3d> targetGlobalPoseSupplier;
   private final Supplier<Pose2d> selfGlobalPoseSupplier;
-  private final Supplier<Translation2d> currentRobotVelocitySupplier;
-  private final Supplier<Translation2d> currentRobotAccelerationSupplier;
   private final Supplier<AngularVelocity> currentRobotYawVelocitySupplier;
-  private final Supplier<AngularAcceleration> currentRobotYawAccelerationSupplier;
 
   public ContinuousAimCommand(Supplier<Translation3d> targetGlobalPoseSupplier,
       Supplier<Pose2d> selfGlobalPoseSupplier,
-      Supplier<Translation2d> currentRobotVelocitySupplier,
-      Supplier<Translation2d> currentRobotAccelerationSupplier,
-      Supplier<AngularVelocity> currentRobotYawVelocitySupplier,
-      Supplier<AngularAcceleration> currentRobotYawAccelerationSupplier) {
+      Supplier<AngularVelocity> currentRobotYawVelocitySupplier) {
     this.turretSubsystem = TurretSubsystem.GetInstance();
     this.targetGlobalPoseSupplier = targetGlobalPoseSupplier;
     this.selfGlobalPoseSupplier = selfGlobalPoseSupplier;
-    this.currentRobotVelocitySupplier = currentRobotVelocitySupplier;
-    this.currentRobotAccelerationSupplier = currentRobotAccelerationSupplier;
     this.currentRobotYawVelocitySupplier = currentRobotYawVelocitySupplier;
-    this.currentRobotYawAccelerationSupplier = currentRobotYawAccelerationSupplier;
     addRequirements(this.turretSubsystem);
   }
 
   public ContinuousAimCommand(Supplier<Translation3d> targetGlobalPoseSupplier) {
-    this(targetGlobalPoseSupplier, GlobalPosition::Get, () -> new Translation2d(0, 0),
-        () -> new Translation2d(0, 0),
-        () -> Units.RadiansPerSecond.of(0),
-        () -> Units.RadiansPerSecondPerSecond.of(0));
+    this(targetGlobalPoseSupplier, GlobalPosition::Get,
+        () -> Units.RadiansPerSecond.of(GlobalPosition.GetVelocity().omegaRadiansPerSecond));
   }
 
   @Override
   public void execute() {
     Pose2d selfPose = selfGlobalPoseSupplier.get();
     Translation3d targetGlobal = targetGlobalPoseSupplier.get();
-    Translation2d selfTranslation = selfPose.getTranslation();
-    Translation2d targetTranslation = targetGlobal.toTranslation2d();
-    // Translation2d target = LocalMath.fromGlobalToRelative(selfTranslation,
-    // targetTranslation);
+    Pose2d targetPoseField = new Pose2d(targetGlobal.toTranslation2d(), new Rotation2d());
+    Pose2d targetInRobotFrame = targetPoseField.relativeTo(selfPose);
+
+    // Target position in robot frame: x = forward, y = left. Turret 0 = robot
+    // forward.
+    double turretAngle = Math.atan2(targetInRobotFrame.getY(), targetInRobotFrame.getX());
+
+    double ff = Math.abs(currentRobotYawVelocitySupplier.get().magnitude()) * TurretConstants.kFFCommand;
+
+    Logger.recordOutput("Turret/goal", targetGlobal);
+    Logger.recordOutput("Turret/angle", turretAngle);
+    Logger.recordOutput("Turret/FF", ff);
+
+    turretSubsystem.setTurretPosition(Units.Radians.of(turretAngle),
+        Units.Volts.of(ff));
   }
 
   /*
@@ -110,40 +111,6 @@ public class ContinuousAimCommand extends Command {
         { Math.cos(delta), -Math.sin(delta) },
         { Math.sin(delta), Math.cos(delta) }
     }));
-  }
-
-  private void logEverything(
-      Pose2d selfPose,
-      Translation3d targetGlobal,
-      Translation2d targetRelative,
-      Translation2d robotVelocity,
-      Translation2d aimPoint,
-      Angle commandedAngle) {
-    // Raw inputs
-    Logger.recordOutput("Turret/AimCommand/SelfPose", selfPose);
-    Logger.recordOutput("Turret/AimCommand/TargetGlobal", targetGlobal);
-    Logger.recordOutput("Turret/AimCommand/RobotVelocity", robotVelocity);
-
-    // Derived math
-    Logger.recordOutput("Turret/AimCommand/TargetRelative", targetRelative);
-    Logger.recordOutput("Turret/AimCommand/TargetDistanceMeters", targetRelative.getNorm());
-    Logger.recordOutput("Turret/AimCommand/AimPoint", aimPoint);
-    Logger.recordOutput("Turret/AimCommand/AimDistanceMeters", aimPoint.getNorm());
-
-    // Commanded angle
-    double goalRad = commandedAngle.in(Units.Radians);
-    Logger.recordOutput("Turret/AimCommand/GoalAngleRad", goalRad);
-    Logger.recordOutput("Turret/AimCommand/GoalAngleDeg", commandedAngle.in(Units.Degrees));
-
-    // Turret feedback vs goal
-    double currentRad = turretSubsystem.getTurretPosition().in(Units.Radians);
-    double errorRad = Math.IEEEremainder(goalRad - currentRad, 2.0 * Math.PI); // wrap to [-pi, pi]
-    Logger.recordOutput("Turret/AimCommand/CurrentAngleRad", currentRad);
-    Logger.recordOutput("Turret/AimCommand/ErrorRad", errorRad);
-    Logger.recordOutput("Turret/AimCommand/ErrorDeg", Math.toDegrees(errorRad));
-
-    // Timing (kept for compatibility with existing dashboards)
-    Logger.recordOutput("Turret/TimeLeftToReachPosition", turretSubsystem.getAimTimeLeftMs());
   }
 
   private double calculateTf(double X, double Y, Angle theta) {

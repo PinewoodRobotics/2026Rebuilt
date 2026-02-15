@@ -1,10 +1,14 @@
 package frc.robot;
 
+import java.util.function.Supplier;
+
 import com.pathplanner.lib.commands.PathPlannerAuto;
 
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj2.command.Command;
 
 import frc.robot.command.SwerveMoveTeleop;
+import frc.robot.command.scoring.ContinuousAimCommand;
 import frc.robot.command.scoring.ManualAimCommand;
 import frc.robot.constant.BotConstants;
 import frc.robot.hardware.AHRSGyro;
@@ -61,10 +65,16 @@ public class RobotContainer {
   private void setTurretCommands() {
     TurretSubsystem turretSubsystem = TurretSubsystem.GetInstance();
 
+    /*
+     * turretSubsystem.setDefaultCommand(
+     * new ManualAimCommand(
+     * turretSubsystem,
+     * () -> m_rightFlightStick.getTwist()));
+     */
+
     turretSubsystem.setDefaultCommand(
-        new ManualAimCommand(
-            turretSubsystem,
-            () -> m_rightFlightStick.getTwist()));
+        new ContinuousAimCommand(
+            () -> new Translation3d(12, 4, 0)));
   }
 
   public Command getAutonomousCommand() {

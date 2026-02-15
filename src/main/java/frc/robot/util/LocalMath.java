@@ -31,6 +31,10 @@ public class LocalMath {
         .collect(Collectors.toList());
   }
 
+  public static Translation2d fromGlobalToRelative(Translation2d global, Translation2d relative) {
+    return global.minus(relative);
+  }
+
   public static Trajectory generatePathfindingTrajectory(List<Translation2d> path, double maxSpeed,
       double maxAcceleration) {
 

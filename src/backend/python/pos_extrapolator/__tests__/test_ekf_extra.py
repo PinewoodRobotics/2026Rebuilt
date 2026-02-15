@@ -129,3 +129,24 @@ def test_add_to_diagonal_adds_value_to_diagonal_entries():
     m = np.zeros((3, 3), dtype=float)
     add_to_diagonal(m, 2.5)
     assert np.allclose(np.diag(m), np.array([2.5, 2.5, 2.5]))
+
+
+def test_get_state_future_predicts_from_current_filter_time():
+    ekf = ExtendedKalmanFilterStrategy(make_cfg(), fake_dt=1.0)
+    ekf._debug_set_state(np.array([0.0, 0.0, 2.0, 0.0, 1.0, 0.0, 0.0]))
+
+    projected = ekf.get_state(future_s=2.0)
+
+    # get_state() projects +2s from current state (x=4), then advances filter by fake_dt (x=2)
+    assert projected[0] == pytest.approx(4.0)
+    assert ekf.x[0] == pytest.approx(2.0)
+
+
+def test_get_state_future_rotates_direction_with_angular_velocity():
+    ekf = ExtendedKalmanFilterStrategy(make_cfg(), fake_dt=0.0)
+    ekf._debug_set_state(np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0]))
+
+    projected = ekf.get_state(future_s=np.pi / 2)
+
+    assert projected[4] == pytest.approx(0.0, abs=1e-6)
+    assert projected[5] == pytest.approx(1.0, abs=1e-6)

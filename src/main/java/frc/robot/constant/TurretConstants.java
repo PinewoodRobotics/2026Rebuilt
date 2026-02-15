@@ -16,10 +16,11 @@ public class TurretConstants {
   public static final double kTurretMotorRotationsPerRotation = 16.0;
   public static final MotorType kTurretMotorType = MotorType.kBrushless;
 
-  public static final double kTurretP = 1.5;
+  public static final double kTurretP = 2;
   public static final double kTurretI = 0.0;
   public static final double kTurretD = 100;
   public static final double kTurretIZ = 0.0;
+  public static final double kFFCommand = 7.0;
 
   public static final AngularVelocity kTurretMaxVelocity = Units.RadiansPerSecond.of(4.0);
   public static final AngularAcceleration kTurretMaxAcceleration = Units.RadiansPerSecondPerSecond.of(4.0);
@@ -29,7 +30,7 @@ public class TurretConstants {
   public static final int kTurretOffByMs = 200;
   public static final Translation2d turretPositionInRobot = new Translation2d(0, 1);
 
-  public static final boolean kMotorInverted = false;
+  public static final boolean kMotorInverted = true;
 
   // Total gearing from motor to turret.
   // REV MAXPlanetary 3:1 + motor gear to turret gear stage.

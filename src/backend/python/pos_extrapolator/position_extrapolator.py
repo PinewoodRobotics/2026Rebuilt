@@ -71,7 +71,7 @@ class PositionExtrapolator:
 
         if sensor_type == KalmanFilterSensorType.IMU:
             imu_cfg = self.config.imu_config[sensor_id]
-            return imu_cfg.use_rotation_absolute or imu_cfg.use_rotation_velocity
+            return imu_cfg.use_rotation
 
         return True
 
