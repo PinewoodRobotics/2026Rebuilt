@@ -25,9 +25,15 @@ export const kalman_filter: KalmanFilterConfig = {
         measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
           1.0, 1.0, 5.0, 5.0,
         ]),
+        measurement_conversion_matrix: MatrixUtil.buildMatrixFromDiagonal([
+          1.0, 1.0, 5.0, 5.0,
+        ]),
       },
       front_right: {
         measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
+          1.0, 1.0, 5.0, 5.0,
+        ]),
+        measurement_conversion_matrix: MatrixUtil.buildMatrixFromDiagonal([
           1.0, 1.0, 5.0, 5.0,
         ]),
       },
@@ -35,9 +41,15 @@ export const kalman_filter: KalmanFilterConfig = {
         measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
           1.0, 1.0, 5.0, 5.0,
         ]),
+        measurement_conversion_matrix: MatrixUtil.buildMatrixFromDiagonal([
+          1.0, 1.0, 5.0, 5.0,
+        ]),
       },
       rear_right: {
         measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
+          1.0, 1.0, 5.0, 5.0,
+        ]),
+        measurement_conversion_matrix: MatrixUtil.buildMatrixFromDiagonal([
           1.0, 1.0, 5.0, 5.0,
         ]),
       },
@@ -47,10 +59,16 @@ export const kalman_filter: KalmanFilterConfig = {
         measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
           0.01, 0.01, 0.001,
         ]),
+        measurement_conversion_matrix: MatrixUtil.buildMatrixFromDiagonal([
+          1.0, 1.0, 5.0, 5.0,
+        ]),
       },
       1: {
         measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
           0.01, 0.01, 0.001,
+        ]),
+        measurement_conversion_matrix: MatrixUtil.buildMatrixFromDiagonal([
+          1.0, 1.0, 5.0, 5.0,
         ]),
       },
     },
@@ -59,7 +77,14 @@ export const kalman_filter: KalmanFilterConfig = {
         measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
           0.001, 0.001,
         ]),
+        measurement_conversion_matrix: MatrixUtil.buildMatrixFromDiagonal([
+          1.0, 1.0, 5.0, 5.0,
+        ]),
       },
     },
   },
+  state_transition_matrix: MatrixUtil.buildMatrixFromDiagonal([
+    1.0, 1.0, 5.0, 5.0,
+  ]),
+  time_step_initial: 0,
 };

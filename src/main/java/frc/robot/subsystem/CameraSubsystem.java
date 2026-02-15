@@ -1,6 +1,5 @@
 package frc.robot.subsystem;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -9,10 +8,10 @@ import org.littletonrobotics.junction.Logger;
 
 import autobahn.client.NamedCallback;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robot;
 import frc.robot.constant.PiConstants;
@@ -36,28 +35,8 @@ public class CameraSubsystem extends SubsystemBase {
    */
   private final ConcurrentLinkedQueue<TimedTags> q = new ConcurrentLinkedQueue<>();
 
-  private static final String FIELD_LAYOUT_DEPLOY_FILE = "2026-rebuilt-welded.json";
-  private static final AprilTagFieldLayout FIELD_LAYOUT = loadFieldLayout();
-
-  /**
-   * Load the field layout from the deploy file.
-   * 
-   * @return The field layout.
-   * @throws IOException If the field layout cannot be loaded.
-   *                     TODO: figure out why the default way does not work.
-   * 
-   *                     How it is meant to work:
-   *                     AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
-   */
-  private static AprilTagFieldLayout loadFieldLayout() {
-    var path = Filesystem.getDeployDirectory().toPath().resolve(FIELD_LAYOUT_DEPLOY_FILE);
-    try {
-      return AprilTagFieldLayout.loadFromResource(path.toString());
-    } catch (IOException e) {
-      e.printStackTrace();
-      return null;
-    }
-  }
+  private static final AprilTagFieldLayout FIELD_LAYOUT = AprilTagFieldLayout
+      .loadField(AprilTagFields.k2026RebuiltWelded);
 
   @Getter
   @AllArgsConstructor
@@ -113,7 +92,9 @@ public class CameraSubsystem extends SubsystemBase {
       }
     }
 
-    Logger.recordOutput("Camera/Tags/PositionsRobot", positionsRobot.toArray(new Pose2d[0]));
-    Logger.recordOutput("Camera/Tags/PositionsField", positionsReal.toArray(new Pose3d[0]));
+    if (positionsReal.size() > 0) {
+      Logger.recordOutput("Camera/Tags/PositionsRobot", positionsRobot.toArray(new Pose2d[0]));
+      Logger.recordOutput("Camera/Tags/PositionsField", positionsReal.toArray(new Pose3d[0]));
+    }
   }
 }

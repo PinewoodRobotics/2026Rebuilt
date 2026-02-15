@@ -35,7 +35,7 @@ public class RobotContainer {
     OdometrySubsystem.GetInstance();
     AHRSGyro.GetInstance();
     SwerveSubsystem.GetInstance();
-    // CameraSubsystem.GetInstance();
+    CameraSubsystem.GetInstance();
     TurretSubsystem.GetInstance();
 
     // Initialize publication subsystem for sending data to Pi

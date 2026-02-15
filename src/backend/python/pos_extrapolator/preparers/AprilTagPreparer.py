@@ -88,10 +88,6 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
 
         self.tag_noise_adjust_mode = self.april_tag_config.tag_noise_adjust_mode
 
-        self.tag_noise_adjust_config: TagNoiseAdjustConfig = (
-            self.april_tag_config.tag_noise_adjust_config
-        )
-
     def get_data_type(self) -> type[AprilTagData]:
         return AprilTagData
 
@@ -122,50 +118,6 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
             return context.has_gotten_rotation
 
         return False
-
-    def get_weight_add_config(
-        self,
-        *,
-        x_hat: NDArray[np.float64],
-        x: NDArray[np.float64] | None,
-        distance_from_tag_m: float,
-        tag_confidence: float,
-    ) -> tuple[float, float]:
-        add = 0.0
-        multiplier = 1.0
-
-        for mode in self.tag_noise_adjust_mode:
-            if mode == TagNoiseAdjustMode.ADD_WEIGHT_PER_M_DISTANCE_TAG:
-                weight = (
-                    self.tag_noise_adjust_config.weight_per_m_from_distance_from_tag
-                )
-                if weight is not None:
-                    add += distance_from_tag_m * weight
-
-            elif mode == TagNoiseAdjustMode.ADD_WEIGHT_PER_DEGREE_ERROR_ANGLE_TAG:
-                weight = (
-                    self.tag_noise_adjust_config.weight_per_degree_from_angle_error_tag
-                )
-                if weight is not None and x is not None:
-                    add += _angle_difference_deg(x_hat, x) * weight
-
-            elif mode == TagNoiseAdjustMode.ADD_WEIGHT_PER_TAG_CONFIDENCE:
-                weight = self.tag_noise_adjust_config.weight_per_confidence_tag
-                if (
-                    weight is not None
-                    and tag_confidence is not None
-                    and np.isfinite(tag_confidence)
-                ):
-                    confidence_term = max(0.0, float(tag_confidence))
-                    add += confidence_term * weight
-            elif mode == TagNoiseAdjustMode.MULTIPLY_POW_BY_M_DISTANCE_FROM_TAG:
-                multiplier += (
-                    distance_from_tag_m
-                    ** self.tag_noise_adjust_config.pow_distance_from_tag_coef
-                    * self.tag_noise_adjust_config.multiply_coef_m_distance_from_tag
-                )
-
-        return multiplier, add
 
     def prepare_input(
         self,
@@ -244,12 +196,7 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
                 ]
             )
 
-            multiplier, add = self.get_weight_add_config(
-                x_hat=datapoint,
-                x=context.x if context is not None else None,
-                distance_from_tag_m=float(np.linalg.norm(tag_in_camera_pose)),
-                tag_confidence=tag.confidence,
-            )
+            multiplier, add = 1, 0
 
             input_list.append(
                 ProcessedData(data=datapoint, R_multipl=multiplier, R_add=add)
