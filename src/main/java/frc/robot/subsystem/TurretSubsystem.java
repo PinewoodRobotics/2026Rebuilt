@@ -9,22 +9,23 @@ import com.revrobotics.spark.FeedbackSensor;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkClosedLoopController.ArbFFUnits;
+import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.SparkMax;
 
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
+import com.revrobotics.spark.config.SparkFlexConfig;
 
 import frc.robot.constant.TurretConstants;
 
 public class TurretSubsystem extends SubsystemBase {
   private static TurretSubsystem instance;
 
-  private SparkMax m_turretMotor;
+  private SparkFlex m_turretMotor;
   private SparkClosedLoopController closedLoopController;
 
   /** Last commanded turret goal angle (for logging / time estimate). */
@@ -43,18 +44,22 @@ public class TurretSubsystem extends SubsystemBase {
   }
 
   private void configureSparkMax(int canId, MotorType motorType) {
-    this.m_turretMotor = new SparkMax(canId, motorType);
+    this.m_turretMotor = new SparkFlex(canId, motorType);
     this.closedLoopController = m_turretMotor.getClosedLoopController();
 
-    SparkMaxConfig config = new SparkMaxConfig();
+    SparkFlexConfig config = new SparkFlexConfig();
+
+    config.idleMode(IdleMode.kBrake);
+    config.inverted(TurretConstants.kMotorInverted);
+
     config
         .smartCurrentLimit(TurretConstants.kTurretCurrentLimit);
 
-    config.absoluteEncoder.positionConversionFactor(1.0);
-    config.absoluteEncoder.velocityConversionFactor(1.0 / 60.0);
+    config.encoder.positionConversionFactor(TurretConstants.kGearRatio);
+    config.encoder.velocityConversionFactor(TurretConstants.kGearRatio / 60.0);
 
     config.closedLoop
-        .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
+        .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
         .pid(TurretConstants.kTurretP, TurretConstants.kTurretI, TurretConstants.kTurretD)
         .iZone(TurretConstants.kTurretIZ)
         .positionWrappingEnabled(true)
@@ -92,14 +97,14 @@ public class TurretSubsystem extends SubsystemBase {
   }
 
   public Angle getTurretPosition() {
-    return Units.Rotations.of(m_turretMotor.getAbsoluteEncoder().getPosition());
+    return Units.Rotations.of(m_turretMotor.getEncoder().getPosition());
   }
 
   @Override
   public void periodic() {
     Logger.recordOutput("Turret/PositionRot", getTurretPosition().in(Units.Rotations));
     Logger.recordOutput("Turret/PositionDeg", getTurretPosition().in(Units.Degrees));
-    Logger.recordOutput("Turret/Velocity", m_turretMotor.getAbsoluteEncoder().getVelocity());
+    Logger.recordOutput("Turret/Velocity", m_turretMotor.getEncoder().getVelocity());
     Logger.recordOutput("Turret/DesiredOutputRot", lastAimTarget != null ? lastAimTarget.in(Units.Rotations) : 0);
     Logger.recordOutput("Turret/AppliedOutput", m_turretMotor.getAppliedOutput());
     Logger.recordOutput("Turret/BusVoltage", m_turretMotor.getBusVoltage());

@@ -5,12 +5,14 @@ import com.pathplanner.lib.commands.PathPlannerAuto;
 import edu.wpi.first.wpilibj2.command.Command;
 
 import frc.robot.command.SwerveMoveTeleop;
+import frc.robot.command.scoring.ManualAimCommand;
 import frc.robot.constant.BotConstants;
 import frc.robot.hardware.AHRSGyro;
 import frc.robot.subsystem.CameraSubsystem;
 import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.OdometrySubsystem;
 import frc.robot.subsystem.SwerveSubsystem;
+import frc.robot.subsystem.TurretSubsystem;
 import frc.robot.util.PathPlannerSetup;
 import pwrup.frc.core.controller.FlightModule;
 import pwrup.frc.core.controller.FlightStick;
@@ -19,7 +21,6 @@ import pwrup.frc.core.controller.OperatorPanel;
 import pwrup.frc.core.online.PublicationSubsystem;
 
 public class RobotContainer {
-
   final LogitechController m_controller = new LogitechController(0);
   final OperatorPanel m_operatorPanel = new OperatorPanel(1);
   final FlightStick m_leftFlightStick = new FlightStick(2);
@@ -34,13 +35,15 @@ public class RobotContainer {
     OdometrySubsystem.GetInstance();
     AHRSGyro.GetInstance();
     SwerveSubsystem.GetInstance();
-    CameraSubsystem.GetInstance();
+    // CameraSubsystem.GetInstance();
+    TurretSubsystem.GetInstance();
 
     // Initialize publication subsystem for sending data to Pi
     PublicationSubsystem.GetInstance(Robot.getCommunicationClient());
     PathPlannerSetup.configure();
 
     setSwerveCommands();
+    setTurretCommands();
   }
 
   private void setSwerveCommands() {
@@ -53,6 +56,15 @@ public class RobotContainer {
         .onTrue(swerveSubsystem.runOnce(() -> {
           swerveSubsystem.resetGyro(0);
         }));
+  }
+
+  private void setTurretCommands() {
+    TurretSubsystem turretSubsystem = TurretSubsystem.GetInstance();
+
+    turretSubsystem.setDefaultCommand(
+        new ManualAimCommand(
+            turretSubsystem,
+            () -> m_rightFlightStick.getTwist()));
   }
 
   public Command getAutonomousCommand() {
