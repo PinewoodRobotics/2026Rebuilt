@@ -38,6 +38,9 @@ SHOULD_USE_ROTATION_MATRIX = True
 class OdomDataPreparer(DataPreparer[OdometryData, OdomDataPreparerConfig]):
     def __init__(self, config: OdomDataPreparerConfig):
         super().__init__(config)
+        self.use_position = (
+            self.config.position_source != OdometryPositionSource.DONT_USE
+        )
         self.config = config.get_config()
 
     def get_data_type(self) -> type[OdometryData]:
@@ -45,16 +48,16 @@ class OdomDataPreparer(DataPreparer[OdometryData, OdomDataPreparerConfig]):
 
     def get_used_indices(self) -> list[bool]:
         used_indices: list[bool] = []
-        used_indices.extend(
-            [self.config.position_source != OdometryPositionSource.DONT_USE] * 2
-        )
-        used_indices.extend([True, True])
-        used_indices.extend([self.config.use_rotation] * 2)
+
+        used_indices.extend([self.use_position] * 2)
+        used_indices.extend([True] * 2)
+        used_indices.extend([self.config.use_rotation])
         used_indices.extend([False])
+
         return used_indices
 
     def jacobian_h(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
-        return transform_matrix_to_size(self.get_used_indices(), np.eye(7))
+        return transform_matrix_to_size(self.get_used_indices(), np.eye(6))
 
     def hx(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         return transform_vector_to_size(x, self.get_used_indices())
@@ -77,8 +80,8 @@ class OdomDataPreparer(DataPreparer[OdometryData, OdomDataPreparerConfig]):
         context: ExtrapolationContext | None = None,
     ) -> KalmanFilterInput | None:
         assert context is not None
-        cos = context.x[4]
-        sin = context.x[5]
+        cos = np.cos(context.x[4])
+        sin = np.sin(context.x[4])
         rotation_matrix = np.array(
             [
                 [cos, -sin],
@@ -108,8 +111,9 @@ class OdomDataPreparer(DataPreparer[OdometryData, OdomDataPreparerConfig]):
         values.append(vel[1])
 
         if self.config.use_rotation:
-            values.append(data.position.direction.x)
-            values.append(data.position.direction.y)
+            values.append(
+                np.atan2(data.position.direction.y, data.position.direction.x)
+            )
 
         return KalmanFilterInput(
             input=ProcessedData(data=np.array(values)),

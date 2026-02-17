@@ -5,9 +5,9 @@ import {
 import { MatrixUtil, VectorUtil } from "../../../util/math";
 
 const logitech_cam: CameraParameters = {
-  pi_to_run_on: "agatha-king",
+  pi_to_run_on: "jetson1",
   name: "logitech",
-  camera_path: "/dev/usb_cam3",
+  camera_path: "/dev/video0",
   flags: 0,
   width: 640,
   height: 480,
@@ -25,8 +25,8 @@ const logitech_cam: CameraParameters = {
   camera_type: CameraType.ULTRAWIDE_100,
   brightness: 50,
   video_options: {
-    send_feed: false,
-    overlay_tags: false,
+    send_feed: true,
+    overlay_tags: true,
     publication_topic: "camera/logitech/video",
     compression_quality: 10,
     do_compression: true,

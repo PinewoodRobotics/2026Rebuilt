@@ -146,31 +146,68 @@ def load_configs() -> tuple[BasicSystemConfig, Config]:
 
 def get_glibc_version() -> str:
     """
-    Returns the system's glibc version as a string, e.g., "2.35".
+    Returns the system's glibc version string, e.g., "2.35-0ubuntu3.8"
+    Strips any extraneous parentheses or trailing characters such as ')'.
+    In the special case of ldd (Ubuntu GLIBC 2.35-0ubuntu3.8) 2.35,
+    will return just "2.35".
     """
+    import re
+
     try:
-        # Parse output from ldd --version (first line, after 'ldd (GNU libc) X.Y[.Z]')
         output = subprocess.check_output(
             ["ldd", "--version"], encoding="utf-8", errors="ignore"
         )
-        for line in output.splitlines():
-            if "GNU libc" in line or "GLIBC" in line or "GLIBC" in line:
-                parts = line.strip().split()
-                for part in parts:
-                    if part[0].isdigit():
-                        return part
-            if line.strip() and line.strip()[0].isdigit():
-                vers_part = line.strip().split()[0]
-                if vers_part[0].isdigit():
-                    return vers_part
-        # Fallback: try to find a digit group in first line
-        first_line = output.splitlines()[0]
-        for s in first_line.split():
-            if s[0].isdigit():
-                return s
+        lines = output.splitlines()
+
+        # Preferred pattern: match ldd (...) <version>
+        for line in lines:
+            # Pattern 1: ldd (Ubuntu GLIBC 2.35-0ubuntu3.8) 2.35
+            #             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^
+            m = re.match(r"^ldd\s+\((.*?)\)\s+([0-9\.]+)", line)
+            if m:
+                # group(2) is the version after the paren
+                return m.group(2)
+
+            # Pattern 2: 'GLIBC 2.35-0ubuntu3.8'
+            m2 = re.search(
+                r"(?:GLIBC|GNU libc)[^\d]*([0-9]+(?:\.[0-9]+)*(?:-[\w\.]+)?)", line
+            )
+            if m2:
+                # Only keep the pure version number:
+                # If m2.group(1) looks like '2.35-0ubuntu3.8', try to extract the major.minor part
+                version = m2.group(1)
+                # Extract first digit dot digit pattern
+                core = re.match(r"^([0-9]+\.[0-9]+)", version)
+                if core:
+                    return core.group(1)
+                return version
+
+            # Pattern 3: fallback paren group with version inside
+            m3 = re.search(r"\(([^)]*\d[^)]*)\)", line)
+            if m3:
+                inner = m3.group(1)
+                for piece in inner.split():
+                    # Find the first piece that looks like a version
+                    core = re.match(r"^([0-9]+\.[0-9]+)", piece)
+                    if core:
+                        return core.group(1)
+                    if any(ch.isdigit() for ch in piece):
+                        return piece.rstrip(")")
+                # If nothing else, just return the whole group
+                return inner.rstrip(")")
+
+        # Final fallback: scan all words in first line for digit-dot-digit pattern
+        if lines:
+            for word in lines[0].split():
+                core = re.match(r"^([0-9]+\.[0-9]+)", word)
+                if core:
+                    return core.group(1)
+                if any(ch.isdigit() for ch in word):
+                    return word.rstrip(")")
+
     except Exception:
         pass
-    # As a fallback, try to load from libc.so version string
+    # Try libc.so.6 version as last resort
     try:
         import ctypes
 
@@ -198,32 +235,40 @@ def setup_shared_library_python_extension(
     *,
     module_name: str,
     py_lib_searchpath: str,
-    module_basename: str | None = None,
+    module_basename: str,
 ) -> ModuleType:
     binary_path = get_local_binary_path()
+    print(f"[Loader] binary_path: {binary_path}")
 
-    module_basename = module_basename if module_basename else module_name
+    dir_path = str(os.path.dirname(os.path.join(binary_path, str(py_lib_searchpath))))
+    print(f"[Loader] module_parent: {dir_path}")
 
-    module_parent = str(
-        os.path.dirname(os.path.join(binary_path, str(py_lib_searchpath)))
-    )
-    if module_parent not in sys.path:
-        sys.path.insert(0, module_parent)
+    if dir_path not in sys.path:
+        sys.path.insert(0, dir_path)
+        print(f"[Loader] Added '{dir_path}' to sys.path")
 
     module_path = os.path.join(str(py_lib_searchpath), module_basename)
+    print(f"[Loader] module_path: {module_path}")
+
     extension_file: str | None = None
-    dir_path = os.path.dirname(module_path)
-    base_stem = os.path.basename(module_path)
+
+    print(f"[Loader] dir_path: {dir_path}, base_stem: {module_basename}")
+
     if os.path.isdir(dir_path):
         for fname in os.listdir(dir_path):
+            print(f"[Loader] Candidate extension file: {fname}")
             if (
-                fname.startswith(base_stem)
+                fname.startswith(module_basename)
                 and (fname.endswith(".so") or fname.endswith(".pyd"))
                 and os.path.isfile(os.path.join(dir_path, fname))
             ):
                 extension_file = os.path.join(dir_path, fname)
+                print(f"[Loader] Found extension_file: {extension_file}")
                 break
+    else:
+        print(f"[Loader] WARNING: Directory '{dir_path}' does not exist")
 
+    print(f"[Loader] extension_file to import: {extension_file}")
     spec = importlib.util.spec_from_file_location(module_name, extension_file)
     if spec is None or spec.loader is None:
         raise ImportError(

@@ -1,11 +1,7 @@
 import time
 
 import numpy as np
-from backend.python.common.debug.logger import info
 from backend.generated.proto.python.util.position_pb2 import RobotPosition
-from backend.generated.proto.python.util.vector_pb2 import Vector2, Vector3
-from backend.generated.thrift.config.camera.ttypes import CameraParameters
-from backend.generated.thrift.config.common.ttypes import Point3
 from backend.generated.thrift.config.kalman_filter.ttypes import KalmanFilterSensorType
 from backend.generated.thrift.config.pos_extrapolator.ttypes import (
     PosExtrapolator,
@@ -89,9 +85,9 @@ class PositionExtrapolator:
         proto_position.position_2d.position.y = filtered_position[1]
         proto_position.position_2d.velocity.x = filtered_position[2]
         proto_position.position_2d.velocity.y = filtered_position[3]
-        proto_position.position_2d.direction.x = filtered_position[4]
-        proto_position.position_2d.direction.y = filtered_position[5]
-        proto_position.position_2d.rotation_speed_rad_s = filtered_position[6]
+        proto_position.position_2d.direction.x = np.cos(filtered_position[4])
+        proto_position.position_2d.direction.y = np.sin(filtered_position[4])
+        proto_position.position_2d.rotation_speed_rad_s = filtered_position[5]
 
         proto_position.P.extend(self.get_position_covariance())
 

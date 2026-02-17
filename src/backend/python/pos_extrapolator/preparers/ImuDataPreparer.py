@@ -40,12 +40,10 @@ class ImuDataPreparer(DataPreparer[ImuData, ImuDataPreparerConfig]):
         used_indices.extend([self.config.config[sensor_id].use_position] * 2)
         used_indices.extend([self.config.config[sensor_id].use_velocity] * 2)
         used_indices.extend([self.config.config[sensor_id].use_rotation] * 2)
-        # Include angular velocity (last state index) when rotation is used
-        used_indices.extend([True])
         return used_indices
 
     def jacobian_h(self, x: NDArray[np.float64], sensor_id: str) -> NDArray[np.float64]:
-        return transform_matrix_to_size(self.get_used_indices(sensor_id), np.eye(7))
+        return transform_matrix_to_size(self.get_used_indices(sensor_id), np.eye(6))
 
     def hx(self, x: NDArray[np.float64], sensor_id: str) -> NDArray[np.float64]:
         return transform_vector_to_size(x, self.get_used_indices(sensor_id))
@@ -63,10 +61,10 @@ class ImuDataPreparer(DataPreparer[ImuData, ImuDataPreparerConfig]):
             values.append(data.velocity.x)
             values.append(data.velocity.y)
         if config.use_rotation:
-            values.append(data.position.direction.x)
-            values.append(data.position.direction.y)
-
-        values.append(data.angularVelocityXYZ.z)
+            values.append(
+                np.atan2(data.position.direction.y, data.position.direction.x)
+            )
+            values.append(data.angularVelocityXYZ.z)
 
         return KalmanFilterInput(
             input=ProcessedData(data=np.array(values)),

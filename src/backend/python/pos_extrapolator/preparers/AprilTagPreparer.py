@@ -96,13 +96,13 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
 
         used_indices.extend([True] * 2)
         used_indices.extend([False] * 2)
-        used_indices.extend([True] * 2)
+        used_indices.extend([True])
         used_indices.extend([False])
 
         return used_indices
 
     def jacobian_h(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
-        return transform_matrix_to_size(self.get_used_indices(), np.eye(7))
+        return transform_matrix_to_size(self.get_used_indices(), np.eye(6))
 
     def hx(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         return transform_vector_to_size(x, self.get_used_indices())
@@ -168,10 +168,14 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
             R_robot_rotation_world: NDArray[np.float64] | None = None
             if self.should_use_imu_rotation(context):
                 assert context is not None
-                R_robot_rotation_world = make_transformation_matrix_p_d(
-                    position=np.array([0, 0, 0]),
-                    direction_vector=np.array([context.x[4], context.x[5], 0]),
-                )[:3, :3]
+                heading_rad = float(context.x[4])
+                if heading_rad is not None:
+                    R_robot_rotation_world = make_transformation_matrix_p_d(
+                        position=np.array([0, 0, 0]),
+                        direction_vector=np.array(
+                            [np.cos(heading_rad), np.sin(heading_rad), 0]
+                        ),
+                    )[:3, :3]
 
             render_pose, render_rotation = get_translation_rotation_components(
                 get_robot_in_world(
@@ -183,6 +187,9 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
             )
 
             render_direction_vector = render_rotation[0:3, 0]
+            rotation_angle_rad = np.atan2(
+                render_direction_vector[1], render_direction_vector[0]
+            )
             # rotation_angle_rad = np.atan2( <- correct rotation theta angle
             #    render_direction_vector[1] /*y*/, render_direction_vector[0] /*x*/
             # )
@@ -191,8 +198,7 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
                 [
                     render_pose[0],
                     render_pose[1],
-                    render_direction_vector[0],
-                    render_direction_vector[1],
+                    rotation_angle_rad,
                 ]
             )
 

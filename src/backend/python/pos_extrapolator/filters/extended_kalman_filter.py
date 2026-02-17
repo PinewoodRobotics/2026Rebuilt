@@ -19,7 +19,15 @@ from backend.python.pos_extrapolator.data_prep import (
 )
 from backend.python.pos_extrapolator.filter_strat import GenericFilterStrategy
 
+# State indices: x, y, vx, vy, angl_rad, angl_vel_rad_s
+ANGLE_RAD_IDX = 4
 
+
+def _wrap_to_pi(angle_rad: float) -> float:
+    return float(np.arctan2(np.sin(angle_rad), np.cos(angle_rad)))
+
+
+# x, y, vx, vy, angl_rad, angl_vel_rad_s
 class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInheritance]
     ExtendedKalmanFilter, GenericFilterStrategy
 ):  # pyright: ignore[reportUnsafeMultipleInheritance]
@@ -28,8 +36,8 @@ class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInher
         config: KalmanFilterConfig,
         fake_dt: float | None = None,
     ):
-        super().__init__(dim_x=config.dim_x_z[0], dim_z=config.dim_x_z[1])
-        self.hw = config.dim_x_z[0]
+        super().__init__(dim_x=6, dim_z=6)
+        self.hw = 6
         self.x = get_np_from_vector(config.state_vector)
         self.P = get_np_from_matrix(config.uncertainty_matrix)
         self.Q = get_np_from_matrix(config.process_noise_matrix)
@@ -37,6 +45,11 @@ class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInher
         self.R_sensors = self.get_R_sensors(config)
         self.last_update_time = time.time()
         self.fake_dt = fake_dt
+        self._wrap_state_angle()
+
+    def _wrap_state_angle(self) -> None:
+        if self.x.size > ANGLE_RAD_IDX:
+            self.x[ANGLE_RAD_IDX] = _wrap_to_pi(float(self.x[ANGLE_RAD_IDX]))
 
     def get_R_sensors(
         self, config: KalmanFilterConfig
@@ -54,7 +67,7 @@ class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInher
         return output
 
     def jacobian_h(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
-        return np.eye(7)
+        return np.eye(6)
 
     def get_R(self) -> NDArray[np.float64]:
         return self.R
@@ -71,8 +84,9 @@ class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInher
         if dt > 5 or dt < 0:
             dt = 0.05
 
-        self._update_transformation_delta_t_with_size(dt)
+        self.set_delta_t(dt)
         self.predict()
+        self._wrap_state_angle()
         self.last_update_time = time.time()
 
     def insert_data(self, data: KalmanFilterInput) -> None:
@@ -97,17 +111,19 @@ class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInher
             add_to_diagonal(R, datapoint.R_add)
 
             self.update(
-                datapoint.data,
+                np.asarray(datapoint.data, dtype=np.float64),
                 data.jacobian_h if data.jacobian_h is not None else self.jacobian_h,
                 data.hx if data.hx is not None else self.hx,
                 R=R,
+                residual=np.subtract,
             )
+            self._wrap_state_angle()
 
     def get_P(self) -> NDArray[np.float64]:
         return self.P
 
     def predict_x_no_update(self, dt: float) -> NDArray[np.float64]:
-        self._update_transformation_delta_t_with_size(dt)
+        self.set_delta_t(dt)
         return np.dot(self.F, self.x) + np.dot(self.B, 0)
 
     def get_state(self, future_s: float | None = None) -> NDArray[np.float64]:
@@ -164,24 +180,24 @@ class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInher
             return 0.0
         return (pos_conf * vel_conf * rot_conf) ** (1 / 3)
 
-    def _update_transformation_delta_t_with_size(self, new_delta_t: float):
+    def set_delta_t(self, delta_t: float):
+        """
+        Set the time step (delta t) for the state transition (F) matrix.
+
+        This updates the elements in the transition matrix that relate to velocity and angular velocity,
+        so that the model uses the specified delta_t for the next prediction/update steps.
+
+        Args:
+            delta_t (float): The new time step size to use in the filter.
+        """
         try:
-            vel_idx_x = 2  # vx is at index 2 in [x, y, vx, vy, cos, sin, angular_velocity_rad_s]
-            vel_idx_y = 3  # vy is at index 3 in [x, y, vx, vy, cos, sin, angular_velocity_rad_s]
-            cos_idx = 4  # cos is at index 4
-            sin_idx = 5  # sin is at index 5
-            angular_vel_idx = 6  # angular velocity is at index 6 in [x, y, vx, vy, cos, sin, angular_velocity_rad_s]
-
-            # Update position based on velocity
-            self.F[0][vel_idx_x] = new_delta_t
-            self.F[1][vel_idx_y] = new_delta_t
-
-            # Update rotation (cos/sin) based on angular velocity
-            # d(cos)/dt = -sin * omega, d(sin)/dt = cos * omega
-            self.F[cos_idx][angular_vel_idx] = -self.x[sin_idx] * new_delta_t
-            self.F[sin_idx][angular_vel_idx] = self.x[cos_idx] * new_delta_t
+            # vx affects x (index 0, velocity index 2), vy affects y (index 1, velocity index 3)
+            self.F[0][2] = delta_t
+            self.F[1][3] = delta_t
+            # angular velocity affects angle (index 4, angular velocity index 5)
+            self.F[4][5] = delta_t
         except IndexError as e:
-            warnings.warn(f"Error updating F matrix: {e}")
+            warnings.warn(f"Error setting delta_t in F matrix: {e}")
 
     def _debug_set_state(self, x: NDArray[np.float64]) -> None:
         self.x = x
