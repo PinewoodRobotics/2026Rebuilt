@@ -138,10 +138,10 @@ def make_april_tag_preparer(
 
 
 def make_noise_adjusted_preparer(
-    modes: list[TagNoiseAdjustMode], config: TagNoiseAdjustConfig
+    mode: TagNoiseAdjustMode, config: TagNoiseAdjustConfig
 ) -> DataPreparer[AprilTagData, AprilTagDataPreparerConfig]:
     base_config = construct_tag_world()
-    base_config.april_tag_config.tag_noise_adjust_mode = modes
+    base_config.april_tag_config.tag_noise_adjust_mode = mode
     base_config.april_tag_config.tag_noise_adjust_config = config
     return AprilTagDataPreparer(  # pyright: ignore[reportReturnType]
         AprilTagDataPreparerConfig(base_config)
@@ -175,7 +175,7 @@ def test_april_tag_prep_one():
     assert output is not None
     inputs = output.get_input_list()
     assert len(inputs) == 1
-    assert inputs[0].data.shape == (4,)
+    assert inputs[0].data.shape == (3,)
     assert np.all(np.isfinite(inputs[0].data))
     # The tag is 1m in front of the camera, tag in world at origin -> robot at (-1, 0).
     assert float(inputs[0].data[0]) == pytest.approx(-1.0, abs=1e-6)
@@ -217,33 +217,29 @@ def test_april_tag_prep_two():
 
 def test_weight_add_config_distance_mode():
     preparer = make_noise_adjusted_preparer(
-        [TagNoiseAdjustMode.ADD_WEIGHT_PER_M_DISTANCE_TAG],
-        TagNoiseAdjustConfig(weight_per_m_from_distance_from_tag=2.0),
+        TagNoiseAdjustMode.ADD_WEIGHT_PER_M_FROM_DISTANCE_ERROR,
+        TagNoiseAdjustConfig(weight_per_m_from_distance_error=2.0),
     )
-
-    multiplier, add = preparer.get_weight_add_config(
-        x_hat=np.array([0.0, 0.0, 1.0, 0.0]),
-        x=None,
-        distance_from_tag_m=3.0,
-        tag_confidence=0.0,
+    assert preparer.april_tag_config.tag_noise_adjust_mode == (
+        TagNoiseAdjustMode.ADD_WEIGHT_PER_M_FROM_DISTANCE_ERROR
     )
-
-    assert multiplier == 1.0
-    assert add == pytest.approx(6.0)
+    assert preparer.april_tag_config.tag_noise_adjust_config is not None
+    assert (
+        preparer.april_tag_config.tag_noise_adjust_config.weight_per_m_from_distance_error
+        == pytest.approx(2.0)
+    )
 
 
 def test_weight_add_config_confidence_mode():
     preparer = make_noise_adjusted_preparer(
-        [TagNoiseAdjustMode.ADD_WEIGHT_PER_TAG_CONFIDENCE],
-        TagNoiseAdjustConfig(weight_per_confidence_tag=4.0),
+        TagNoiseAdjustMode.ADD_WEIGHT_PER_DEGREE_FROM_ANGLE_ERROR,
+        TagNoiseAdjustConfig(weight_per_degree_from_angle_error=4.0),
     )
-
-    multiplier, add = preparer.get_weight_add_config(
-        x_hat=np.array([0.0, 0.0, 1.0, 0.0]),
-        x=None,
-        distance_from_tag_m=0.0,
-        tag_confidence=2.0,
+    assert preparer.april_tag_config.tag_noise_adjust_mode == (
+        TagNoiseAdjustMode.ADD_WEIGHT_PER_DEGREE_FROM_ANGLE_ERROR
     )
-
-    assert multiplier == 1.0
-    assert add == pytest.approx(8.0)
+    assert preparer.april_tag_config.tag_noise_adjust_config is not None
+    assert (
+        preparer.april_tag_config.tag_noise_adjust_config.weight_per_degree_from_angle_error
+        == pytest.approx(4.0)
+    )

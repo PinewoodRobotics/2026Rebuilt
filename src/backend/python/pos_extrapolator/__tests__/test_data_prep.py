@@ -59,8 +59,7 @@ def test_data_prep():
         ImuDataPreparerConfig(
             {
                 "0": ImuConfig(
-                    use_rotation_absolute=True,
-                    use_rotation_velocity=True,
+                    use_rotation=True,
                     use_position=False,
                     use_velocity=True,
                 )
@@ -80,9 +79,9 @@ def test_data_prep():
     imu_data = sample_imu_data()
     odometry_data = sample_odometry_data()
 
-    # 7D state: [x, y, vx, vy, cos, sin, omega]
-    context_x = np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0])
-    context_P = np.eye(7)
+    # 6D state: [x, y, vx, vy, angle, omega]
+    context_x = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    context_P = np.eye(6)
 
     imu_input = data_preparer_manager.prepare_data(
         imu_data,
@@ -103,8 +102,7 @@ def test_data_prep():
             [
                 imu_data.velocity.x,
                 imu_data.velocity.y,
-                imu_data.position.direction.x,
-                imu_data.position.direction.y,
+                np.arctan2(imu_data.position.direction.y, imu_data.position.direction.x),
                 imu_data.angularVelocityXYZ.z,
             ]
         ),
@@ -120,8 +118,10 @@ def test_data_prep():
                 odometry_data.position.position.y,
                 odometry_data.velocity.x,
                 odometry_data.velocity.y,
-                odometry_data.position.direction.x,
-                odometry_data.position.direction.y,
+                np.arctan2(
+                    odometry_data.position.direction.y,
+                    odometry_data.position.direction.x,
+                ),
             ]
         ),
     )
@@ -136,8 +136,7 @@ def test_get_config():
         ImuDataPreparerConfig(
             {
                 "0": ImuConfig(
-                    use_rotation_absolute=True,
-                    use_rotation_velocity=True,
+                    use_rotation=True,
                     use_position=False,
                     use_velocity=True,
                 )
@@ -147,8 +146,8 @@ def test_get_config():
 
     imu = sample_imu_data()
     ctx = ExtrapolationContext(
-        x=np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
-        P=np.eye(7),
+        x=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+        P=np.eye(6),
         has_gotten_rotation=False,
     )
     imu_input = preparer_manager.prepare_data(imu, "0", ctx)

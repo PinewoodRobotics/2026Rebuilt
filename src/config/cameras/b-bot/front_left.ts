@@ -24,7 +24,7 @@ const front_left: CameraParameters = {
   exposure_time: 10,
   camera_type: CameraType.OV2311,
   video_options: {
-    send_feed: true,
+    send_feed: false,
     compression_quality: 20,
     publication_topic: "camera/front_left/video",
     do_compression: true,

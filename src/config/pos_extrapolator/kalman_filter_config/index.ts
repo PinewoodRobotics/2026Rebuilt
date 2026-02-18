@@ -7,52 +7,46 @@ import { MatrixUtil, VectorUtil } from "../../util/math";
 export const kalman_filter: KalmanFilterConfig = {
   state_vector: VectorUtil.fromArray([2.0, 5.0, 0.0, 0.0, 1.0, 0.0]), // [x, y, vx, vy, angle, angular_velocity_rad_s]
   uncertainty_matrix: MatrixUtil.buildMatrixFromDiagonal([
-    5.0, 5.0, 5.0, 5.0, 5.0, 5.0,
+    5.0, 5.0, 5.0, 5.0, 1000, 1000,
   ]),
   process_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
-    0.0001, 0.0001, 1, 1, 1, 1,
+    0.0001, 0.0001, 1, 1, 10000, 10000,
   ]),
   time_step_initial: 0.025,
   sensors: {
     [KalmanFilterSensorType.APRIL_TAG]: {
       front_left: {
         measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
-          1.0, 1.0, 5.0,
+          2.0, 1.0, 5.0,
         ]),
       },
       front_right: {
         measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
-          1.0, 1.0, 5.0,
+          2.0, 1.0, 5.0,
         ]),
       },
       rear_left: {
         measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
-          1.0, 1.0, 5.0,
+          2.0, 1.0, 5.0,
         ]),
       },
       rear_right: {
         measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
-          1.0, 1.0, 5.0,
+          2.0, 1.0, 5.0,
         ]),
       },
     },
     [KalmanFilterSensorType.IMU]: {
       0: {
-        measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
-          0.01, 0.001,
-        ]),
+        measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([0, 0]),
       },
       1: {
-        measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
-          0.01, 0.001,
-        ]),
+        measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([0, 0]),
       },
     },
     [KalmanFilterSensorType.ODOMETRY]: {
       odom: {
-        measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
-          0.001, 0.001,
-        ]),
+        measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([0, 0]),
       },
     },
   },

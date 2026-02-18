@@ -19,7 +19,6 @@ import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constant.TurretConstants;
-import frc.robot.hardware.AHRSGyro;
 import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.TurretSubsystem;
 
@@ -54,7 +53,7 @@ public class ContinuousAimCommand extends Command {
     double lagCompensationAngle = yawRateRadPerSec * TurretConstants.kRotationLagLeadSeconds;
     double turretAngle = Math.atan2(targetInRobotFrame.getY(), targetInRobotFrame.getX()) + lagCompensationAngle;
 
-    double ff = Math.abs(yawRateRadPerSec) * TurretConstants.kFFCommand;
+    double ff = -yawRateRadPerSec * TurretConstants.kFFCommand;
 
     Logger.recordOutput("Turret/goal", targetGlobal);
     Logger.recordOutput("Turret/angle", turretAngle);

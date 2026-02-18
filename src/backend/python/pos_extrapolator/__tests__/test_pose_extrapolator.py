@@ -99,8 +99,7 @@ def make_min_config(
 
     imu_config = {
         imu_sensor_id: ImuConfig(
-            use_rotation_absolute=imu_use_rotation,
-            use_rotation_velocity=imu_use_rotation,
+            use_rotation=imu_use_rotation,
             use_position=False,
             use_velocity=True,
         )
@@ -151,9 +150,9 @@ def make_subject(
     )
 
     if x is None:
-        x = np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0])
+        x = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
     if p_matrix is None:
-        p_matrix = np.eye(7)
+        p_matrix = np.eye(6)
 
     fake_filter = FakeFilterStrategy(x=x, P=p_matrix, confidence=confidence)
     fake_manager = FakeDataPreparerManager()
@@ -180,7 +179,7 @@ def test_initial_has_gotten_rotation_false_when_tags_use_imu_rotation():
 
 
 def test_insert_sensor_data_passes_context_state_and_flag():
-    x = np.array([1.0, 2.0, 3.0, 4.0, 0.5, 0.5, 0.0])
+    x = np.array([1.0, 2.0, 3.0, 4.0, 0.5, 0.0])
     pe, fake_filter, mgr = make_subject(
         tag_use_imu_rotation=TagUseImuRotation.ALWAYS, x=x
     )
@@ -263,9 +262,9 @@ def test_unknown_sensor_type_defaults_to_rotation_gotten_true():
 
 
 def test_get_robot_position_estimate_returns_flattened_list():
-    x = np.array([1.0, 2.0, 3.0, 4.0, 0.25, 0.75, 0.5])
+    x = np.array([1.0, 2.0, 3.0, 4.0, 0.25, 0.5])
     pe, _, _ = make_subject(x=x)
-    assert pe.get_robot_position_estimate() == [1.0, 2.0, 3.0, 4.0, 0.25, 0.75, 0.5]
+    assert pe.get_robot_position_estimate() == [1.0, 2.0, 3.0, 4.0, 0.25, 0.5]
 
 
 def test_get_robot_position_estimate_passes_future_s_through():
@@ -275,8 +274,8 @@ def test_get_robot_position_estimate_passes_future_s_through():
 
 
 def test_get_robot_position_maps_state_indices_to_proto_fields():
-    x = np.array([10.0, 20.0, 1.1, -2.2, 0.6, 0.8, 0.05])
-    P = np.eye(7) * 2.0
+    x = np.array([10.0, 20.0, 1.1, -2.2, 0.6435, 0.05])
+    P = np.eye(6) * 2.0
     pe, fake_filter, _ = make_subject(
         x=x,
         p_matrix=P,
@@ -291,19 +290,19 @@ def test_get_robot_position_maps_state_indices_to_proto_fields():
     assert float(proto.position_2d.position.y) == pytest.approx(20.0)
     assert float(proto.position_2d.velocity.x) == pytest.approx(1.1)
     assert float(proto.position_2d.velocity.y) == pytest.approx(-2.2)
-    assert float(proto.position_2d.direction.x) == pytest.approx(0.6)
-    assert float(proto.position_2d.direction.y) == pytest.approx(0.8)
+    assert float(proto.position_2d.direction.x) == pytest.approx(np.cos(0.6435))
+    assert float(proto.position_2d.direction.y) == pytest.approx(np.sin(0.6435))
     assert float(proto.position_2d.rotation_speed_rad_s) == pytest.approx(0.05)
     assert float(proto.confidence) == pytest.approx(0.123)
 
 
 def test_get_position_covariance_flattens_matrix():
-    P = np.arange(49, dtype=float).reshape(7, 7)
+    P = np.arange(36, dtype=float).reshape(6, 6)
     pe, _, _ = make_subject(p_matrix=P)
     flat = pe.get_position_covariance()
-    assert len(flat) == 49
+    assert len(flat) == 36
     assert flat[0] == 0.0
-    assert flat[-1] == 48.0
+    assert flat[-1] == 35.0
 
 
 def test_get_confidence_is_forwarded():

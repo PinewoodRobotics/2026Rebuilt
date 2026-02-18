@@ -19,11 +19,11 @@ def _eye(n: int) -> list[list[float]]:
 
 
 def make_test_kalman_filter_config() -> KalmanFilterConfig:
-    # 7D state: [x, y, vx, vy, cos, sin, angular_velocity_rad_s]
-    dim_x = 7
-    dim_z = 5  # [vx, vy, cos, sin, omega]
+    # 6D state: [x, y, vx, vy, angle_rad, angular_velocity_rad_s]
+    dim_x = 6
+    dim_z = 4  # [vx, vy, angle, omega]
 
-    state_vector = GenericVector(values=[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0], size=dim_x)
+    state_vector = GenericVector(values=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], size=dim_x)
     P = GenericMatrix(values=_eye(dim_x), rows=dim_x, cols=dim_x)
     Q = GenericMatrix(
         values=[[0.01 if i == j else 0.0 for j in range(dim_x)] for i in range(dim_x)],
@@ -43,44 +43,43 @@ def make_test_kalman_filter_config() -> KalmanFilterConfig:
         uncertainty_matrix=P,
         process_noise_matrix=Q,
         sensors=sensors,
-        dim_x_z=[dim_x, dim_z],
+        time_step_initial=0.05,
     )
 
 
 def sample_jacobian_h(_x: NDArray[np.float64]) -> NDArray[np.float64]:
-    # 7D state: [x, y, vx, vy, cos, sin, angular_velocity_rad_s]
-    # Measurement: [vx, vy, cos, sin, omega]
-    H = np.zeros((5, 7))
+    # 6D state: [x, y, vx, vy, angle, omega]
+    # Measurement: [vx, vy, angle, omega]
+    H = np.zeros((4, 6))
     H[0, 2] = 1  # vx
     H[1, 3] = 1  # vy
-    H[2, 4] = 1  # cos
-    H[3, 5] = 1  # sin
-    H[4, 6] = 1  # omega
+    H[2, 4] = 1  # angle
+    H[3, 5] = 1  # omega
     return H
 
 
 def sample_hx(x: NDArray[np.float64]) -> NDArray[np.float64]:
-    return x[[2, 3, 4, 5, 6]]  # vx, vy, cos, sin, omega
+    return x[[2, 3, 4, 5]]  # vx, vy, angle, omega
 
 
 def ekf_dataset_imu_input():
     return [
         KalmanFilterInput(
-            input=ProcessedData(data=np.array([1.0, 1.0, 1.0, 0.0, 0.0])),
+            input=ProcessedData(data=np.array([1.0, 1.0, 0.0, 0.0])),
             sensor_id="0",
             sensor_type=KalmanFilterSensorType.IMU,
             jacobian_h=sample_jacobian_h,
             hx=sample_hx,
         ),
         KalmanFilterInput(
-            input=ProcessedData(data=np.array([1.0, 1.0, 1.0, 0.0, 0.0])),
+            input=ProcessedData(data=np.array([1.0, 1.0, 0.0, 0.0])),
             sensor_id="0",
             sensor_type=KalmanFilterSensorType.IMU,
             jacobian_h=sample_jacobian_h,
             hx=sample_hx,
         ),
         KalmanFilterInput(
-            input=ProcessedData(data=np.array([1.0, 1.0, 1.0, 0.0, 0.0])),
+            input=ProcessedData(data=np.array([1.0, 1.0, 0.0, 0.0])),
             sensor_id="0",
             sensor_type=KalmanFilterSensorType.IMU,
             jacobian_h=sample_jacobian_h,
@@ -100,7 +99,7 @@ def test_ekf():
 
     # Check that the state is close to expected values (accounting for noise)
     # Logic: Start near [0,0,0,0,1,0,0], measure vx=1,vy=1,cos=1,sin=0,omega=0 and predict 1s each step.
-    expected = [3, 3, 1, 1, 1, 0, 0]
+    expected = [3, 3, 1, 1, 0, 0]
     assert len(state) == len(expected)
     for i, (actual, exp) in enumerate(zip(state, expected)):
         assert abs(actual - exp) < 0.25, f"State[{i}]: expected {exp}, got {actual}"

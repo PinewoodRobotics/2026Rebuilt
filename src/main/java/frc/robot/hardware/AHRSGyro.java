@@ -79,7 +79,7 @@ public class AHRSGyro implements IGyroscopeLike, IDataClass {
 
   @Override
   public double[] getAngularVelocityXYZ() {
-    return new double[] { 0, 0, Math.toRadians(m_gyro.getRate()) };
+    return new double[] { 0, 0, Math.toRadians(m_gyro.getRawGyroZ()) };
   }
 
   @Override

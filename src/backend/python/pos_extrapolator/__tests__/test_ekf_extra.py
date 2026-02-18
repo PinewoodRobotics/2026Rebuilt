@@ -21,11 +21,11 @@ def _eye(n: int) -> list[list[float]]:
 
 
 def make_cfg(*, include_sensors: bool = True) -> KalmanFilterConfig:
-    # 7D state: [x, y, vx, vy, cos, sin, omega]
-    dim_x = 7
-    dim_z = 5
+    # 6D state: [x, y, vx, vy, angle, omega]
+    dim_x = 6
+    dim_z = 4
 
-    state_vector = GenericVector(values=[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0], size=dim_x)
+    state_vector = GenericVector(values=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], size=dim_x)
     P = GenericMatrix(values=_eye(dim_x), rows=dim_x, cols=dim_x)
     Q = GenericMatrix(values=_eye(dim_x), rows=dim_x, cols=dim_x)
     R = GenericMatrix(values=_eye(dim_z), rows=dim_z, cols=dim_z)
@@ -43,7 +43,7 @@ def make_cfg(*, include_sensors: bool = True) -> KalmanFilterConfig:
         uncertainty_matrix=P,
         process_noise_matrix=Q,
         sensors=sensors,
-        dim_x_z=[dim_x, dim_z],
+        time_step_initial=0.05,
     )
 
 
@@ -51,7 +51,7 @@ def make_kfi(
     *, sensor_type: KalmanFilterSensorType, sensor_id: str
 ) -> KalmanFilterInput:
     return KalmanFilterInput(
-        input=ProcessedData(data=np.array([0.0, 0.0, 1.0, 0.0, 0.0])),
+        input=ProcessedData(data=np.array([0.0, 0.0, 0.0, 0.0])),
         sensor_id=sensor_id,
         sensor_type=sensor_type,
     )
@@ -61,7 +61,7 @@ def test_get_R_sensors_mapping_contains_sensor_and_id():
     ekf = ExtendedKalmanFilterStrategy(make_cfg(), fake_dt=0.1)
     assert KalmanFilterSensorType.IMU in ekf.R_sensors
     assert "imu0" in ekf.R_sensors[KalmanFilterSensorType.IMU]
-    assert ekf.R_sensors[KalmanFilterSensorType.IMU]["imu0"].shape == (5, 5)
+    assert ekf.R_sensors[KalmanFilterSensorType.IMU]["imu0"].shape == (4, 4)
 
 
 def test_insert_data_warns_and_skips_unknown_sensor_type():
@@ -102,24 +102,22 @@ def test_prediction_step_clamps_dt_when_negative_or_too_large(monkeypatch):
     assert ekf.F[1, 3] == pytest.approx(0.05)
 
 
-def test_update_transformation_delta_t_sets_velocity_and_rotation_entries():
+def test_set_delta_t_sets_velocity_and_rotation_entries():
     ekf = ExtendedKalmanFilterStrategy(make_cfg(), fake_dt=0.1)
-    ekf._debug_set_state(np.array([0.0, 0.0, 0.0, 0.0, 0.6, 0.8, 0.0]))
-    ekf._update_transformation_delta_t_with_size(0.2)
+    ekf._debug_set_state(np.array([0.0, 0.0, 0.0, 0.0, 0.6, 0.2]))
+    ekf.set_delta_t(0.2)
     assert ekf.F[0, 2] == pytest.approx(0.2)
     assert ekf.F[1, 3] == pytest.approx(0.2)
-    # Rotation coupling
-    assert ekf.F[4, 6] == pytest.approx(-0.8 * 0.2)
-    assert ekf.F[5, 6] == pytest.approx(0.6 * 0.2)
+    assert ekf.F[4, 5] == pytest.approx(0.2)
 
 
 def test_get_confidence_returns_zero_for_nan_or_inf_covariance():
     ekf = ExtendedKalmanFilterStrategy(make_cfg(), fake_dt=0.1)
-    ekf.P = np.eye(7)
+    ekf.P = np.eye(6)
     ekf.P[0, 0] = np.nan
     assert ekf.get_confidence() == 0.0
 
-    ekf.P = np.eye(7)
+    ekf.P = np.eye(6)
     ekf.P[2, 2] = np.inf
     assert ekf.get_confidence() == 0.0
 
@@ -133,7 +131,7 @@ def test_add_to_diagonal_adds_value_to_diagonal_entries():
 
 def test_get_state_future_predicts_from_current_filter_time():
     ekf = ExtendedKalmanFilterStrategy(make_cfg(), fake_dt=1.0)
-    ekf._debug_set_state(np.array([0.0, 0.0, 2.0, 0.0, 1.0, 0.0, 0.0]))
+    ekf._debug_set_state(np.array([0.0, 0.0, 2.0, 0.0, 0.0, 0.0]))
 
     projected = ekf.get_state(future_s=2.0)
 
@@ -144,9 +142,9 @@ def test_get_state_future_predicts_from_current_filter_time():
 
 def test_get_state_future_rotates_direction_with_angular_velocity():
     ekf = ExtendedKalmanFilterStrategy(make_cfg(), fake_dt=0.0)
-    ekf._debug_set_state(np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0]))
+    ekf._debug_set_state(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]))
 
     projected = ekf.get_state(future_s=np.pi / 2)
 
-    assert projected[4] == pytest.approx(0.0, abs=1e-6)
+    assert projected[4] == pytest.approx(np.pi / 2, abs=1e-6)
     assert projected[5] == pytest.approx(1.0, abs=1e-6)

@@ -81,9 +81,9 @@ def sample_odom() -> OdometryData:
         (False, False, False, 0),
         (True, False, False, 2),
         (False, True, False, 2),
-        (False, False, True, 3),  # cos,sin + omega
+        (False, False, True, 2),  # angle + omega
         (True, True, False, 4),
-        (True, True, True, 7),
+        (True, True, True, 6),
     ],
 )
 def test_imu_preparer_value_selection_and_shapes(
@@ -94,8 +94,7 @@ def test_imu_preparer_value_selection_and_shapes(
         ImuDataPreparerConfig(
             {
                 "imu0": ImuConfig(
-                    use_rotation_absolute=use_rotation,
-                    use_rotation_velocity=use_rotation,
+                    use_rotation=use_rotation,
                     use_position=use_position,
                     use_velocity=use_velocity,
                 )
@@ -105,8 +104,8 @@ def test_imu_preparer_value_selection_and_shapes(
 
     mgr = DataPreparerManager()
     ctx = ExtrapolationContext(
-        x=np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
-        P=np.eye(7),
+        x=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+        P=np.eye(6),
         has_gotten_rotation=False,
     )
     out = mgr.prepare_data(sample_imu(), "imu0", ctx)
@@ -128,8 +127,7 @@ def test_imu_preparer_missing_sensor_id_raises_keyerror():
         ImuDataPreparerConfig(
             {
                 "imu0": ImuConfig(
-                    use_rotation_absolute=True,
-                    use_rotation_velocity=True,
+                    use_rotation=True,
                     use_position=False,
                     use_velocity=True,
                 )
@@ -138,8 +136,8 @@ def test_imu_preparer_missing_sensor_id_raises_keyerror():
     )
     mgr = DataPreparerManager()
     ctx = ExtrapolationContext(
-        x=np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
-        P=np.eye(7),
+        x=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+        P=np.eye(6),
         has_gotten_rotation=False,
     )
     with pytest.raises(KeyError):
@@ -158,8 +156,8 @@ def test_odom_preparer_absolute_includes_position_and_rotates_velocity():
     mgr = DataPreparerManager()
     # 90 deg rotation: cos=0,sin=1 rotates (vx,vy) -> (-vy, vx)
     ctx = ExtrapolationContext(
-        x=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]),
-        P=np.eye(7),
+        x=np.array([0.0, 0.0, 0.0, 0.0, np.pi / 2, 0.0]),
+        P=np.eye(6),
         has_gotten_rotation=False,
     )
 
@@ -184,8 +182,8 @@ def test_odom_preparer_abs_change_updates_position_by_delta():
     )
     mgr = DataPreparerManager()
     ctx = ExtrapolationContext(
-        x=np.array([100.0, 200.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
-        P=np.eye(7),
+        x=np.array([100.0, 200.0, 0.0, 0.0, 0.0, 0.0]),
+        P=np.eye(6),
         has_gotten_rotation=False,
     )
     out = mgr.prepare_data(sample_odom(), "odom", ctx)
@@ -211,8 +209,8 @@ def test_odom_preparer_abs_change_should_rotate_position_delta():
     mgr = DataPreparerManager()
     # 90 deg rotation: (dx,dy) in robot frame should rotate to (-dy, dx)
     ctx = ExtrapolationContext(
-        x=np.array([100.0, 200.0, 0.0, 0.0, 0.0, 1.0, 0.0]),
-        P=np.eye(7),
+        x=np.array([100.0, 200.0, 0.0, 0.0, np.pi / 2, 0.0]),
+        P=np.eye(6),
         has_gotten_rotation=False,
     )
     odom = sample_odom()
@@ -312,8 +310,8 @@ def test_april_tag_preparer_until_first_non_tag_rotation_should_use_imu_before_n
         )
     )
     ctx = ExtrapolationContext(
-        x=np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
-        P=np.eye(7),
+        x=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+        P=np.eye(6),
         has_gotten_rotation=False,
     )
     assert preparer.should_use_imu_rotation(ctx) is True

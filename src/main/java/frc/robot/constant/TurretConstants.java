@@ -16,12 +16,12 @@ public class TurretConstants {
   public static final double kTurretMotorRotationsPerRotation = 16.0;
   public static final MotorType kTurretMotorType = MotorType.kBrushless;
 
-  public static final double kTurretP = 2;
+  public static final double kTurretP = 3;
   public static final double kTurretI = 0.0;
   public static final double kTurretD = 100;
   public static final double kTurretIZ = 0.0;
-  public static final double kFFCommand = 7.0;
-  public static final double kRotationLagLeadSeconds = 0.2;
+  public static final double kFFCommand = 1;
+  public static final double kRotationLagLeadSeconds = 0.05;
 
   public static final AngularVelocity kTurretMaxVelocity = Units.RadiansPerSecond.of(4.0);
   public static final AngularAcceleration kTurretMaxAcceleration = Units.RadiansPerSecondPerSecond.of(4.0);
