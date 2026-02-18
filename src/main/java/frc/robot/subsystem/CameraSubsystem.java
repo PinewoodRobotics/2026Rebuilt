@@ -14,7 +14,7 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robot;
-import frc.robot.constant.PiConstants;
+import frc.robot.constant.FieldConstants;
 import frc.robot.constant.TopicConstants;
 import frc.robot.util.CustomUtil;
 import lombok.AllArgsConstructor;
@@ -34,9 +34,6 @@ public class CameraSubsystem extends SubsystemBase {
    * contradict each other.
    */
   private final ConcurrentLinkedQueue<TimedTags> q = new ConcurrentLinkedQueue<>();
-
-  private static final AprilTagFieldLayout FIELD_LAYOUT = AprilTagFieldLayout
-      .loadField(AprilTagFields.k2026RebuiltWelded);
 
   @Getter
   @AllArgsConstructor
@@ -83,7 +80,7 @@ public class CameraSubsystem extends SubsystemBase {
             (double) posRaw.getX(), (double) posRaw.getY(),
             new Rotation2d((double) rotRaw.getDirectionX().getX(), (double) rotRaw.getDirectionX().getY()));
 
-        Pose3d positionField = FIELD_LAYOUT.getTagPose(id).orElse(new Pose3d());
+        Pose3d positionField = FieldConstants.kFieldLayout.getTagPose(id).orElse(new Pose3d());
 
         positionsRobot.add(positionRobot);
         positionsReal.add(positionField);

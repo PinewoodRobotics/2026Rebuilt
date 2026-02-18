@@ -11,7 +11,6 @@ import autobahn.client.Address;
 import autobahn.client.AutobahnClient;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import frc.robot.constant.PiConstants;
 import frc.robot.util.RPC;
 import lombok.Getter;
 import pwrup.frc.core.constant.RaspberryPiConstants;
@@ -20,7 +19,7 @@ import pwrup.frc.core.online.raspberrypi.discovery.PiDiscoveryUtil;
 import pwrup.frc.core.online.raspberrypi.discovery.PiInfo;
 
 public class Robot extends LoggedRobot {
-  private static final int NETWORK_RETRY_TICKS = 50;
+  private static final int kNetworkRetryTicks = 50;
 
   @Getter
   private static OptionalAutobahn communicationClient = new OptionalAutobahn();
@@ -51,12 +50,8 @@ public class Robot extends LoggedRobot {
     boolean currentlyConnected = communicationClient.isConnected();
     Logger.recordOutput("Autobahn/Connected", currentlyConnected);
 
-    if (currentlyConnected || networkAttemptInProgress) {
-      return;
-    }
-
-    retryCounter = (retryCounter + 1) % NETWORK_RETRY_TICKS;
-    if (retryCounter == 0) {
+    retryCounter = (retryCounter + 1) % kNetworkRetryTicks;
+    if (!currentlyConnected && !networkAttemptInProgress && retryCounter == 0) {
       initializeNetwork();
     }
   }
@@ -76,8 +71,6 @@ public class Robot extends LoggedRobot {
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
     if (m_autonomousCommand != null) {
       CommandScheduler.getInstance().schedule(m_autonomousCommand);
-    } else {
-      System.out.println("WARNING: getAutonomousCommand() returned null; nothing scheduled for auton.");
     }
   }
 
@@ -117,40 +110,22 @@ public class Robot extends LoggedRobot {
     networkAttemptInProgress = true;
     new Thread(() -> {
       try {
-        List<PiInfo> pisFound = PiDiscoveryUtil.discover(PiConstants.networkInitializeTimeSec);
+        List<PiInfo> pisFound = PiDiscoveryUtil.discover(4);
+        var pi = pisFound.get(0);
+        var address = new Address(pi.getHostnameLocal(),
+            pi.getAutobahnPort().orElse(RaspberryPiConstants.DEFAULT_PORT_AUTOB));
+        var realClient = new AutobahnClient(address);
+        realClient.begin().join();
 
-        for (PiInfo discoveredPi : pisFound) {
-          String host = discoveredPi.getHostnameLocal();
-          if (host == null || host.isBlank()) {
-            host = discoveredPi.getHostname();
-          }
-          if (host == null || host.isBlank()) {
-            continue;
-          }
-          if (host.endsWith(".")) {
-            host = host.substring(0, host.length() - 1);
-          }
+        communicationClient.setAutobahnClient(realClient);
+        retryCounter = 0;
 
-          int autobahnPort = discoveredPi.getAutobahnPort().orElse(RaspberryPiConstants.DEFAULT_PORT_AUTOB);
-          var address = new Address(host, autobahnPort);
-
-          try {
-            var realClient = new AutobahnClient(address);
-            realClient.begin().join();
-            communicationClient.setAutobahnClient(realClient);
-            retryCounter = 0;
-            System.out.println("[PiConnect] Connected to Pi Autobahn at " + address);
-            return;
-          } catch (RuntimeException ignored) {
-          }
-        }
+        System.out.println("[PiConnect] Connected to Pi Autobahn at " + address);
       } catch (IOException | InterruptedException e) {
-        if (e instanceof InterruptedException) {
-          Thread.currentThread().interrupt();
-        }
+        e.printStackTrace();
       } finally {
         networkAttemptInProgress = false;
       }
-    }, "pi-network-init").start();
+    }).start();
   }
 }
