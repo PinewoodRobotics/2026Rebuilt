@@ -6,6 +6,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.command.SwerveMoveTeleop;
 import frc.robot.command.scoring.ContinuousAimCommand;
 import frc.robot.constant.BotConstants;
+import frc.robot.constant.FieldConstants;
 import frc.robot.hardware.AHRSGyro;
 import frc.robot.subsystem.CameraSubsystem;
 import frc.robot.subsystem.GlobalPosition;
@@ -55,11 +56,9 @@ public class RobotContainer {
   }
 
   private void setTurretCommands() {
-    TurretSubsystem turretSubsystem = TurretSubsystem.GetInstance();
-
-    turretSubsystem.setDefaultCommand(
+    TurretSubsystem.GetInstance().setDefaultCommand(
         new ContinuousAimCommand(
-            () -> new Translation3d(12, 4, 0)));
+            () -> FieldConstants.kHubPositionRed));
   }
 
   public Command getAutonomousCommand() {
