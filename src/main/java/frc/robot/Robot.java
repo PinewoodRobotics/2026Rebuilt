@@ -1,7 +1,6 @@
 package frc.robot;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.littletonrobotics.junction.LoggedRobot;
@@ -15,19 +14,26 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.constant.PiConstants;
 import frc.robot.util.RPC;
 import lombok.Getter;
+import pwrup.frc.core.constant.RaspberryPiConstants;
 import pwrup.frc.core.online.raspberrypi.OptionalAutobahn;
 import pwrup.frc.core.online.raspberrypi.discovery.PiDiscoveryUtil;
 import pwrup.frc.core.online.raspberrypi.discovery.PiInfo;
 
 public class Robot extends LoggedRobot {
+  private static final int NETWORK_RETRY_TICKS = 50;
 
   @Getter
   private static OptionalAutobahn communicationClient = new OptionalAutobahn();
   @Getter
-  private static boolean onlineStatus;
+  private static volatile boolean onlineStatus;
 
   private RobotContainer m_robotContainer;
   private Command m_autonomousCommand;
+
+  private int retryCounter = 0;
+  private int networkAttemptIndex = 0;
+  private volatile boolean connectedToPis = false;
+  private volatile boolean networkAttemptInProgress = false;
 
   public static OptionalAutobahn getAutobahnClient() {
     return communicationClient;
@@ -50,7 +56,25 @@ public class Robot extends LoggedRobot {
   public void robotPeriodic() {
     CommandScheduler.getInstance().run();
 
-    Logger.recordOutput("Autobahn/Connected", communicationClient.isConnected() && onlineStatus);
+    boolean currentlyConnected = communicationClient.isConnected() && onlineStatus;
+    Logger.recordOutput("Autobahn/Connected", currentlyConnected);
+
+    if (!currentlyConnected && connectedToPis) {
+      connectedToPis = false;
+      onlineStatus = false;
+      System.out.println("Lost Pi connection. Will continue retrying.");
+    }
+
+    if (!connectedToPis && !networkAttemptInProgress) {
+      retryCounter = (retryCounter + 1) % NETWORK_RETRY_TICKS;
+      if (retryCounter == 1) {
+        System.out.println(
+            "[PiConnect] Waiting to start attempt #" + (networkAttemptIndex + 1) + " (in ~1 second)");
+      }
+      if (retryCounter == 0) {
+        initializeNetwork();
+      }
+    }
   }
 
   @Override
@@ -102,26 +126,98 @@ public class Robot extends LoggedRobot {
   }
 
   private void initializeNetwork() {
+    if (connectedToPis || networkAttemptInProgress) {
+      return;
+    }
+
+    int attemptNumber = ++networkAttemptIndex;
+    networkAttemptInProgress = true;
     new Thread(() -> {
-      List<PiInfo> pisFound = new ArrayList<>();
-
       try {
-        pisFound = PiDiscoveryUtil.discover(PiConstants.networkInitializeTimeSec);
+        System.out.println("[PiConnect #" + attemptNumber + "] Discovery started...");
+        List<PiInfo> pisFound = PiDiscoveryUtil.discover(PiConstants.networkInitializeTimeSec);
+        System.out.println("[PiConnect #" + attemptNumber + "] Discovery complete. Found " + pisFound.size() + " Pi(s).");
+        if (pisFound.isEmpty()) {
+          System.out.println("[PiConnect #" + attemptNumber + "] No Pis discovered yet. Retrying...");
+          return;
+        }
+
+        for (PiInfo discoveredPi : pisFound) {
+          var hostToConnect = resolvePiHost(discoveredPi);
+          if (hostToConnect == null) {
+            System.out.println("[PiConnect #" + attemptNumber + "] Skipping Pi with missing host info: " + discoveredPi);
+            continue;
+          }
+
+          int autobahnPort = discoveredPi.getAutobahnPort().orElse(RaspberryPiConstants.DEFAULT_PORT_AUTOB);
+          var address = new Address(hostToConnect, autobahnPort);
+
+          try {
+            var realClient = new AutobahnClient(address);
+            realClient.begin().join();
+            communicationClient.setAutobahnClient(realClient);
+            connectedToPis = true;
+            onlineStatus = true;
+            retryCounter = 0;
+            System.out.println("[PiConnect #" + attemptNumber + "] Connected to Pi Autobahn at " + address);
+            return;
+          } catch (RuntimeException e) {
+            System.out.println(
+                "[PiConnect #" + attemptNumber + "] Failed to connect to discovered Pi at " + address
+                    + ". Trying next Pi...");
+          }
+        }
+
+        connectedToPis = false;
+        onlineStatus = false;
+        System.out.println(
+            "[PiConnect #" + attemptNumber + "] Discovered Pis but could not connect to any Autobahn endpoint. Retrying...");
       } catch (IOException | InterruptedException e) {
-        e.printStackTrace();
+        if (e instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
+        connectedToPis = false;
+        onlineStatus = false;
+        System.out.println("[PiConnect #" + attemptNumber + "] Pi discovery failed. Will retry: " + e.getMessage());
+      } catch (RuntimeException e) {
+        connectedToPis = false;
+        onlineStatus = false;
+        System.out.println(
+            "[PiConnect #" + attemptNumber + "] Failed to connect to Pi Autobahn. Will retry: " + e.getMessage());
+      } finally {
+        networkAttemptInProgress = false;
       }
+    }, "pi-network-init").start();
+  }
 
-      var mainPi = pisFound.get(0);
+  private String resolvePiHost(PiInfo piInfo) {
+    String hostnameLocal = normalizeHost(piInfo.getHostnameLocal());
+    if (hostnameLocal != null) {
+      return hostnameLocal;
+    }
 
-      System.out.println(mainPi);
+    String hostname = normalizeHost(piInfo.getHostname());
+    if (hostname != null) {
+      return hostname.contains(".") ? hostname : hostname + ".local";
+    }
 
-      var address = new Address(mainPi.getHostnameLocal(), mainPi.getAutobahnPort().get());
-      System.out.println(address);
-      var realClient = new AutobahnClient(address);
-      realClient.begin().join();
-      communicationClient.setAutobahnClient(realClient);
-      onlineStatus = true;
-      System.out.println("SET UP CLIENT");
-    }).start();
+    return null;
+  }
+
+  private String normalizeHost(String host) {
+    if (host == null) {
+      return null;
+    }
+
+    String normalized = host.trim();
+    if (normalized.isEmpty()) {
+      return null;
+    }
+
+    if (normalized.endsWith(".")) {
+      normalized = normalized.substring(0, normalized.length() - 1);
+    }
+
+    return normalized.isEmpty() ? null : normalized;
   }
 }
