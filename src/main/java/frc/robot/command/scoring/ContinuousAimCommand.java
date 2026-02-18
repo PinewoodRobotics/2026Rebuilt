@@ -50,15 +50,15 @@ public class ContinuousAimCommand extends Command {
     Translation3d targetGlobal = targetGlobalPoseSupplier.get();
     Pose2d targetPoseField = new Pose2d(targetGlobal.toTranslation2d(), new Rotation2d());
     Pose2d targetInRobotFrame = targetPoseField.relativeTo(selfPose);
+    double yawRateRadPerSec = currentRobotYawVelocitySupplier.get().in(Units.RadiansPerSecond);
+    double lagCompensationAngle = yawRateRadPerSec * TurretConstants.kRotationLagLeadSeconds;
+    double turretAngle = Math.atan2(targetInRobotFrame.getY(), targetInRobotFrame.getX()) + lagCompensationAngle;
 
-    // Target position in robot frame: x = forward, y = left. Turret 0 = robot
-    // forward.
-    double turretAngle = Math.atan2(targetInRobotFrame.getY(), targetInRobotFrame.getX());
-
-    double ff = Math.abs(currentRobotYawVelocitySupplier.get().magnitude()) * TurretConstants.kFFCommand;
+    double ff = Math.abs(yawRateRadPerSec) * TurretConstants.kFFCommand;
 
     Logger.recordOutput("Turret/goal", targetGlobal);
     Logger.recordOutput("Turret/angle", turretAngle);
+    Logger.recordOutput("Turret/lagCompensationAngle", lagCompensationAngle);
     Logger.recordOutput("Turret/FF", ff);
 
     turretSubsystem.setTurretPosition(Units.Radians.of(turretAngle),

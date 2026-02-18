@@ -38,10 +38,10 @@ SHOULD_USE_ROTATION_MATRIX = True
 class OdomDataPreparer(DataPreparer[OdometryData, OdomDataPreparerConfig]):
     def __init__(self, config: OdomDataPreparerConfig):
         super().__init__(config)
+        self.config = config.get_config()
         self.use_position = (
             self.config.position_source != OdometryPositionSource.DONT_USE
         )
-        self.config = config.get_config()
 
     def get_data_type(self) -> type[OdometryData]:
         return OdometryData
