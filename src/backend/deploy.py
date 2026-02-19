@@ -60,9 +60,8 @@ def get_modules() -> list[_Module]:
         ModuleTypes.CPPLibraryModule(
             name="cuda-tags-lib",
             project_root_folder_path="cpp/CudaTags",
-            build_for_platforms=[SystemType.JETPACK_L4T_R36_2],
+            build_for_platforms=[],  # SystemType.JETPACK_L4T_R36_2
             compilation_config=CPPBuildConfig.with_cmake(
-                clean_build_dir=True,
                 cmake_args=[
                     "-DCUDATAGS_BUILD_PYTHON=ON",
                     "-DCMAKE_BUILD_TYPE=Release",
