@@ -22,7 +22,7 @@ from backend.python.common.debug.logger import (
     info,
     init_logging,
 )
-from backend.python.common.debug.pubsub_replay import ReplayAutobahn
+from backend.python.common.debug.pubsub_replay import ReplayAutobahn, autolog
 from backend.python.common.debug.replay_recorder import (
     init_replay_recorder,
     record_output,
@@ -147,6 +147,7 @@ async def main():
         DataPreparerManager(),
     )
 
+    @autolog(config.pos_extrapolator.message_config.post_tag_input_topic)
     async def process_data(message: bytes):
         data = GeneralSensorData.FromString(message)
         one_of_name = data.WhichOneof("data")

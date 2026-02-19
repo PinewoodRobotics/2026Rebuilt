@@ -158,11 +158,10 @@ def test_record_output_uses_current_time_each_call(tmp_path, monkeypatch):
 
     recorder.record_output("a", b"x")
     recorder.record_output("b", b"y")
+    recorder.close()
 
     rows = list(replay_recorder.ReplayDB.select().order_by(replay_recorder.ReplayDB.id))
     assert [row.timestamp for row in rows] == [100.0, 101.25]
-
-    recorder.close()
 
 
 def test_record_output_encodes_supported_types(tmp_path):
