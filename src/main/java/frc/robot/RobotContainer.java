@@ -13,6 +13,7 @@ import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.OdometrySubsystem;
 import frc.robot.subsystem.SwerveSubsystem;
 import frc.robot.subsystem.TurretSubsystem;
+import frc.robot.util.AimPoint;
 import frc.robot.util.PathPlannerSetup;
 import pwrup.frc.core.controller.FlightModule;
 import pwrup.frc.core.controller.FlightStick;
@@ -58,7 +59,7 @@ public class RobotContainer {
   private void setTurretCommands() {
     TurretSubsystem.GetInstance().setDefaultCommand(
         new ContinuousAimCommand(
-            () -> FieldConstants.kHubPositionRed));
+            () -> AimPoint.getTarget(GlobalPosition.Get())));
   }
 
   public Command getAutonomousCommand() {
@@ -67,6 +68,7 @@ public class RobotContainer {
   }
 
   public void onAnyModeStart() {
+    TurretSubsystem.GetInstance().reset();
     var position = GlobalPosition.Get();
     if (position != null) {
       AHRSGyro.GetInstance().setAngleAdjustment(position.getRotation().getDegrees());

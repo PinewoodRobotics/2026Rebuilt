@@ -3,6 +3,7 @@ package frc.robot.subsystem;
 import org.littletonrobotics.junction.Logger;
 
 import com.revrobotics.PersistMode;
+import com.revrobotics.RelativeEncoder;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.FeedbackSensor;
@@ -27,6 +28,7 @@ public class TurretSubsystem extends SubsystemBase {
 
   private SparkFlex m_turretMotor;
   private SparkClosedLoopController closedLoopController;
+  private final RelativeEncoder relativeEncoder;
 
   /** Last commanded turret goal angle (for logging / time estimate). */
   private Angle lastAimTarget;
@@ -41,6 +43,8 @@ public class TurretSubsystem extends SubsystemBase {
 
   public TurretSubsystem(int canId, MotorType motorType) {
     configureSparkMax(canId, motorType);
+    relativeEncoder = m_turretMotor.getEncoder();
+    reset();
   }
 
   private void configureSparkMax(int canId, MotorType motorType) {
@@ -67,6 +71,10 @@ public class TurretSubsystem extends SubsystemBase {
         .positionWrappingMaxInput(1);
 
     m_turretMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+  }
+
+  public void reset() {
+    relativeEncoder.setPosition(0.0);
   }
 
   /**

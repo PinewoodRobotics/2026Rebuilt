@@ -8,10 +8,11 @@ import autobahn.client.NamedCallback;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robot;
 import frc.robot.constant.TopicConstants;
-import frc.robot.hardware.AHRSGyro;
+import frc.robot.util.AimPoint;
 import frc4765.proto.util.Position.RobotPosition;
 
 public class GlobalPosition extends SubsystemBase {
@@ -67,5 +68,22 @@ public class GlobalPosition extends SubsystemBase {
     Logger.recordOutput("Global/pose", position);
     Logger.recordOutput("Global/velocity", positionVelocity);
     Logger.recordOutput("Global/lastUpdateTime", lastUpdateTime);
+
+    for (AimPoint.ZoneName zoneName : AimPoint.ZoneName.values()) {
+      AimPoint.logZoneForAdvantageScope(zoneName, "Global/Zones/All");
+    }
+
+    if (position != null) {
+      AimPoint.ZoneName activeZone = AimPoint.getZone(position);
+      AimPoint.logZoneForAdvantageScope(activeZone, "Global/Zones/Active");
+
+      var target = AimPoint.getTarget(activeZone);
+      Logger.recordOutput(
+          "Global/Zones/Active/LineToTarget",
+          new Pose2d[] {
+              new Pose2d(position.getTranslation(), new Rotation2d()),
+              new Pose2d(target, new Rotation2d())
+          });
+    }
   }
 }

@@ -24,11 +24,11 @@ import frc.robot.subsystem.TurretSubsystem;
 
 public class ContinuousAimCommand extends Command {
   private final TurretSubsystem turretSubsystem;
-  private final Supplier<Translation3d> targetGlobalPoseSupplier;
+  private final Supplier<Translation2d> targetGlobalPoseSupplier;
   private final Supplier<Pose2d> selfGlobalPoseSupplier;
   private final Supplier<AngularVelocity> currentRobotYawVelocitySupplier;
 
-  public ContinuousAimCommand(Supplier<Translation3d> targetGlobalPoseSupplier,
+  public ContinuousAimCommand(Supplier<Translation2d> targetGlobalPoseSupplier,
       Supplier<Pose2d> selfGlobalPoseSupplier,
       Supplier<AngularVelocity> currentRobotYawVelocitySupplier) {
     this.turretSubsystem = TurretSubsystem.GetInstance();
@@ -38,7 +38,7 @@ public class ContinuousAimCommand extends Command {
     addRequirements(this.turretSubsystem);
   }
 
-  public ContinuousAimCommand(Supplier<Translation3d> targetGlobalPoseSupplier) {
+  public ContinuousAimCommand(Supplier<Translation2d> targetGlobalPoseSupplier) {
     this(targetGlobalPoseSupplier, GlobalPosition::Get,
         () -> Units.RadiansPerSecond.of(GlobalPosition.GetVelocity().omegaRadiansPerSecond));
   }
@@ -46,8 +46,8 @@ public class ContinuousAimCommand extends Command {
   @Override
   public void execute() {
     Pose2d selfPose = selfGlobalPoseSupplier.get();
-    Translation3d targetGlobal = targetGlobalPoseSupplier.get();
-    Pose2d targetPoseField = new Pose2d(targetGlobal.toTranslation2d(), new Rotation2d());
+    Translation2d targetGlobal = targetGlobalPoseSupplier.get();
+    Pose2d targetPoseField = new Pose2d(targetGlobal, new Rotation2d());
     Pose2d targetInRobotFrame = targetPoseField.relativeTo(selfPose);
     double yawRateRadPerSec = currentRobotYawVelocitySupplier.get().in(Units.RadiansPerSecond);
     double lagCompensationAngle = yawRateRadPerSec * TurretConstants.kRotationLagLeadSeconds;
