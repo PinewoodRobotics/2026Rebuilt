@@ -63,6 +63,32 @@ public class GlobalPosition extends SubsystemBase {
     return positionVelocity;
   }
 
+  /**
+   * Returns the velocity transformed from the global field frame to the
+   * robot-relative frame.
+   *
+   * @param rotationOfRobot The robot's current rotation (as a Rotation2d)
+   * @return ChassisSpeeds in the robot's local frame
+   */
+  public static ChassisSpeeds GetVelocity(Rotation2d rotationOfRobot) {
+    if (positionVelocity == null) {
+      return null;
+    }
+    // Field-relative to robot-relative: rotate the vx/vy by -robotAngle
+    var fieldVX = positionVelocity.vxMetersPerSecond;
+    var fieldVY = positionVelocity.vyMetersPerSecond;
+    var angular = positionVelocity.omegaRadiansPerSecond;
+
+    // Compute robot-relative velocities
+    double cos = rotationOfRobot.getCos();
+    double sin = rotationOfRobot.getSin();
+
+    double robotVX = fieldVX * cos + fieldVY * sin;
+    double robotVY = -fieldVX * sin + fieldVY * cos;
+
+    return new ChassisSpeeds(robotVX, robotVY, angular);
+  }
+
   @Override
   public void periodic() {
     Logger.recordOutput("Global/pose", position);

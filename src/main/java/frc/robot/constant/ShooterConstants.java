@@ -29,4 +29,13 @@ public class ShooterConstants {
   public static final AngularAcceleration kShooterMaxAcceleration = Units.RotationsPerSecondPerSecond.of(100.0);
 
   public static final int kShooterOffByMs = 200;
+
+  ///////////////// AIMING CONSTANTS /////////////////
+
+  public static final double kTimeVsDistanceSlope = 0.0111;
+  public static final double kTimeVsDistanceIntercept = 0.316;
+
+  public static double DistanceFromTargetToTime(double distance) {
+    return kTimeVsDistanceSlope * distance + kTimeVsDistanceIntercept;
+  }
 }

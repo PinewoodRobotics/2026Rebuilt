@@ -11,6 +11,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.units.Units;
@@ -18,6 +19,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.constant.ShooterConstants;
 import frc.robot.constant.TurretConstants;
 import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.TurretSubsystem;
@@ -47,22 +49,61 @@ public class ContinuousAimCommand extends Command {
   public void execute() {
     Pose2d selfPose = selfGlobalPoseSupplier.get();
     Translation2d targetGlobal = targetGlobalPoseSupplier.get();
-    Pose2d targetPoseField = new Pose2d(targetGlobal, new Rotation2d());
-    Pose2d targetInRobotFrame = targetPoseField.relativeTo(selfPose);
+
+    // Robot-relative pose of the target (for current instant)
+    Pose2d targetInRobotFrame = new Pose2d(targetGlobal, new Rotation2d()).relativeTo(selfPose);
+
+    // Time for the flywheel projectile to reach the target (from current pose)
+    double flyTime = ShooterConstants.DistanceFromTargetToTime(targetInRobotFrame.getTranslation().getNorm());
+
+    // Get robot's field-relative chassis speeds
+    ChassisSpeeds robotFieldSpeeds = GlobalPosition.GetVelocity();
+
+    // Compute where the target will *appear* to the robot at projectile arrival
+    // (lead target by own future motion)
+    // robotVelocity projected into robot-relative coordinates:
+    double robotTheta = selfPose.getRotation().getRadians();
+    double robotVXRobot = robotFieldSpeeds.vxMetersPerSecond * Math.cos(-robotTheta)
+        - robotFieldSpeeds.vyMetersPerSecond * Math.sin(-robotTheta);
+    double robotVYRobot = robotFieldSpeeds.vxMetersPerSecond * Math.sin(-robotTheta)
+        + robotFieldSpeeds.vyMetersPerSecond * Math.cos(-robotTheta);
+
+    // Compensate by predicting where the target *will be* relative to the robot at
+    // flyTime
+    Translation2d leadCompensation = new Translation2d(-robotVXRobot * flyTime, -robotVYRobot * flyTime);
+    Translation2d compensatedTargetInRobot = targetInRobotFrame.getTranslation().plus(leadCompensation);
+
+    // --- Compute compensated target in global frame ---
+    // To get the target's future global position, we must transform the compensated
+    // target in robot frame back to global
+    Translation2d compensatedTargetGlobal = compensatedTargetInRobot.rotateBy(selfPose.getRotation())
+        .plus(selfPose.getTranslation());
+
+    // Yaw lag compensation
     double yawRateRadPerSec = currentRobotYawVelocitySupplier.get().in(Units.RadiansPerSecond);
     double lagCompensationAngle = yawRateRadPerSec * TurretConstants.kRotationLagLeadSeconds;
-    double turretAngle = Math.atan2(targetInRobotFrame.getY(), targetInRobotFrame.getX()) + lagCompensationAngle;
-
+    double turretAngle = Math.atan2(compensatedTargetInRobot.getY(), compensatedTargetInRobot.getX())
+        + lagCompensationAngle;
     double ff = -yawRateRadPerSec * TurretConstants.kFFCommand;
 
-    Logger.recordOutput("Turret/goal", targetGlobal);
-    Logger.recordOutput("Turret/angle", turretAngle);
-    Logger.recordOutput("Turret/lagCompensationAngle", lagCompensationAngle);
-    Logger.recordOutput("Turret/FF", ff);
+    // Command the turret
+    turretSubsystem.setTurretPosition(Units.Radians.of(turretAngle), Units.Volts.of(ff));
 
-    turretSubsystem.setTurretPosition(Units.Radians.of(turretAngle),
-        Units.Volts.of(ff));
+    // Log both uncompensated and compensated target positions (robot and global
+    // frame)
+    Logger.recordOutput("Turret/TargetGlobal", targetGlobal);
+    Logger.recordOutput("Turret/TargetRobotRelativeUncompensated", targetInRobotFrame.getTranslation());
+    Logger.recordOutput("Turret/LeadCompensation", leadCompensation);
+    Logger.recordOutput("Turret/CompensatedTargetRobotRelative", compensatedTargetInRobot);
+    Logger.recordOutput("Turret/CompensatedTargetGlobal", compensatedTargetGlobal); // <-- ADDED LOG
+    Logger.recordOutput("Turret/YawRateRadPerSec", yawRateRadPerSec);
+    Logger.recordOutput("Turret/LagCompensationAngle", lagCompensationAngle);
+    Logger.recordOutput("Turret/Angle", turretAngle);
+    Logger.recordOutput("Turret/FF", ff);
+    Logger.recordOutput("Turret/FlyTime", flyTime);
   }
+
+  // No longer needed in this form – lead compensation is now done inline.
 
   /*
    * Translation2d velocity = currentRobotVelocitySupplier.get();
