@@ -27,6 +27,19 @@ def _wrap_to_pi(angle_rad: float) -> float:
     return float(np.arctan2(np.sin(angle_rad), np.cos(angle_rad)))
 
 
+def _get_angle_measurement_index(
+    H: NDArray[np.float64], angle_state_index: int = ANGLE_RAD_IDX
+) -> int | None:
+    if H.ndim != 2 or H.shape[1] <= angle_state_index:
+        return None
+
+    candidates = np.where(np.abs(H[:, angle_state_index]) > 1e-9)[0]
+    if candidates.size == 0:
+        return None
+
+    return int(candidates[0])
+
+
 # x, y, vx, vy, angl_rad, angl_vel_rad_s
 class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInheritance]
     ExtendedKalmanFilter, GenericFilterStrategy
@@ -109,13 +122,31 @@ class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInher
         for datapoint in data.get_input_list():
             R = R_sensor.copy() * datapoint.R_multipl
             add_to_diagonal(R, datapoint.R_add)
+            jacobian_h = (
+                data.jacobian_h if data.jacobian_h is not None else self.jacobian_h
+            )
+            hx = data.hx if data.hx is not None else self.hx
+            angle_measurement_idx = _get_angle_measurement_index(jacobian_h(self.x))
+
+            def _residual_with_angle_wrap(
+                z: NDArray[np.float64], h_x: NDArray[np.float64]
+            ) -> NDArray[np.float64]:
+                residual = np.subtract(z, h_x)
+                if (
+                    angle_measurement_idx is not None
+                    and angle_measurement_idx < residual.shape[0]
+                ):
+                    residual[angle_measurement_idx] = _wrap_to_pi(
+                        float(residual[angle_measurement_idx])
+                    )
+                return residual
 
             self.update(
                 np.asarray(datapoint.data, dtype=np.float64),
-                data.jacobian_h if data.jacobian_h is not None else self.jacobian_h,
-                data.hx if data.hx is not None else self.hx,
+                jacobian_h,
+                hx,
                 R=R,
-                residual=np.subtract,
+                residual=_residual_with_angle_wrap,
             )
             self._wrap_state_angle()
 

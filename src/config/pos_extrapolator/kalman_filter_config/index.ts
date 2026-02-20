@@ -7,10 +7,10 @@ import { MatrixUtil, VectorUtil } from "../../util/math";
 export const kalman_filter: KalmanFilterConfig = {
   state_vector: VectorUtil.fromArray([2.0, 5.0, 0.0, 0.0, 1.0, 0.0]), // [x, y, vx, vy, angle, angular_velocity_rad_s]
   uncertainty_matrix: MatrixUtil.buildMatrixFromDiagonal([
-    5.0, 5.0, 5.0, 5.0, 1000, 1000,
+    5.0, 5.0, 5.0, 5.0, 5.0, 5.0,
   ]),
   process_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
-    0.0001, 0.0001, 1, 1, 10000, 10000,
+    0.0001, 0.0001, 1, 1, 1, 1,
   ]),
   time_step_initial: 0.025,
   sensors: {
