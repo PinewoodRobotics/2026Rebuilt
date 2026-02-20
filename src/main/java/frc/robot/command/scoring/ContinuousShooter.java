@@ -111,8 +111,8 @@ public class ContinuousShooter extends Command {
 
     // Shooter
     Logger.recordOutput("ContinuousShooter/ShooterSetpointMps", shooterSetpoint.in(Units.MetersPerSecond));
-    Logger.recordOutput("ContinuousShooter/ShooterCurrentMps",
-        shooterSubsystem.getCurrentShooterVelocity().in(Units.MetersPerSecond));
+    Logger.recordOutput("ContinuousShooter/ShooterCurrentRPM",
+        shooterSubsystem.getCurrentShooterVelocity().in(Units.RPM));
     Logger.recordOutput("ContinuousShooter/ShooterTimeLeftMs", shooterSubsystem.timeLeftToReachVelocity());
     Logger.recordOutput("ContinuousShooter/ShooterReady",
         shooterSubsystem.timeLeftToReachVelocity() < ShooterConstants.kShooterOffByMs);
