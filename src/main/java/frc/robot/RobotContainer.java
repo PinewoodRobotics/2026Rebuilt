@@ -20,6 +20,9 @@ import pwrup.frc.core.controller.FlightStick;
 import pwrup.frc.core.controller.OperatorPanel;
 import pwrup.frc.core.online.PublicationSubsystem;
 
+import frc.robot.subsystem.IndexSubsystem;
+import frc.robot.command.testing.IndexCommand;
+
 public class RobotContainer {
   final OperatorPanel m_operatorPanel = new OperatorPanel(1);
   final FlightStick m_leftFlightStick = new FlightStick(2);
@@ -35,6 +38,7 @@ public class RobotContainer {
     SwerveSubsystem.GetInstance();
     CameraSubsystem.GetInstance();
     TurretSubsystem.GetInstance();
+    IndexSubsystem.GetInstance();
 
     // Initialize publication subsystem for sending data to Pi
     PublicationSubsystem.GetInstance(Robot.getCommunicationClient());
@@ -42,6 +46,14 @@ public class RobotContainer {
 
     setSwerveCommands();
     setTurretCommands();
+    setTestCommands();
+  }
+
+  private void setTestCommands() {
+    IndexSubsystem indexSubsystem = IndexSubsystem.GetInstance();
+    m_leftFlightStick
+        .B17()
+        .whileTrue(new IndexCommand(indexSubsystem, 0.45));
   }
 
   private void setSwerveCommands() {
