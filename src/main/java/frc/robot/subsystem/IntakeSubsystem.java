@@ -82,7 +82,6 @@ public class IntakeSubsystem extends SubsystemBase {
 
   public void setWristPosition(Rotation2d position) {
     m_wristSetpoint = position;
-    System.out.println("moving the wrist!");
   }
 
   public Rotation2d getSetpoint() {
@@ -124,10 +123,6 @@ public class IntakeSubsystem extends SubsystemBase {
         ControlType.kPosition,
         ClosedLoopSlot.kSlot0,
         calculateFeedForward());
-    System.out.printf(
-        "current pos is %.3f rot, trying to go to %.3f rot%n",
-        getWristPosition().getRotations(),
-        getSetpoint().getRotations());
 
   }
 }
