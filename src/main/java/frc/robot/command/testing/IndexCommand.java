@@ -15,12 +15,12 @@ public class IndexCommand extends Command {
 
   @Override
   public void execute() {
-    m_indexSubsystem.runMotor(m_speed);
+    m_indexSubsystem.runMotors(m_speed);
   }
 
   @Override
   public void end(boolean interrupted) {
-    m_indexSubsystem.stopMotor();
+    m_indexSubsystem.stopMotors();
   }
 
   @Override
