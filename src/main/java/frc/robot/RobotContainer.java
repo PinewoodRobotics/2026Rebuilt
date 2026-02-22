@@ -23,6 +23,7 @@ import pwrup.frc.core.controller.OperatorPanel;
 
 import frc.robot.subsystem.IndexSubsystem;
 import frc.robot.subsystem.IntakeSubsystem;
+import frc.robot.subsystem.OrchestraSubsystem;
 import frc.robot.command.testing.IndexCommand;
 import frc.robot.command.testing.IntakeCommand;
 import frc.robot.command.testing.SetWristPos;
@@ -44,6 +45,7 @@ public class RobotContainer {
     // TurretSubsystem.GetInstance();
     IndexSubsystem.GetInstance();
     IntakeSubsystem.GetInstance();
+    OrchestraSubsystem.GetInstance();
 
     // Initialize publication subsystem for sending data to Pi
     // PublicationSubsystem.GetInstance(Robot.getCommunicationClient());
@@ -57,6 +59,7 @@ public class RobotContainer {
   private void setTestCommands() {
     IndexSubsystem indexSubsystem = IndexSubsystem.GetInstance();
     IntakeSubsystem intakeSubsystem = IntakeSubsystem.GetInstance();
+    OrchestraSubsystem orchestraSubsystem = OrchestraSubsystem.GetInstance();
     m_leftFlightStick
         .B17()
         .whileTrue(new IndexCommand(indexSubsystem, 0.45));
@@ -72,6 +75,15 @@ public class RobotContainer {
     m_leftFlightStick
         .B8()
         .onTrue(new SetWristPos(intakeSubsystem, Rotation2d.fromRotations(0)));
+    m_leftFlightStick
+        .B5()
+        .onTrue(orchestraSubsystem.runOnce(orchestraSubsystem::togglePlayFromStart));
+    m_leftFlightStick
+        .B6()
+        .onTrue(orchestraSubsystem.runOnce(orchestraSubsystem::nextTrackAndPlay));
+    m_leftFlightStick
+        .B4()
+        .onTrue(orchestraSubsystem.runOnce(orchestraSubsystem::previousTrackAndPlay));
   }
 
   // private void setSwerveCommands() {
