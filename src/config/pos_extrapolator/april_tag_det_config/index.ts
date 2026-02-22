@@ -31,7 +31,11 @@ const april_tag_pos_config: AprilTagConfig = {
   tag_use_imu_rotation: TagUseImuRotation.UNTIL_FIRST_NON_TAG_ROTATION,
   disambiguation_time_window_s: 0.05,
   tag_disambiguation_mode: TagDisambiguationMode.LEAST_ANGLE_AND_DISTANCE,
-  tag_noise_adjust_config: {},
+  tag_noise_adjust_config: {
+    multiply_coef_m_distance_from_tag: 0.0,
+    pow_distance_from_tag_coef: 0.0,
+  },
+  tag_noise_adjust_mode: [],
 };
 
 export default april_tag_pos_config;
