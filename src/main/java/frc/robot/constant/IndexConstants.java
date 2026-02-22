@@ -1,6 +1,6 @@
 package frc.robot.constant;
 
 public class IndexConstants {
-  public static final int indexMotorID = 36;
-  public static final double indexMotorSpeed = 0.45;
+  public static final int kIndexMotorID = 3;
+  public static final double kIndexMotorSpeed = 0.5;
 }

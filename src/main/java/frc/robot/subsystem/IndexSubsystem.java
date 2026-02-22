@@ -24,7 +24,7 @@ public class IndexSubsystem extends SubsystemBase {
   }
 
   private IndexSubsystem() {
-    m_indexMotor = new SparkFlex(IndexConstants.indexMotorID, MotorType.kBrushless);
+    m_indexMotor = new SparkFlex(IndexConstants.kIndexMotorID, MotorType.kBrushless);
     configureMotor();
   }
 

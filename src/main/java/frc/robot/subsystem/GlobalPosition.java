@@ -94,6 +94,7 @@ public class GlobalPosition extends SubsystemBase {
     Logger.recordOutput("Global/pose", position);
     Logger.recordOutput("Global/velocity", positionVelocity);
     Logger.recordOutput("Global/lastUpdateTime", lastUpdateTime);
+    Logger.recordOutput("Global/updateTimeDifference", System.currentTimeMillis() - lastUpdateTime);
 
     for (AimPoint.ZoneName zoneName : AimPoint.ZoneName.values()) {
       AimPoint.logZoneForAdvantageScope(zoneName, "Global/Zones/All");

@@ -59,8 +59,6 @@ class BasicSystemConfig(BaseModel):
 
 class SystemStatus(Enum):
     PRODUCTION = "production"
-    DEVELOPMENT_LOCAL = "development_local"
-    DEVELOPMENT = "development_remote"
     SIMULATION = "simulation"
 
 

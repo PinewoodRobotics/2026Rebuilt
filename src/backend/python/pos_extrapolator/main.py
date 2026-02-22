@@ -52,6 +52,10 @@ from backend.python.pos_extrapolator.preparers.OdomDataPreparer import (
     OdomDataPreparerConfig,
 )
 
+REPLAY_PATH = (
+    "/opt/blitz/B.L.I.T.Z/replays/pose_extrapolator/replay-2026-01-25_12-22-17.db"
+)
+
 
 def init_utilities(
     config: Config, basic_system_config: BasicSystemConfig, autobahn_server: Autobahn
@@ -66,22 +70,28 @@ def init_utilities(
 
     if get_system_status() == SystemStatus.SIMULATION:
         init_replay_recorder(
-            process_name="pose_extrapolator", replay_path="latest", mode="r"
+            process_name="pose_extrapolator",
+            mode="r",
+            replay_path=REPLAY_PATH,
         )
     else:
-        init_replay_recorder(process_name="pose_extrapolator", mode="w")
+        init_replay_recorder(
+            process_name="pose_extrapolator",
+            mode="w",
+        )
 
 
 def get_autobahn_server(system_config: BasicSystemConfig):
     address = Address(system_config.autobahn.host, system_config.autobahn.port)
-    autobahn_server = Autobahn(address)
 
     if get_system_status() == SystemStatus.SIMULATION:
         autobahn_server = ReplayAutobahn(
-            replay_path="latest",
+            replay_path=REPLAY_PATH,
             publish_on_real_autobahn=True,
             address=address,
         )
+    else:
+        autobahn_server = Autobahn(address)
 
     return autobahn_server
 

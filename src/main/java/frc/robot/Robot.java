@@ -122,7 +122,7 @@ public class Robot extends LoggedRobot {
 
         System.out.println("[PiConnect] Connected to Pi Autobahn at " + address);
       } catch (IOException | InterruptedException e) {
-        e.printStackTrace();
+        //e.printStackTrace();
       } finally {
         networkAttemptInProgress = false;
       }

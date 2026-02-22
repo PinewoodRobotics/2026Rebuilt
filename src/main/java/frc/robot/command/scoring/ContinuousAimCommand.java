@@ -81,9 +81,10 @@ public class ContinuousAimCommand extends Command {
 
     // Yaw lag compensation
     double yawRateRadPerSec = currentRobotYawVelocitySupplier.get().in(Units.RadiansPerSecond);
-    double lagCompensationAngle = yawRateRadPerSec * TurretConstants.kRotationLagLeadSeconds;
-    double turretAngle = Math.atan2(compensatedTargetInRobot.getY(), compensatedTargetInRobot.getX())
-        + lagCompensationAngle;
+    // double lagCompensationAngle = yawRateRadPerSec *
+    // TurretConstants.kRotationLagLeadSeconds;
+    double turretAngle = Math.atan2(compensatedTargetInRobot.getY(), compensatedTargetInRobot.getX());
+    // + lagCompensationAngle;
     double ff = -yawRateRadPerSec * TurretConstants.kFFCommand;
 
     // Command the turret
@@ -97,7 +98,7 @@ public class ContinuousAimCommand extends Command {
     Logger.recordOutput("Turret/CompensatedTargetRobotRelative", compensatedTargetInRobot);
     Logger.recordOutput("Turret/CompensatedTargetGlobal", compensatedTargetGlobal); // <-- ADDED LOG
     Logger.recordOutput("Turret/YawRateRadPerSec", yawRateRadPerSec);
-    Logger.recordOutput("Turret/LagCompensationAngle", lagCompensationAngle);
+    // Logger.recordOutput("Turret/LagCompensationAngle", lagCompensationAngle);
     Logger.recordOutput("Turret/Angle", turretAngle);
     Logger.recordOutput("Turret/FF", ff);
     Logger.recordOutput("Turret/FlyTime", flyTime);

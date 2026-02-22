@@ -78,13 +78,6 @@ public class ShooterSubsystem extends SubsystemBase {
         .pid(ShooterConstants.kShooterFollowerP, ShooterConstants.kShooterI, ShooterConstants.kShooterD)
         .iZone(ShooterConstants.kShooterIZ);
 
-    leaderConfig.closedLoop.maxMotion
-        .cruiseVelocity(ShooterConstants.kShooterMaxVelocity.in(Units.RPM))
-        .maxAcceleration(ShooterConstants.kShooterMaxAcceleration.in(Units.RotationsPerSecondPerSecond) * 60.0);
-    followerConfig.closedLoop.maxMotion
-        .cruiseVelocity(ShooterConstants.kShooterMaxVelocity.in(Units.RPM))
-        .maxAcceleration(ShooterConstants.kShooterMaxAcceleration.in(Units.RotationsPerSecondPerSecond) * 60.0);
-
     leaderMotor.configure(
         leaderConfig,
         ResetMode.kResetSafeParameters,
@@ -112,9 +105,9 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     double feedForward = ShooterConstants.kFF * targetRpm;
-    leaderClosedLoopController.setSetpoint(targetRpm, ControlType.kMAXMotionVelocityControl,
+    leaderClosedLoopController.setSetpoint(targetRpm, ControlType.kVelocity,
         ClosedLoopSlot.kSlot0, feedForward);
-    followerClosedLoopController.setSetpoint(targetRpm, ControlType.kMAXMotionVelocityControl,
+    followerClosedLoopController.setSetpoint(targetRpm, ControlType.kVelocity,
         ClosedLoopSlot.kSlot0, feedForward);
 
     return timeLeftToReachVelocity();

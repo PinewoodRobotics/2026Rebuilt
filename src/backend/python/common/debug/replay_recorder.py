@@ -297,6 +297,10 @@ def get_next_key_replay(key: str) -> Replay | None:
 
 def record_output(key: str, data: T):
     global GLOBAL_INSTANCE
+
+    if isinstance(GLOBAL_INSTANCE, Player):
+        return
+
     if GLOBAL_INSTANCE is None:
         error("Replay recorder not initialized or in write mode")
         raise RuntimeError("Replay recorder not initialized or in write mode")
