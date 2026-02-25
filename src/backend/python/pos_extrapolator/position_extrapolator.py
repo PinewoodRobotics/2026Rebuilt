@@ -39,8 +39,7 @@ class PositionExtrapolator:
 
     def insert_sensor_data(self, data: object, sensor_id: str) -> None:
         context = ExtrapolationContext(
-            x=self.filter_strategy.get_state(),
-            P=self.filter_strategy.get_P(),
+            filter=self.filter_strategy,
             has_gotten_rotation=self.has_gotten_rotation,
         )
 
@@ -51,10 +50,10 @@ class PositionExtrapolator:
         if prepared_data is None:
             return
 
-        if self.is_rotation_gotten(prepared_data.sensor_type, sensor_id):
-            self.has_gotten_rotation = True
-
-        self.filter_strategy.insert_data(prepared_data)
+        for datapoint in prepared_data:
+            if self.is_rotation_gotten(datapoint.sensor_type, sensor_id):
+                self.has_gotten_rotation = True
+            self.filter_strategy.insert_data(datapoint)
 
     def is_rotation_gotten(
         self, sensor_type: KalmanFilterSensorType, sensor_id: str
@@ -66,8 +65,7 @@ class PositionExtrapolator:
             return self.config.odom_config.use_rotation
 
         if sensor_type == KalmanFilterSensorType.IMU:
-            imu_cfg = self.config.imu_config[sensor_id]
-            return imu_cfg.use_rotation
+            return self.config.imu_config[sensor_id].use_rotation
 
         return True
 

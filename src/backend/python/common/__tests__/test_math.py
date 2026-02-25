@@ -4,7 +4,7 @@ from backend.python.common.util.math import (
     get_np_from_matrix,
     get_np_from_vector,
     get_robot_in_world,
-    transform_matrix_to_size,
+    _transform_matrix_to_size,
     transform_matrix_to_size_square,
     transform_vector_to_size,
 )
@@ -55,14 +55,14 @@ def test_get_robot_in_world():
 def test_transform_matrix_to_size_square():
     matrix = np.eye(6)
     used_diagonals = [True, True, True, True, True, True]
-    transformed_matrix = transform_matrix_to_size(used_diagonals, matrix)
+    transformed_matrix = _transform_matrix_to_size(used_diagonals, matrix)
     assert np.allclose(transformed_matrix, matrix)
 
 
 def test_transform_matrix_to_size_nonsq():
     matrix = np.eye(6)
     used_diagonals = [True, True, False, False, False, False]
-    transformed_matrix = transform_matrix_to_size(used_diagonals, matrix)
+    transformed_matrix = _transform_matrix_to_size(used_diagonals, matrix)
     assert np.allclose(transformed_matrix[0, 0], 1)
     assert np.allclose(transformed_matrix[1, 1], 1)
     assert transformed_matrix.shape[0] == 2

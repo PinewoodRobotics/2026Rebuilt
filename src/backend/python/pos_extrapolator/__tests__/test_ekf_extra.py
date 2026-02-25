@@ -12,7 +12,7 @@ from backend.generated.thrift.config.kalman_filter.ttypes import (
 from backend.python.pos_extrapolator.data_prep import KalmanFilterInput, ProcessedData
 from backend.python.pos_extrapolator.filters.extended_kalman_filter import (
     ExtendedKalmanFilterStrategy,
-    add_to_diagonal,
+    _add_to_diagonal,
 )
 
 
@@ -125,7 +125,7 @@ def test_get_confidence_returns_zero_for_nan_or_inf_covariance():
 @pytest.mark.xfail(reason="add_to_diagonal is currently unimplemented (pass)")
 def test_add_to_diagonal_adds_value_to_diagonal_entries():
     m = np.zeros((3, 3), dtype=float)
-    add_to_diagonal(m, 2.5)
+    _add_to_diagonal(m, 2.5)
     assert np.allclose(np.diag(m), np.array([2.5, 2.5, 2.5]))
 
 

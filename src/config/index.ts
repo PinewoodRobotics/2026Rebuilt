@@ -28,7 +28,6 @@ const config: Config = {
     iou_threshold: 0,
     conf_threshold: 0,
   },
-  pi_name_to_pipeline_types: {},
 };
 
 export default config;

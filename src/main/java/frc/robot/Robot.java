@@ -11,6 +11,7 @@ import autobahn.client.Address;
 import autobahn.client.AutobahnClient;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.util.PathPlannerSetup;
 import frc.robot.util.RPC;
 import lombok.Getter;
 import pwrup.frc.core.constant.RaspberryPiConstants;
@@ -122,7 +123,7 @@ public class Robot extends LoggedRobot {
 
         System.out.println("[PiConnect] Connected to Pi Autobahn at " + address);
       } catch (IOException | InterruptedException e) {
-        //e.printStackTrace();
+        // e.printStackTrace();
       } finally {
         networkAttemptInProgress = false;
       }

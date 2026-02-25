@@ -48,6 +48,8 @@ public class OdometrySubsystem extends SubsystemBase implements IDataClass {
         getGlobalGyroRotation(),
         swerve.getSwerveModulePositions(),
         newPose);
+    timedPositions[0] = newPose;
+    timedPositions[1] = newPose;
   }
 
   public Rotation2d getGlobalGyroRotation() {

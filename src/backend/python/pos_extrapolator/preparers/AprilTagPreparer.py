@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import math
+from typing import TYPE_CHECKING
 import numpy as np
 from numpy.typing import NDArray
 from backend.python.common.debug.logger import debug
@@ -10,10 +11,7 @@ from backend.python.common.util.math import (
     get_np_from_vector,
     get_robot_in_world,
     get_translation_rotation_components,
-    make_3d_rotation_from_yaw,
     make_transformation_matrix_p_d,
-    transform_matrix_to_size,
-    transform_vector_to_size,
 )
 from backend.generated.proto.python.sensor.apriltags_pb2 import AprilTagData
 from backend.generated.proto.python.sensor.imu_pb2 import ImuData
@@ -34,27 +32,15 @@ from backend.python.pos_extrapolator.data_prep import (
     DataPreparerManager,
     ExtrapolationContext,
     KalmanFilterInput,
-    ProcessedData,
 )
-from backend.python.pos_extrapolator.filters.gate.mahalanobis import (
-    mahalanobis_distance,
-)
+from backend.python.pos_extrapolator.filters.extended_kalman_filter import T_EKF
 from backend.python.pos_extrapolator.position_extrapolator import PositionExtrapolator
 
+# from typing import override
 
-def _angle_difference_deg(x_hat: NDArray[np.float64], x: NDArray[np.float64]) -> float:
-    measured_angle = math.atan2(float(x_hat[3]), float(x_hat[2]))
-    state_angle = math.atan2(float(x[5]), float(x[4]))
-    diff = measured_angle - state_angle
-    while diff > math.pi:
-        diff -= 2 * math.pi
-    while diff < -math.pi:
-        diff += 2 * math.pi
-    return abs(math.degrees(diff))
-
-
-def _distance_difference_m(x_hat: NDArray[np.float64], x: NDArray[np.float64]) -> float:
-    return np.sqrt((x_hat[0] - x[0]) ** 2 + (x_hat[1] - x[1]) ** 2)
+# rotation_angle_rad = np.atan2( <- correct rotation theta angle
+#    render_direction_vector[1] /*y*/, render_direction_vector[0] /*x*/
+# )
 
 
 @dataclass
@@ -66,11 +52,7 @@ class AprilTagPreparerConfig:
 
 
 class AprilTagDataPreparerConfig(ConfigProvider[AprilTagPreparerConfig]):
-    def __init__(self, config: AprilTagPreparerConfig):
-        self.config = config
-
-    def get_config(self) -> AprilTagPreparerConfig:
-        return self.config
+    pass
 
 
 @DataPreparerManager.register(proto_type=AprilTagData)
@@ -88,10 +70,21 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
 
         self.tag_noise_adjust_mode = self.april_tag_config.tag_noise_adjust_mode
 
+    def should_use_imu_rotation(self, context: ExtrapolationContext) -> bool:
+        if self.use_imu_rotation == TagUseImuRotation.ALWAYS:
+            return True
+
+        if self.use_imu_rotation == TagUseImuRotation.UNTIL_FIRST_NON_TAG_ROTATION:
+            return context.has_gotten_rotation
+
+        return False
+
+    # @override
     def get_data_type(self) -> type[AprilTagData]:
         return AprilTagData
 
-    def get_used_indices(self) -> list[bool]:
+    # @override
+    def _used_indices(self) -> list[bool]:
         used_indices: list[bool] = []
 
         used_indices.extend([True] * 2)
@@ -101,34 +94,20 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
 
         return used_indices
 
-    def jacobian_h(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
-        return transform_matrix_to_size(self.get_used_indices(), np.eye(6))
-
-    def hx(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
-        return transform_vector_to_size(x, self.get_used_indices())
-
-    def should_use_imu_rotation(self, context: ExtrapolationContext | None) -> bool:
-        if context is None:
-            return False
-
-        if self.use_imu_rotation == TagUseImuRotation.ALWAYS:
-            return True
-
-        if self.use_imu_rotation == TagUseImuRotation.UNTIL_FIRST_NON_TAG_ROTATION:
-            return context.has_gotten_rotation
-
-        return False
-
-    def prepare_input(
+    # @override
+    def _prepare(
         self,
         data: AprilTagData,
         sensor_id: str,
         context: ExtrapolationContext | None = None,
-    ) -> KalmanFilterInput | None:
+    ) -> list[KalmanFilterInput] | KalmanFilterInput | None:
+        assert context is not None
         if data.WhichOneof("data") == "raw_tags":
-            raise ValueError("Tags are not in processed format")
+            raise ValueError(
+                "Tried to insert AprilTagData with raw tags, but tags are not in processed format"
+            )
 
-        input_list: list[ProcessedData] = []
+        input_list: list[KalmanFilterInput] = []
         for tag in data.world_tags.tags:
             tag_id = tag.id
             if tag_id not in self.tags_in_world:
@@ -167,17 +146,13 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
 
             R_robot_rotation_world: NDArray[np.float64] | None = None
             if self.should_use_imu_rotation(context):
-                assert context is not None
-                heading_rad = float(context.x[4])
-                if heading_rad is not None:
-                    R_robot_rotation_world = make_transformation_matrix_p_d(
-                        position=np.array([0, 0, 0]),
-                        direction_vector=np.array(
-                            [np.cos(heading_rad), np.sin(heading_rad), 0]
-                        ),
-                    )[:3, :3]
+                direction_2d = context.filter.angle()
+                direction_3d = np.array([direction_2d[0], direction_2d[1], 0.0])
+                R_robot_rotation_world = make_transformation_matrix_p_d(
+                    direction_vector=direction_3d,
+                )[:3, :3]
 
-            render_pose, render_rotation = get_translation_rotation_components(
+            pose, rotation = get_translation_rotation_components(
                 get_robot_in_world(
                     T_tag_in_camera=T_tag_in_camera,
                     T_camera_in_robot=T_camera_in_robot,
@@ -186,32 +161,24 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
                 )
             )
 
-            render_direction_vector = render_rotation[0:3, 0]
-            rotation_angle_rad = np.atan2(
-                render_direction_vector[1], render_direction_vector[0]
-            )
-            # rotation_angle_rad = np.atan2( <- correct rotation theta angle
-            #    render_direction_vector[1] /*y*/, render_direction_vector[0] /*x*/
-            # )
-
+            direction_vector = rotation[0:3, 0]
+            angle_rad = np.atan2(direction_vector[1], direction_vector[0])
             datapoint = np.array(
                 [
-                    render_pose[0],
-                    render_pose[1],
-                    rotation_angle_rad,
+                    pose[0],
+                    pose[1],
+                    angle_rad,
                 ]
             )
 
-            multiplier, add = 1, 0
-
             input_list.append(
-                ProcessedData(data=datapoint, R_multipl=multiplier, R_add=add)
+                KalmanFilterInput(
+                    input=datapoint,
+                    sensor_id=sensor_id,
+                    sensor_type=KalmanFilterSensorType.APRIL_TAG,
+                    jacobian_h=T_EKF.generic_jacobian_h(self.get_used_indices()),
+                    hx=T_EKF.generic_hx(self.get_used_indices()),
+                )
             )
 
-        return KalmanFilterInput(
-            input=input_list,
-            sensor_id=sensor_id,
-            sensor_type=KalmanFilterSensorType.APRIL_TAG,
-            jacobian_h=self.jacobian_h,
-            hx=self.hx,
-        )
+        return input_list

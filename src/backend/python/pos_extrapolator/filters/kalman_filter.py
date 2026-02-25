@@ -85,3 +85,6 @@ class KalmanFilterStrategy(
         self.F[1][size_matrix_h // 2] = new_delta_t
         self.F[0][0] = size_matrix_w
         self.F[1][1] = size_matrix_h
+
+
+T_KF = KalmanFilterStrategy

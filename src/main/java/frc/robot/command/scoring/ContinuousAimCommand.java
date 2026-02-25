@@ -23,85 +23,54 @@ import frc.robot.constant.ShooterConstants;
 import frc.robot.constant.TurretConstants;
 import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.TurretSubsystem;
+import frc.robot.subsystem.GlobalPosition.GMFrame;
 
 public class ContinuousAimCommand extends Command {
   private final TurretSubsystem turretSubsystem;
   private final Supplier<Translation2d> targetGlobalPoseSupplier;
-  private final Supplier<Pose2d> selfGlobalPoseSupplier;
-  private final Supplier<AngularVelocity> currentRobotYawVelocitySupplier;
-
-  public ContinuousAimCommand(Supplier<Translation2d> targetGlobalPoseSupplier,
-      Supplier<Pose2d> selfGlobalPoseSupplier,
-      Supplier<AngularVelocity> currentRobotYawVelocitySupplier) {
-    this.turretSubsystem = TurretSubsystem.GetInstance();
-    this.targetGlobalPoseSupplier = targetGlobalPoseSupplier;
-    this.selfGlobalPoseSupplier = selfGlobalPoseSupplier;
-    this.currentRobotYawVelocitySupplier = currentRobotYawVelocitySupplier;
-    addRequirements(this.turretSubsystem);
-  }
 
   public ContinuousAimCommand(Supplier<Translation2d> targetGlobalPoseSupplier) {
-    this(targetGlobalPoseSupplier, GlobalPosition::Get,
-        () -> Units.RadiansPerSecond.of(GlobalPosition.GetVelocity().omegaRadiansPerSecond));
+    this.turretSubsystem = TurretSubsystem.GetInstance();
+    this.targetGlobalPoseSupplier = targetGlobalPoseSupplier;
+    addRequirements(this.turretSubsystem);
   }
 
   @Override
   public void execute() {
-    Pose2d selfPose = selfGlobalPoseSupplier.get();
+    Pose2d selfPose = GlobalPosition.Get();
     Translation2d targetGlobal = targetGlobalPoseSupplier.get();
 
-    // Robot-relative pose of the target (for current instant)
     Pose2d targetInRobotFrame = new Pose2d(targetGlobal, new Rotation2d()).relativeTo(selfPose);
+    double distanceToTarget = targetInRobotFrame.getTranslation().getNorm();
+    double flyTime = ShooterConstants.DistanceFromTargetToTime(distanceToTarget);
 
-    // Time for the flywheel projectile to reach the target (from current pose)
-    double flyTime = ShooterConstants.DistanceFromTargetToTime(targetInRobotFrame.getTranslation().getNorm());
-
-    // Get robot's field-relative chassis speeds
-    ChassisSpeeds robotFieldSpeeds = GlobalPosition.GetVelocity();
-
-    // Compute where the target will *appear* to the robot at projectile arrival
-    // (lead target by own future motion)
-    // robotVelocity projected into robot-relative coordinates:
+    ChassisSpeeds robotFieldSpeeds = GlobalPosition.Velocity(GMFrame.kFieldRelative);
     double robotTheta = selfPose.getRotation().getRadians();
     double robotVXRobot = robotFieldSpeeds.vxMetersPerSecond * Math.cos(-robotTheta)
         - robotFieldSpeeds.vyMetersPerSecond * Math.sin(-robotTheta);
     double robotVYRobot = robotFieldSpeeds.vxMetersPerSecond * Math.sin(-robotTheta)
         + robotFieldSpeeds.vyMetersPerSecond * Math.cos(-robotTheta);
 
-    // Compensate by predicting where the target *will be* relative to the robot at
-    // flyTime
     Translation2d leadCompensation = new Translation2d(-robotVXRobot * flyTime, -robotVYRobot * flyTime);
     Translation2d compensatedTargetInRobot = targetInRobotFrame.getTranslation().plus(leadCompensation);
 
-    // --- Compute compensated target in global frame ---
-    // To get the target's future global position, we must transform the compensated
-    // target in robot frame back to global
-    Translation2d compensatedTargetGlobal = compensatedTargetInRobot.rotateBy(selfPose.getRotation())
-        .plus(selfPose.getTranslation());
-
-    // Yaw lag compensation
-    double yawRateRadPerSec = currentRobotYawVelocitySupplier.get().in(Units.RadiansPerSecond);
-    // double lagCompensationAngle = yawRateRadPerSec *
-    // TurretConstants.kRotationLagLeadSeconds;
     double turretAngle = Math.atan2(compensatedTargetInRobot.getY(), compensatedTargetInRobot.getX());
-    // + lagCompensationAngle;
+
+    double yawRateRadPerSec = GlobalPosition.Velocity(GMFrame.kFieldRelative).omegaRadiansPerSecond;
     double ff = -yawRateRadPerSec * TurretConstants.kFFCommand;
 
-    // Command the turret
     turretSubsystem.setTurretPosition(Units.Radians.of(turretAngle), Units.Volts.of(ff));
 
-    // Log both uncompensated and compensated target positions (robot and global
-    // frame)
     Logger.recordOutput("Turret/TargetGlobal", targetGlobal);
-    Logger.recordOutput("Turret/TargetRobotRelativeUncompensated", targetInRobotFrame.getTranslation());
+
+    Logger.recordOutput("Turret/DistanceToTarget", distanceToTarget);
+    Logger.recordOutput("Turret/FlyTime", flyTime);
+
     Logger.recordOutput("Turret/LeadCompensation", leadCompensation);
     Logger.recordOutput("Turret/CompensatedTargetRobotRelative", compensatedTargetInRobot);
-    Logger.recordOutput("Turret/CompensatedTargetGlobal", compensatedTargetGlobal); // <-- ADDED LOG
     Logger.recordOutput("Turret/YawRateRadPerSec", yawRateRadPerSec);
-    // Logger.recordOutput("Turret/LagCompensationAngle", lagCompensationAngle);
     Logger.recordOutput("Turret/Angle", turretAngle);
     Logger.recordOutput("Turret/FF", ff);
-    Logger.recordOutput("Turret/FlyTime", flyTime);
   }
 
   // No longer needed in this form – lead compensation is now done inline.

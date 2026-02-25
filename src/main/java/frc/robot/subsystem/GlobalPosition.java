@@ -7,7 +7,9 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import autobahn.client.NamedCallback;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.util.protobuf.ProtobufSerializable;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robot;
@@ -17,9 +19,15 @@ import frc4765.proto.util.Position.RobotPosition;
 
 public class GlobalPosition extends SubsystemBase {
   private static volatile long lastUpdateTime;
+  private static volatile double positionUpdateHz;
   private static GlobalPosition self;
   private static Pose2d position;
   private static ChassisSpeeds positionVelocity;
+
+  public static enum GMFrame {
+    kFieldRelative,
+    kRobotRelative,
+  }
 
   public static GlobalPosition GetInstance() {
     if (self == null) {
@@ -29,6 +37,7 @@ public class GlobalPosition extends SubsystemBase {
   }
 
   public GlobalPosition() {
+    lastUpdateTime = System.currentTimeMillis();
     Robot.getCommunicationClient().subscribe(TopicConstants.kPoseSubscribeTopic,
         NamedCallback.FromConsumer(this::subscription));
   }
@@ -48,7 +57,9 @@ public class GlobalPosition extends SubsystemBase {
       positionVelocity = new ChassisSpeeds(velocity.getX(), velocity.getY(),
           rotationSpeed);
 
-      lastUpdateTime = (long) System.currentTimeMillis();
+      long now = System.currentTimeMillis();
+      positionUpdateHz = 1000.0 / ((double) (now - lastUpdateTime));
+      lastUpdateTime = now;
     } catch (InvalidProtocolBufferException e) {
       e.printStackTrace();
       return;
@@ -59,42 +70,51 @@ public class GlobalPosition extends SubsystemBase {
     return position;
   }
 
-  public static ChassisSpeeds GetVelocity() {
+  public static Translation2d Velocity2d(GMFrame velocityType) {
+    var velocity = Velocity(velocityType);
+    return new Translation2d(velocity.vxMetersPerSecond, velocity.vyMetersPerSecond);
+  }
+
+  public static ChassisSpeeds Velocity(GMFrame velocityType) {
+    if (velocityType == GMFrame.kFieldRelative) {
+      return positionVelocity;
+    } else if (velocityType == GMFrame.kRobotRelative) {
+      return VelocityInFrame(position.getRotation());
+    }
+
     return positionVelocity;
   }
 
   /**
-   * Returns the velocity transformed from the global field frame to the
-   * robot-relative frame.
-   *
-   * @param rotationOfRobot The robot's current rotation (as a Rotation2d)
-   * @return ChassisSpeeds in the robot's local frame
+   * Converts the velocity from the field frame to the robot frame.
+   * 
+   * @param rotationOfRobot The rotation of the robot in the field frame. This is
+   *                        the angle of the robot in the field frame.
+   * @return The velocity in the robot frame.
    */
-  public static ChassisSpeeds GetVelocity(Rotation2d rotationOfRobot) {
+  public static ChassisSpeeds VelocityInFrame(Rotation2d rotationOfRobot) {
     if (positionVelocity == null) {
       return null;
     }
-    // Field-relative to robot-relative: rotate the vx/vy by -robotAngle
-    var fieldVX = positionVelocity.vxMetersPerSecond;
-    var fieldVY = positionVelocity.vyMetersPerSecond;
-    var angular = positionVelocity.omegaRadiansPerSecond;
 
-    // Compute robot-relative velocities
-    double cos = rotationOfRobot.getCos();
-    double sin = rotationOfRobot.getSin();
+    return ChassisSpeeds.fromFieldRelativeSpeeds(positionVelocity, rotationOfRobot);
+  }
 
-    double robotVX = fieldVX * cos + fieldVY * sin;
-    double robotVY = -fieldVX * sin + fieldVY * cos;
+  public static Pose2d ToRobotRelative(Pose2d pose) {
+    return pose.relativeTo(position);
+  }
 
-    return new ChassisSpeeds(robotVX, robotVY, angular);
+  public static Translation2d ToRobotRelative(Translation2d translation) {
+    return translation.rotateBy(position.getRotation());
   }
 
   @Override
   public void periodic() {
     Logger.recordOutput("Global/pose", position);
     Logger.recordOutput("Global/velocity", positionVelocity);
-    Logger.recordOutput("Global/lastUpdateTime", lastUpdateTime);
-    Logger.recordOutput("Global/updateTimeDifference", System.currentTimeMillis() - lastUpdateTime);
+    if (positionUpdateHz < 100) {
+      Logger.recordOutput("Global/positionUpdateHz", positionUpdateHz);
+    }
 
     for (AimPoint.ZoneName zoneName : AimPoint.ZoneName.values()) {
       AimPoint.logZoneForAdvantageScope(zoneName, "Global/Zones/All");

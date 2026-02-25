@@ -1,8 +1,11 @@
-from typing import Optional, cast
+from typing import cast
 import numpy as np
 from numpy.typing import NDArray
 
-from backend.generated.thrift.config.common.ttypes import GenericVector, GenericMatrix
+from backend.generated.thrift.config.common.ttypes import (
+    GenericVector,
+    GenericMatrix,
+)
 
 
 def get_translation_rotation_components(
@@ -19,8 +22,8 @@ def normalize_vector(vector: NDArray[np.float64]) -> NDArray[np.float64]:
 
 def make_transformation_matrix_p_d(
     *,
-    position: NDArray[np.float64],
-    direction_vector: NDArray[np.float64],
+    position: NDArray[np.float64] = np.array([0, 0, 0]),
+    direction_vector: NDArray[np.float64] = np.array([1, 0, 0]),
     z_axis: NDArray[np.float64] = np.array([0, 0, 1]),
 ) -> NDArray[np.float64]:
     x_axis = normalize_vector(direction_vector)
@@ -130,9 +133,17 @@ def get_np_from_matrix(
     return np.array(matrix.values)
 
 
-def transform_matrix_to_size(
+def _transform_matrix_to_size(
     used_diagonals: list[bool],
     matrix: NDArray[np.float64] = np.eye(6),
+) -> NDArray[np.float64]:
+    indices = [i for i, used in enumerate(used_diagonals) if used]
+    return matrix[indices, :]
+
+
+def transform_matrix_to_size(
+    matrix: NDArray[np.float64],
+    used_diagonals: list[bool],
 ) -> NDArray[np.float64]:
     indices = [i for i, used in enumerate(used_diagonals) if used]
     return matrix[indices, :]

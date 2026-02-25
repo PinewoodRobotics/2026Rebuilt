@@ -22,11 +22,6 @@ from backend.python.common.debug.logger import (
     info,
     init_logging,
 )
-from backend.python.common.debug.pubsub_replay import ReplayAutobahn, autolog
-from backend.python.common.debug.replay_recorder import (
-    init_replay_recorder,
-    record_output,
-)
 from backend.python.common.util.extension import subscribe_to_multiple_topics
 from backend.python.common.util.parser import get_default_process_parser
 from backend.python.common.util.system import (
@@ -52,10 +47,6 @@ from backend.python.pos_extrapolator.preparers.OdomDataPreparer import (
     OdomDataPreparerConfig,
 )
 
-REPLAY_PATH = (
-    "/opt/blitz/B.L.I.T.Z/replays/pose_extrapolator/replay-2026-01-25_12-22-17.db"
-)
-
 
 def init_utilities(
     config: Config, basic_system_config: BasicSystemConfig, autobahn_server: Autobahn
@@ -68,32 +59,9 @@ def init_utilities(
         system_name=get_system_name(),
     )
 
-    if get_system_status() == SystemStatus.SIMULATION:
-        init_replay_recorder(
-            process_name="pose_extrapolator",
-            mode="r",
-            replay_path=REPLAY_PATH,
-        )
-    else:
-        init_replay_recorder(
-            process_name="pose_extrapolator",
-            mode="w",
-        )
-
 
 def get_autobahn_server(system_config: BasicSystemConfig):
-    address = Address(system_config.autobahn.host, system_config.autobahn.port)
-
-    if get_system_status() == SystemStatus.SIMULATION:
-        autobahn_server = ReplayAutobahn(
-            replay_path=REPLAY_PATH,
-            publish_on_real_autobahn=True,
-            address=address,
-        )
-    else:
-        autobahn_server = Autobahn(address)
-
-    return autobahn_server
+    return Autobahn(Address(system_config.autobahn.host, system_config.autobahn.port))
 
 
 def init_data_preparer_manager(config: Config):
@@ -111,7 +79,7 @@ def init_data_preparer_manager(config: Config):
         DataPreparerManager.set_config(
             AprilTagData,
             AprilTagDataPreparerConfig(
-                config=AprilTagPreparerConfig(
+                AprilTagPreparerConfig(
                     tags_in_world=config.pos_extrapolator.april_tag_config.tag_position_config,
                     cameras_in_robot=config.pos_extrapolator.april_tag_config.camera_position_config,
                     use_imu_rotation=config.pos_extrapolator.april_tag_config.tag_use_imu_rotation,
@@ -135,6 +103,8 @@ def get_subscribe_topics(config: Config):
         subscribe_topics.append(
             config.pos_extrapolator.message_config.post_tag_input_topic
         )
+    if config.pos_extrapolator.composite_publish_topic:
+        subscribe_topics.append(config.pos_extrapolator.composite_publish_topic)
 
     return subscribe_topics
 
@@ -157,7 +127,6 @@ async def main():
         DataPreparerManager(),
     )
 
-    @autolog(config.pos_extrapolator.message_config.post_tag_input_topic)
     async def process_data(message: bytes):
         data = GeneralSensorData.FromString(message)
         one_of_name = data.WhichOneof("data")
@@ -170,12 +139,6 @@ async def main():
             error(
                 f"Something went wrong when inserting data into Position Extrapolator: {e}"
             )
-
-    if (
-        hasattr(config.pos_extrapolator, "composite_publish_topic")
-        and config.pos_extrapolator.composite_publish_topic is not None
-    ):
-        subscribe_topics.append(config.pos_extrapolator.composite_publish_topic)
 
     await subscribe_to_multiple_topics(
         autobahn_server,
@@ -191,11 +154,6 @@ async def main():
         await autobahn_server.publish(
             config.pos_extrapolator.message_config.post_robot_position_output_topic,
             proto_position.SerializeToString(),
-        )
-
-        record_output(
-            config.pos_extrapolator.message_config.post_robot_position_output_topic,
-            proto_position,
         )
 
         await asyncio.sleep(

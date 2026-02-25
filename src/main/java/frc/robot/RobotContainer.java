@@ -44,7 +44,7 @@ public class RobotContainer {
     OdometrySubsystem.GetInstance();
     AHRSGyro.GetInstance();
     SwerveSubsystem.GetInstance();
-    CameraSubsystem.GetInstance();
+    // CameraSubsystem.GetInstance();
 
     TurretSubsystem.GetInstance();
     ShooterSubsystem.GetInstance();
@@ -125,12 +125,10 @@ public class RobotContainer {
   }
 
   public Command getAutonomousCommand() {
-    return new Command() {
-    };
+    return PathPlannerSetup.getAutonomousCommand();
   }
 
   public void onAnyModeStart() {
-
     TurretSubsystem.GetInstance().reset();
     var position = GlobalPosition.Get();
     if (position != null) {
@@ -143,6 +141,5 @@ public class RobotContainer {
           OdometrySubsystem.GetInstance(),
           AHRSGyro.GetInstance());
     }
-
   }
 }

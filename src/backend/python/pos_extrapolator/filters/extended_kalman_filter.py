@@ -1,46 +1,81 @@
 import time
 from typing import Any, Callable
+from enum import Enum
 from filterpy.kalman import ExtendedKalmanFilter
 import numpy as np
 import warnings
 
 from numpy.typing import NDArray
-from scipy.linalg import cho_factor, cho_solve
-from scipy.stats import chi2
 
-from backend.python.common.util.math import get_np_from_matrix, get_np_from_vector
+from backend.python.common.util.math import (
+    get_np_from_matrix,
+    get_np_from_vector,
+    transform_matrix_to_size,
+    transform_vector_to_size,
+)
 from backend.generated.thrift.config.kalman_filter.ttypes import (
     KalmanFilterConfig,
     KalmanFilterSensorType,
 )
 from backend.python.pos_extrapolator.data_prep import (
-    ExtrapolationContext,
     KalmanFilterInput,
 )
 from backend.python.pos_extrapolator.filter_strat import GenericFilterStrategy
-
-# State indices: x, y, vx, vy, angl_rad, angl_vel_rad_s
-ANGLE_RAD_IDX = 4
 
 
 def _wrap_to_pi(angle_rad: float) -> float:
     return float(np.arctan2(np.sin(angle_rad), np.cos(angle_rad)))
 
 
-def _get_angle_measurement_index(
-    H: NDArray[np.float64], angle_state_index: int = ANGLE_RAD_IDX
-) -> int | None:
-    if H.ndim != 2 or H.shape[1] <= angle_state_index:
-        return None
-
-    candidates = np.where(np.abs(H[:, angle_state_index]) > 1e-9)[0]
-    if candidates.size == 0:
-        return None
-
-    return int(candidates[0])
+def _add_to_diagonal(mat: NDArray[np.float64], num: float):
+    for i in range(min(mat.shape[0], mat.shape[1])):
+        mat[i, i] += num
 
 
-# x, y, vx, vy, angl_rad, angl_vel_rad_s
+def _residual_with_angle_wrap(
+    z: NDArray[np.float64],
+    h_x: NDArray[np.float64],
+    angle_measurement_idx: int | None,
+) -> NDArray[np.float64]:
+    """
+    Residual with angle wrap. This is used to wrap the angle residual to the range [-π, π].
+    Residual definition:
+      A function that returns the difference between the measurement and the prediction.
+      Essentially a vector subtraction function specific to the filter.
+
+    Args:
+        z: Measurement vector.
+        h_x: Prediction vector.
+
+    Returns:
+        Residual vector with angle wrapped to the range [-π, π].
+
+    Reason needed:
+      The angle residual is not automatically wrapped to the range [-π, π] by the filter so it will bug out when
+      the angle goes outside of this range or changes from -pi to pi (0 angle difference read as huge change).
+    """
+
+    residual = np.subtract(z, h_x)
+    if angle_measurement_idx is None:
+        return residual
+
+    if 0 <= angle_measurement_idx < len(residual):
+        residual[angle_measurement_idx] = _wrap_to_pi(
+            float(residual[angle_measurement_idx])
+        )
+
+    return residual
+
+
+class FilterStateType(Enum):
+    POS_X = GenericFilterStrategy.kPosXIdx
+    POS_Y = GenericFilterStrategy.kPosYIdx
+    VEL_X = GenericFilterStrategy.kVelXIdx
+    VEL_Y = GenericFilterStrategy.kVelYIdx
+    ANGLE_RAD = GenericFilterStrategy.kAngleRadIdx
+    ANGLE_VEL_RAD_S = GenericFilterStrategy.kAngleVelRadSIdx
+
+
 class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInheritance]
     ExtendedKalmanFilter, GenericFilterStrategy
 ):  # pyright: ignore[reportUnsafeMultipleInheritance]
@@ -49,20 +84,21 @@ class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInher
         config: KalmanFilterConfig,
         fake_dt: float | None = None,
     ):
-        super().__init__(dim_x=6, dim_z=6)
-        self.hw = 6
-        self.x = get_np_from_vector(config.state_vector)
+        ExtendedKalmanFilter.__init__(
+            self,
+            dim_x=GenericFilterStrategy.kNumStates,
+            dim_z=GenericFilterStrategy.kNumOutputs,
+        )
+        GenericFilterStrategy.__init__(self, x=self.x)
+
+        self.hw = GenericFilterStrategy.kNumStates
+        self.x = get_np_from_vector(config.initial_state_vector)
         self.P = get_np_from_matrix(config.uncertainty_matrix)
         self.Q = get_np_from_matrix(config.process_noise_matrix)
         self.config = config
         self.R_sensors = self.get_R_sensors(config)
         self.last_update_time = time.time()
         self.fake_dt = fake_dt
-        self._wrap_state_angle()
-
-    def _wrap_state_angle(self) -> None:
-        if self.x.size > ANGLE_RAD_IDX:
-            self.x[ANGLE_RAD_IDX] = _wrap_to_pi(float(self.x[ANGLE_RAD_IDX]))
 
     def get_R_sensors(
         self, config: KalmanFilterConfig
@@ -79,14 +115,51 @@ class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInher
 
         return output
 
-    def jacobian_h(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
-        return np.eye(6)
+    @staticmethod
+    def generic_jacobian_h(
+        used_indices: list[bool],
+    ) -> Callable[[NDArray[np.float64]], NDArray[np.float64]]:
+        """
+        Returns a function that returns the Jacobian of the measurement function. This is generalized for common preparation steps.
+        """
+        return lambda _: transform_matrix_to_size(
+            np.eye(len(used_indices)), used_indices
+        )
+
+    @staticmethod
+    def generic_hx(
+        used_indices: list[bool],
+    ) -> Callable[[NDArray[np.float64]], NDArray[np.float64]]:
+        """
+        Returns a function that returns the measurement function. This is generalized for common preparation steps.
+        """
+        return lambda x: transform_vector_to_size(x, used_indices)
 
     def get_R(self) -> NDArray[np.float64]:
         return self.R
 
-    def hx(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
-        return x
+    def _infer_measurement_idx(
+        self,
+        jacobian_h: Callable[[NDArray[np.float64]], NDArray[np.float64]],
+        state_type: FilterStateType,
+    ) -> int | None:
+        """
+        Infer which measurement index maps to a given state component from H Jacobian.
+        Returns None if this measurement does not include the requested state.
+        """
+        state_idx = state_type.value
+        H = jacobian_h(self.x)
+        if H.ndim != 2 or H.shape[1] <= state_idx:
+            return None
+
+        state_col = np.abs(H[:, state_idx])
+        if state_col.size == 0:
+            return None
+
+        idx = int(np.argmax(state_col))
+        if float(state_col[idx]) <= 1e-12:
+            return None
+        return idx
 
     def prediction_step(self):
         if self.fake_dt is not None:
@@ -99,12 +172,10 @@ class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInher
 
         self.set_delta_t(dt)
         self.predict()
-        self._wrap_state_angle()
+
         self.last_update_time = time.time()
 
     def insert_data(self, data: KalmanFilterInput) -> None:
-        self.prediction_step()
-
         if data.sensor_type not in self.R_sensors:
             warnings.warn(
                 f"Sensor type {data.sensor_type} not found in R_sensors, skipping update"
@@ -117,38 +188,37 @@ class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInher
             )
             return
 
+        self.prediction_step()
+
         R_sensor = self.R_sensors[data.sensor_type][data.sensor_id]
 
-        for datapoint in data.get_input_list():
-            R = R_sensor.copy() * datapoint.R_multipl
-            add_to_diagonal(R, datapoint.R_add)
-            jacobian_h = (
-                data.jacobian_h if data.jacobian_h is not None else self.jacobian_h
-            )
-            hx = data.hx if data.hx is not None else self.hx
-            angle_measurement_idx = _get_angle_measurement_index(jacobian_h(self.x))
+        jacobian_h = (
+            data.jacobian_h
+            if data.jacobian_h is not None
+            else self.generic_jacobian_h(GenericFilterStrategy.kNumStates * [True])
+        )
+        hx = (
+            data.hx
+            if data.hx is not None
+            else self.generic_hx(GenericFilterStrategy.kNumStates * [True])
+        )
+        angle_measurement_idx = self._infer_measurement_idx(
+            jacobian_h, FilterStateType.ANGLE_RAD
+        )
 
-            def _residual_with_angle_wrap(
-                z: NDArray[np.float64], h_x: NDArray[np.float64]
-            ) -> NDArray[np.float64]:
-                residual = np.subtract(z, h_x)
-                if (
-                    angle_measurement_idx is not None
-                    and angle_measurement_idx < residual.shape[0]
-                ):
-                    residual[angle_measurement_idx] = _wrap_to_pi(
-                        float(residual[angle_measurement_idx])
-                    )
-                return residual
+        R = R_sensor.copy() * data.R_mult
+        _add_to_diagonal(R, data.R_add)
 
-            self.update(
-                np.asarray(datapoint.data, dtype=np.float64),
-                jacobian_h,
-                hx,
-                R=R,
-                residual=_residual_with_angle_wrap,
-            )
-            self._wrap_state_angle()
+        residual_fn = lambda z, h_x: _residual_with_angle_wrap(
+            z, h_x, angle_measurement_idx
+        )
+        self.update(
+            data.get_input(),
+            jacobian_h,
+            hx,
+            R=R,
+            residual=residual_fn,
+        )
 
     def get_P(self) -> NDArray[np.float64]:
         return self.P
@@ -158,75 +228,34 @@ class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInher
         return np.dot(self.F, self.x) + np.dot(self.B, 0)
 
     def get_state(self, future_s: float | None = None) -> NDArray[np.float64]:
-        predicted_x: NDArray[np.float64]
+        predicted_x: NDArray[np.float64] = self.x
         if future_s is not None and future_s > 0:
             predicted_x = self.predict_x_no_update(future_s)
-            self.prediction_step()
-        else:
-            self.prediction_step()
-            predicted_x = self.x
+
+        self.prediction_step()
 
         return predicted_x
 
-    def get_position_confidence(self) -> float:
-        P_position = self.P[:2, :2]
-        if np.any(np.isnan(P_position)) or np.any(np.isinf(P_position)):
-            return 0.0
-        try:
-            eigenvalues: NDArray[np.float64] = np.real(
-                np.linalg.eigvals(P_position)
-            )  # pyright: ignore[reportAssignmentType]
-            max_eigen = np.max(eigenvalues)
-            if np.isnan(max_eigen) or np.isinf(max_eigen) or max_eigen < 0:
-                return 0.0
-            return 1.0 / (1.0 + np.sqrt(max_eigen))
-        except np.linalg.LinAlgError:
-            return 0.0
-
-    def get_velocity_confidence(self) -> float:
-        P_velocity = self.P[2:4, 2:4]
-        if np.any(np.isnan(P_velocity)) or np.any(np.isinf(P_velocity)):
-            return 0.0
-        try:
-            eigenvalues = np.linalg.eigvals(P_velocity)
-            max_eigen = np.max(eigenvalues)
-            if np.isnan(max_eigen) or np.isinf(max_eigen) or max_eigen < 0:
-                return 0.0
-            return 1.0 / (1.0 + np.sqrt(max_eigen))
-        except np.linalg.LinAlgError:
-            return 0.0
-
-    def get_rotation_confidence(self) -> float:
-        angle_var = self.P[4, 4] + self.P[5, 5]
-        if np.isnan(angle_var) or np.isinf(angle_var) or angle_var < 0:
-            return 0.0
-        angle_uncertainty = np.sqrt(angle_var)
-        return 1.0 / (1.0 + angle_uncertainty)
-
     def get_confidence(self) -> float:
-        pos_conf = self.get_position_confidence()
-        vel_conf = self.get_velocity_confidence()
-        rot_conf = self.get_rotation_confidence()
-        if pos_conf == 0.0 or vel_conf == 0.0 or rot_conf == 0.0:
-            return 0.0
-        return (pos_conf * vel_conf * rot_conf) ** (1 / 3)
+        return 1.0
 
     def set_delta_t(self, delta_t: float):
         """
-        Set the time step (delta t) for the state transition (F) matrix.
-
-        This updates the elements in the transition matrix that relate to velocity and angular velocity,
-        so that the model uses the specified delta_t for the next prediction/update steps.
-
-        Args:
-            delta_t (float): The new time step size to use in the filter.
+        Sets the delta_t in the F matrix (state transition matrix which is multiplied by the state to get the next state).
+        This is used because the delta_t is not constant for the filter.
         """
+
         try:
-            # vx affects x (index 0, velocity index 2), vy affects y (index 1, velocity index 3)
-            self.F[0][2] = delta_t
-            self.F[1][3] = delta_t
-            # angular velocity affects angle (index 4, angular velocity index 5)
-            self.F[4][5] = delta_t
+            self.F[GenericFilterStrategy.kPosXIdx][
+                GenericFilterStrategy.kVelXIdx
+            ] = delta_t  # vx innovation
+            self.F[GenericFilterStrategy.kPosYIdx][
+                GenericFilterStrategy.kVelYIdx
+            ] = delta_t  # vy innovation
+
+            self.F[GenericFilterStrategy.kAngleRadIdx][
+                GenericFilterStrategy.kAngleVelRadSIdx
+            ] = delta_t  # angular velocity innovation
         except IndexError as e:
             warnings.warn(f"Error setting delta_t in F matrix: {e}")
 
@@ -246,6 +275,4 @@ class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInher
         super().update(z, HJacobian, Hx, R, args, hx_args, residual)
 
 
-def add_to_diagonal(mat: NDArray[np.float64], num: float):
-    for i in range(min(mat.shape[0], mat.shape[1])):
-        mat[i, i] += num
+T_EKF = ExtendedKalmanFilterStrategy  # alias for the class

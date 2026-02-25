@@ -47,7 +47,10 @@ thrift-to-py:
 		-out $(THRIFT_GEN_DIR) \
 		$(THRIFT_ROOT_FILE);
 
-generate: generate-proto-python thrift-to-py
+proto-to-java:
+	./gradlew generateProto
+
+generate: generate-proto-python thrift-to-py proto-to-java
 
 deploy-backend:
 	PYTHONPATH="$(PWD)/src" $(VENV_PYTHON) -m backend.deploy

@@ -3,20 +3,26 @@ package frc.robot.util;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.littletonrobotics.junction.Logger;
+
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.pathplanner.lib.path.PathPlannerPath;
+import com.pathplanner.lib.trajectory.PathPlannerTrajectory;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystem.GlobalPosition;
+import frc.robot.subsystem.GlobalPosition.GMFrame;
 import frc.robot.subsystem.OdometrySubsystem;
 import frc.robot.subsystem.SwerveSubsystem;
 
 public final class PathPlannerSetup {
   private static boolean configured = false;
+  private static RobotConfig robotConfig = null;
 
   private PathPlannerSetup() {
   }
@@ -34,6 +40,7 @@ public final class PathPlannerSetup {
       e.printStackTrace();
       return;
     }
+    robotConfig = config;
 
     AutoBuilder.configure(
         new Supplier<Pose2d>() {
@@ -48,8 +55,8 @@ public final class PathPlannerSetup {
         PathPlannerSetup::getRobotRelativeSpeeds,
         (speeds, feedforwards) -> SwerveSubsystem.GetInstance().drive(speeds, SwerveSubsystem.DriveType.RAW),
         new PPHolonomicDriveController(
-            new PIDConstants(5.0, 0.0, 0.15), // translation PID (initial: match ExecuteTrajectory)
-            new PIDConstants(1.0, 0.0, 0.7) // rotation PID (initial: match ExecuteTrajectory theta P)
+            new PIDConstants(3.0, 0.0, 0.1), // translation PID (initial: match ExecuteTrajectory)
+            new PIDConstants(0.5, 0.0, 0.2) // rotation PID (initial: match ExecuteTrajectory theta P)
         ),
         config,
         PathPlannerSetup::shouldFlipForAlliance,
@@ -70,16 +77,40 @@ public final class PathPlannerSetup {
    * is field-relative, so convert using the current pose heading.
    */
   private static ChassisSpeeds getRobotRelativeSpeeds() {
-    ChassisSpeeds field = GlobalPosition.GetVelocity();
-    if (field == null) {
-      return new ChassisSpeeds();
-    }
+    return GlobalPosition.Velocity(GMFrame.kRobotRelative);
+  }
 
-    var heading = GlobalPosition.Get().getRotation();
-    return ChassisSpeeds.fromFieldRelativeSpeeds(
-        field.vxMetersPerSecond,
-        field.vyMetersPerSecond,
-        field.omegaRadiansPerSecond,
-        heading);
+  /**
+   * Returns the trajectory for a path by name (as in the PathPlanner GUI).
+   * Applies alliance flip when {@link #shouldFlipForAlliance()} is true.
+   *
+   * @param pathName name of the path file (e.g. "Ball Shooter Right")
+   * @return the generated trajectory, or empty if not configured, path load
+   *         failed, or ideal trajectory could not be generated
+   */
+  public static Optional<PathPlannerTrajectory> getTrajectory(String pathName) {
+    if (!configured || robotConfig == null) {
+      return Optional.empty();
+    }
+    try {
+      PathPlannerPath path = PathPlannerPath.fromPathFile(pathName);
+      if (shouldFlipForAlliance()) {
+        path = path.flipPath();
+      }
+
+      return path.getIdealTrajectory(robotConfig);
+    } catch (Exception e) {
+      System.out.println("ERROR: PathPlanner getTrajectory failed for path: " + pathName);
+      e.printStackTrace();
+      return Optional.empty();
+    }
+  }
+
+  /**
+   * Returns the autonomous command configured in PathPlanner (e.g. "Ball Shooter
+   * Right").
+   */
+  public static Command getAutonomousCommand() {
+    return AutoBuilder.buildAuto("Ball Shooter Right");
   }
 }

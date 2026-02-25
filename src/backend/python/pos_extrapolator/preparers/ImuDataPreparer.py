@@ -1,8 +1,8 @@
-from typing import final
+# from typing import final, overload, override
 import numpy as np
 from numpy.typing import NDArray
 from backend.python.common.util.math import (
-    transform_matrix_to_size,
+    _transform_matrix_to_size,
     transform_vector_to_size,
 )
 from backend.generated.proto.python.sensor.imu_pb2 import ImuData
@@ -14,16 +14,12 @@ from backend.python.pos_extrapolator.data_prep import (
     DataPreparerManager,
     ExtrapolationContext,
     KalmanFilterInput,
-    ProcessedData,
 )
+from backend.python.pos_extrapolator.filters.extended_kalman_filter import T_EKF
 
 
 class ImuDataPreparerConfig(ConfigProvider[dict[str, ImuConfig]]):
-    def __init__(self, config: dict[str, ImuConfig]):
-        self.config = config
-
-    def get_config(self) -> dict[str, ImuConfig]:
-        return self.config
+    pass
 
 
 @DataPreparerManager.register(proto_type=ImuData)
@@ -32,25 +28,23 @@ class ImuDataPreparer(DataPreparer[ImuData, ImuDataPreparerConfig]):
         super().__init__(config)
         self.config: ImuDataPreparerConfig = config
 
+    # @override
     def get_data_type(self) -> type[ImuData]:
         return ImuData
 
-    def get_used_indices(self, sensor_id: str) -> list[bool]:
+    # @override
+    def _used_indices(self, sensor_id: str) -> list[bool]:
         used_indices: list[bool] = []
         used_indices.extend([self.config.config[sensor_id].use_position] * 2)
         used_indices.extend([self.config.config[sensor_id].use_velocity] * 2)
         used_indices.extend([self.config.config[sensor_id].use_rotation] * 2)
         return used_indices
 
-    def jacobian_h(self, x: NDArray[np.float64], sensor_id: str) -> NDArray[np.float64]:
-        return transform_matrix_to_size(self.get_used_indices(sensor_id), np.eye(6))
-
-    def hx(self, x: NDArray[np.float64], sensor_id: str) -> NDArray[np.float64]:
-        return transform_vector_to_size(x, self.get_used_indices(sensor_id))
-
-    def prepare_input(
+    # @override
+    def _prepare(
         self, data: ImuData, sensor_id: str, context: ExtrapolationContext | None = None
-    ) -> KalmanFilterInput | None:
+    ) -> list[KalmanFilterInput] | KalmanFilterInput | None:
+        assert context is not None
         config = self.config.config[sensor_id]
         values: list[float] = []
 
@@ -58,8 +52,11 @@ class ImuDataPreparer(DataPreparer[ImuData, ImuDataPreparerConfig]):
             values.append(data.position.position.x)
             values.append(data.position.position.y)
         if config.use_velocity:
-            values.append(data.velocity.x)
-            values.append(data.velocity.y)
+            velocity = context.filter.angle_matrix() @ np.array(
+                [data.velocity.x, data.velocity.y]
+            )
+            values.append(velocity[0])
+            values.append(velocity[1])
         if config.use_rotation:
             values.append(
                 np.atan2(data.position.direction.y, data.position.direction.x)
@@ -67,9 +64,9 @@ class ImuDataPreparer(DataPreparer[ImuData, ImuDataPreparerConfig]):
             values.append(data.angularVelocityXYZ.z)
 
         return KalmanFilterInput(
-            input=ProcessedData(data=np.array(values)),
+            input=np.array(values),
             sensor_id=sensor_id,
             sensor_type=KalmanFilterSensorType.IMU,
-            jacobian_h=lambda x: self.jacobian_h(x, sensor_id),
-            hx=lambda x: self.hx(x, sensor_id),
+            jacobian_h=T_EKF.generic_jacobian_h(self.get_used_indices(sensor_id)),
+            hx=T_EKF.generic_hx(self.get_used_indices(sensor_id)),
         )
