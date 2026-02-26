@@ -6,6 +6,7 @@ import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.commands.PathfindThenFollowPath;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
@@ -111,6 +112,6 @@ public final class PathPlannerSetup {
    * Right").
    */
   public static Command getAutonomousCommand() {
-    return AutoBuilder.buildAuto("Ball Shooter Right");
+    return AutoBuilder.buildAuto("Climber Right Middle");
   }
 }

@@ -10,7 +10,7 @@ export const kalman_filter: KalmanFilterConfig = {
     5.0, 5.0, 10.0, 10.0, 10.0, 1.0,
   ]),
   process_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
-    0.001, 0.001, 1, 1, 1, 1,
+    0.0005, 0.0005, 1, 1, 1, 1,
   ]),
   sensors: {
     [KalmanFilterSensorType.APRIL_TAG]: {
@@ -46,7 +46,7 @@ export const kalman_filter: KalmanFilterConfig = {
     [KalmanFilterSensorType.ODOMETRY]: {
       odom: {
         measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
-          0.5, 0.5, 0, 0,
+          3, 3, 0, 0,
         ]),
       },
     },

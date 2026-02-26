@@ -44,7 +44,7 @@ public class RobotContainer {
     OdometrySubsystem.GetInstance();
     AHRSGyro.GetInstance();
     SwerveSubsystem.GetInstance();
-    // CameraSubsystem.GetInstance();
+    CameraSubsystem.GetInstance();
 
     TurretSubsystem.GetInstance();
     ShooterSubsystem.GetInstance();
@@ -59,7 +59,7 @@ public class RobotContainer {
 
     setSwerveCommands();
     setTurretCommands();
-    setIndexCommands();
+    // setIndexCommands();
     setShooterCommands();
 
     // setTestCommands();

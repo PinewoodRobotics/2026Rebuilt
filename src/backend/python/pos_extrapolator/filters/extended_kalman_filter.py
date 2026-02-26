@@ -76,9 +76,7 @@ class FilterStateType(Enum):
     ANGLE_VEL_RAD_S = GenericFilterStrategy.kAngleVelRadSIdx
 
 
-class ExtendedKalmanFilterStrategy(  # pyright: ignore[reportUnsafeMultipleInheritance]
-    ExtendedKalmanFilter, GenericFilterStrategy
-):  # pyright: ignore[reportUnsafeMultipleInheritance]
+class ExtendedKalmanFilterStrategy(ExtendedKalmanFilter, GenericFilterStrategy):
     def __init__(
         self,
         config: KalmanFilterConfig,

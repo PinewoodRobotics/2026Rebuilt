@@ -20,20 +20,22 @@ import pwrup.frc.core.online.raspberrypi.discovery.PiDiscoveryUtil;
 import pwrup.frc.core.online.raspberrypi.discovery.PiInfo;
 
 public class Robot extends LoggedRobot {
-  private static final int kNetworkRetryTicks = 50;
+  private static final int kNetworkRetryTicks = 80;
 
   @Getter
   private static OptionalAutobahn communicationClient = new OptionalAutobahn();
 
+  private int retryCounter;
+  private volatile boolean networkAttemptInProgress;
+
   private RobotContainer m_robotContainer;
   private Command m_autonomousCommand;
-
-  private int retryCounter = 0;
-  private volatile boolean networkAttemptInProgress = false;
 
   public Robot() {
     Logger.addDataReceiver(new NT4Publisher());
     Logger.start();
+    this.networkAttemptInProgress = false;
+    this.retryCounter = 0;
 
     RPC.SetClient(communicationClient);
   }

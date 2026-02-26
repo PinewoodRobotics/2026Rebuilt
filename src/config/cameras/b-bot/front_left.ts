@@ -21,11 +21,11 @@ const front_left: CameraParameters = {
     0.052745830893280964, -0.08619099299637119, -0.00044316972116126193,
     0.00004422164981020342, 0.022592221476200467,
   ]),
-  exposure_time: 10,
+  exposure_time: 8,
   camera_type: CameraType.OV2311,
   video_options: {
     send_feed: false,
-    compression_quality: 20,
+    compression_quality: 40,
     publication_topic: "camera/front_left/video",
     do_compression: true,
     overlay_tags: true,

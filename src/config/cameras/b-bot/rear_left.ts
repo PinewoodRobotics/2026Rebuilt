@@ -21,7 +21,7 @@ const rear_left: CameraParameters = {
     0.04908778853478117, -0.08285586799580322, -0.0003984055550807527,
     -0.0001698331827697349, 0.022084131827275894,
   ]),
-  exposure_time: 10,
+  exposure_time: 8,
   camera_type: CameraType.OV2311,
   video_options: {
     send_feed: false,

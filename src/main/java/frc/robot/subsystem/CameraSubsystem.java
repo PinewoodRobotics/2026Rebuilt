@@ -88,8 +88,9 @@ public class CameraSubsystem extends SubsystemBase {
     }
 
     if (positionsReal.size() > 0) {
-      Logger.recordOutput("Camera/Tags/PositionsRobot", positionsRobot.toArray(new Pose2d[0]));
-      Logger.recordOutput("Camera/Tags/PositionsField", positionsReal.toArray(new Pose3d[0]));
     }
+
+    Logger.recordOutput("Camera/Tags/PositionsRobot", positionsRobot.toArray(new Pose2d[0]));
+    Logger.recordOutput("Camera/Tags/PositionsField", positionsReal.toArray(new Pose3d[0]));
   }
 }

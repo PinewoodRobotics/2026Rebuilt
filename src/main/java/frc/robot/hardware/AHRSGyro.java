@@ -5,6 +5,7 @@ import org.littletonrobotics.junction.Logger;
 import com.kauailabs.navx.frc.AHRS;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.I2C;
 import frc.robot.util.LocalMath;
 import frc4765.proto.sensor.GeneralSensorDataOuterClass.GeneralSensorData;
@@ -138,9 +139,9 @@ public class AHRSGyro implements IGyroscopeLike, IDataClass {
     var yaw = Rotation2d.fromDegrees(getYPR()[0]);
     var angularVelocity = getAngularVelocityXYZ();
 
-    Logger.recordOutput("Imu/AngularVel", angularVelocity[2]);
-
     Logger.recordOutput("Imu/yaw", yaw.getDegrees());
+    Logger.recordOutput("Imu/AngularVel", angularVelocity[2]);
+    Logger.recordOutput("Imu/Velocity", new ChassisSpeeds(velocityXYZ[0], velocityXYZ[1], 0));
 
     var position = Vector3.newBuilder()
         .setX((float) poseXYZ[0])
