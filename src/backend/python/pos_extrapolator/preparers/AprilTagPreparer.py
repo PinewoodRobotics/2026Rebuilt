@@ -3,7 +3,6 @@ import math
 from typing import TYPE_CHECKING
 import numpy as np
 from numpy.typing import NDArray
-from backend.python.common.debug.logger import debug
 from backend.python.common.util.math import (
     create_transformation_matrix,
     from_float_list,
@@ -13,16 +12,14 @@ from backend.python.common.util.math import (
     get_translation_rotation_components,
     make_transformation_matrix_p_d,
 )
-from backend.generated.proto.python.sensor.apriltags_pb2 import AprilTagData
-from backend.generated.proto.python.sensor.imu_pb2 import ImuData
-from backend.generated.proto.python.sensor.odometry_pb2 import OdometryData
+from backend.generated.proto.python.sensor.apriltags_pb2 import (
+    AprilTagData,
+    ProcessedTag,
+)
 from backend.generated.thrift.config.common.ttypes import Point3
 from backend.generated.thrift.config.kalman_filter.ttypes import KalmanFilterSensorType
 from backend.generated.thrift.config.pos_extrapolator.ttypes import (
     AprilTagConfig,
-    ImuConfig,
-    OdomConfig,
-    TagNoiseAdjustConfig,
     TagNoiseAdjustMode,
     TagUseImuRotation,
 )
@@ -68,16 +65,41 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
         self.use_imu_rotation: TagUseImuRotation = conf.use_imu_rotation
         self.april_tag_config: AprilTagConfig = conf.april_tag_config
 
-        self.tag_noise_adjust_mode = self.april_tag_config.tag_noise_adjust_mode
+        self.noise_change_modes = self.april_tag_config.noise_change_modes
 
     def should_use_imu_rotation(self, context: ExtrapolationContext) -> bool:
+        if self.use_imu_rotation == TagUseImuRotation.NEVER:
+            return False
+
         if self.use_imu_rotation == TagUseImuRotation.ALWAYS:
             return True
 
-        if self.use_imu_rotation == TagUseImuRotation.UNTIL_FIRST_NON_TAG_ROTATION:
+        if self.use_imu_rotation == TagUseImuRotation.WHILE_NO_OTHER_ROTATION_DATA:
             return context.has_gotten_rotation
 
         return False
+
+    def get_noise_change(
+        self, x_hat: NDArray[np.float64], tag_detection: ProcessedTag
+    ) -> tuple[float, float]:
+        total_add = 0.0
+        total_mult = 1.0
+
+        if TagNoiseAdjustMode.ADD_WEIGHT_PER_M_DISTANCE_TAG in self.noise_change_modes:
+            distance = np.linalg.norm(x_hat[0:2])
+            weight = (
+                self.april_tag_config.tag_noise_adjust_config.weight_per_m_from_distance_from_tag
+                * distance
+            )
+
+            total_add += float(weight)
+        if TagNoiseAdjustMode.ADD_WEIGHT_PER_TAG_CONFIDENCE in self.noise_change_modes:
+            total_add += float(
+                tag_detection.confidence
+                * self.april_tag_config.tag_noise_adjust_config.weight_per_confidence_tag
+            )
+
+        return float(total_add), float(total_mult)
 
     # @override
     def get_data_type(self) -> type[AprilTagData]:
@@ -161,7 +183,7 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
                 )
             )
 
-            direction_vector = rotation[0:3, 0]
+            direction_vector = rotation[0:3, 0]  # extract cos and sin
             angle_rad = np.atan2(direction_vector[1], direction_vector[0])
             datapoint = np.array(
                 [
@@ -171,6 +193,8 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
                 ]
             )
 
+            add, mult = self.get_noise_change(datapoint, tag)
+
             input_list.append(
                 KalmanFilterInput(
                     input=datapoint,
@@ -178,6 +202,8 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
                     sensor_type=KalmanFilterSensorType.APRIL_TAG,
                     jacobian_h=T_EKF.generic_jacobian_h(self.get_used_indices()),
                     hx=T_EKF.generic_hx(self.get_used_indices()),
+                    R_add=add,
+                    R_mult=mult,
                 )
             )
 

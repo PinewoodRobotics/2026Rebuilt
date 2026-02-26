@@ -14,7 +14,6 @@ from backend.generated.thrift.config.pos_extrapolator.ttypes import (
     ImuConfig,
     OdomConfig,
     OdometryPositionSource,
-    TagDisambiguationMode,
     TagUseImuRotation,
 )
 from backend.python.common.util.math import from_theta_to_3x3_mat

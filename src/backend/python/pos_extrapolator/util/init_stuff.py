@@ -1,5 +1,6 @@
 from autobahn_client.client import Autobahn
 from autobahn_client.util import Address
+from backend.generated.thrift.config.pos_extrapolator.ttypes import DataSources
 from backend.python.common.debug.logger import LogLevel, init_logging
 from backend.python.common.util.system import (
     BasicSystemConfig,
@@ -39,18 +40,24 @@ def _init_utilities(basic_system_config: BasicSystemConfig) -> Autobahn:
     return server
 
 
-def _init_data_preparer_manager(config: Config):
-    if config.pos_extrapolator.enable_imu:
+def _init_data_preparers_and_get_topics(config: Config) -> list[str]:
+    enabled = config.pos_extrapolator.enabled_data_sources
+    msg_config = config.pos_extrapolator.message_config
+    topics: list[str] = []
+
+    if DataSources.IMU in enabled:
         DataPreparerManager.set_config(
             ImuData, ImuDataPreparerConfig(config.pos_extrapolator.imu_config)
         )
+        topics.append(msg_config.post_imu_input_topic)
 
-    if config.pos_extrapolator.enable_odom:
+    if DataSources.ODOMETRY in enabled:
         DataPreparerManager.set_config(
             OdometryData, OdomDataPreparerConfig(config.pos_extrapolator.odom_config)
         )
+        topics.append(msg_config.post_odometry_input_topic)
 
-    if config.pos_extrapolator.enable_tags:
+    if DataSources.APRIL_TAG in enabled:
         DataPreparerManager.set_config(
             AprilTagData,
             AprilTagDataPreparerConfig(
@@ -62,33 +69,15 @@ def _init_data_preparer_manager(config: Config):
                 ),
             ),
         )
+        topics.append(msg_config.post_tag_input_topic)
 
-
-def _get_subscribe_topics(config: Config):
-    subscribe_topics: list[str] = []
-    if config.pos_extrapolator.enable_imu:
-        subscribe_topics.append(
-            config.pos_extrapolator.message_config.post_imu_input_topic
-        )
-    if config.pos_extrapolator.enable_odom:
-        subscribe_topics.append(
-            config.pos_extrapolator.message_config.post_odometry_input_topic
-        )
-    if config.pos_extrapolator.enable_tags:
-        subscribe_topics.append(
-            config.pos_extrapolator.message_config.post_tag_input_topic
-        )
-    if config.pos_extrapolator.composite_publish_topic:
-        subscribe_topics.append(config.pos_extrapolator.composite_publish_topic)
-
-    return subscribe_topics
+    return topics
 
 
 def main_init_phase() -> tuple[BasicSystemConfig, Config, Autobahn, list[str]]:
     system_config, config = load_configs()
 
     autobahn_server = _init_utilities(system_config)
-    _init_data_preparer_manager(config)
-    subscribe_topics = _get_subscribe_topics(config)
+    subscribe_topics = _init_data_preparers_and_get_topics(config)
 
     return system_config, config, autobahn_server, subscribe_topics

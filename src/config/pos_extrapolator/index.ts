@@ -1,4 +1,5 @@
 import {
+  DataSources,
   PosExtrapolator,
   TagUseImuRotation,
 } from "generated/thrift/gen-nodejs/pos_extrapolator_types";
@@ -13,9 +14,11 @@ import april_tag_det_config from "./april_tag_det_config";
 
 export const pose_extrapolator: PosExtrapolator = {
   message_config: message_config,
-  enable_imu: true,
-  enable_odom: true,
-  enable_tags: true,
+  enabled_data_sources: [
+    DataSources.APRIL_TAG,
+    DataSources.ODOMETRY,
+    DataSources.IMU,
+  ],
   odom_config: swerve_odom_config,
   imu_config: nav_x_config,
   kalman_filter_config: kalman_filter,
