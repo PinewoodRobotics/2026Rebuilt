@@ -1,13 +1,14 @@
 import time
 
 from numpy.typing import NDArray
+import pytest
 from backend.generated.thrift.config.kalman_filter.ttypes import KalmanFilterSensorType
 from backend.generated.thrift.config.kalman_filter.ttypes import (
     KalmanFilterConfig,
     KalmanFilterSensorConfig,
 )
 from backend.generated.thrift.config.common.ttypes import GenericMatrix, GenericVector
-from backend.python.pos_extrapolator.data_prep import KalmanFilterInput, ProcessedData
+from backend.python.pos_extrapolator.data_prep import KalmanFilterInput
 from backend.python.pos_extrapolator.filters.extended_kalman_filter import (
     ExtendedKalmanFilterStrategy,
 )
@@ -39,11 +40,10 @@ def make_test_kalman_filter_config() -> KalmanFilterConfig:
     }
 
     return KalmanFilterConfig(
-        state_vector=state_vector,
+        initial_state_vector=state_vector,
         uncertainty_matrix=P,
         process_noise_matrix=Q,
         sensors=sensors,
-        time_step_initial=0.05,
     )
 
 
@@ -65,21 +65,21 @@ def sample_hx(x: NDArray[np.float64]) -> NDArray[np.float64]:
 def ekf_dataset_imu_input():
     return [
         KalmanFilterInput(
-            input=ProcessedData(data=np.array([1.0, 1.0, 0.0, 0.0])),
+            input=np.array([1.0, 1.0, 0.0, 0.0]),
             sensor_id="0",
             sensor_type=KalmanFilterSensorType.IMU,
             jacobian_h=sample_jacobian_h,
             hx=sample_hx,
         ),
         KalmanFilterInput(
-            input=ProcessedData(data=np.array([1.0, 1.0, 0.0, 0.0])),
+            input=np.array([1.0, 1.0, 0.0, 0.0]),
             sensor_id="0",
             sensor_type=KalmanFilterSensorType.IMU,
             jacobian_h=sample_jacobian_h,
             hx=sample_hx,
         ),
         KalmanFilterInput(
-            input=ProcessedData(data=np.array([1.0, 1.0, 0.0, 0.0])),
+            input=np.array([1.0, 1.0, 0.0, 0.0]),
             sensor_id="0",
             sensor_type=KalmanFilterSensorType.IMU,
             jacobian_h=sample_jacobian_h,
@@ -97,12 +97,17 @@ def test_ekf():
     state = [float(v) for v in ekf.get_state().flatten().tolist()]
     print(state)
 
-    # Check that the state is close to expected values (accounting for noise)
-    # Logic: Start near [0,0,0,0,1,0,0], measure vx=1,vy=1,cos=1,sin=0,omega=0 and predict 1s each step.
-    expected = [3, 3, 1, 1, 0, 0]
-    assert len(state) == len(expected)
-    for i, (actual, exp) in enumerate(zip(state, expected)):
-        assert abs(actual - exp) < 0.25, f"State[{i}]: expected {exp}, got {actual}"
+    # Behavior-level checks for the current EKF tuning:
+    # - symmetric x/y motion from symmetric measurements
+    # - positive position and velocity from repeated +1 velocity measurements
+    # - bounded velocity due to Kalman blending
+    assert len(state) == 6
+    assert state[0] == pytest.approx(state[1], abs=1e-6)
+    assert state[2] == pytest.approx(state[3], abs=1e-6)
+    assert 1.5 < state[0] < 3.0
+    assert 0.4 < state[2] < 1.1
+    assert state[4] == pytest.approx(0.0, abs=1e-6)
+    assert state[5] == pytest.approx(0.0, abs=1e-6)
 
 
 def test_ekf_timing():

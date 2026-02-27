@@ -7,16 +7,22 @@ from backend.generated.thrift.config.pos_extrapolator.ttypes import (
     OdomConfig,
     OdometryPositionSource,
 )
-from backend.python.pos_extrapolator.data_prep import (
-    DataPreparerManager,
-    ExtrapolationContext,
-)
-from backend.python.pos_extrapolator.preparers.ImuDataPreparer import (
-    ImuDataPreparerConfig,
-)
-from backend.python.pos_extrapolator.preparers.OdomDataPreparer import (
-    OdomDataPreparerConfig,
-)
+from backend.python.pos_extrapolator.data_prep import DataPreparerManager, ExtrapolationContext
+from backend.python.pos_extrapolator.preparers.ImuDataPreparer import ImuDataPreparerConfig
+from backend.python.pos_extrapolator.preparers.OdomDataPreparer import OdomDataPreparerConfig
+
+
+class _FakeFilter:
+    def __init__(self, angle_rad: float = 0.0):
+        self.x = np.array([0.0, 0.0, 0.0, 0.0, angle_rad, 0.0], dtype=np.float64)
+
+    def angle_matrix(self) -> np.ndarray:
+        c = float(np.cos(self.x[4]))
+        s = float(np.sin(self.x[4]))
+        return np.array([[c, -s], [s, c]], dtype=np.float64)
+
+    def get_state(self) -> np.ndarray:
+        return self.x.copy()
 
 
 def sample_imu_data():
@@ -33,8 +39,6 @@ def sample_imu_data():
     imu_data.velocity.x = 10
     imu_data.velocity.y = 11
     imu_data.velocity.z = 12
-    # angularVelocityXYZ.z is used when rotation is enabled; default is 0.0
-
     return imu_data
 
 
@@ -46,14 +50,12 @@ def sample_odometry_data():
     odometry_data.position.direction.y = 0.7
     odometry_data.velocity.x = 15
     odometry_data.velocity.y = 16
-    # Populate position_change too so the test is meaningful under ABS_CHANGE configs.
     odometry_data.position_change.x = 13
     odometry_data.position_change.y = 14
     return odometry_data
 
 
 def test_data_prep():
-    # Avoid config-file/schema coupling: define the minimal preparer configs inline.
     DataPreparerManager.set_config(
         ImuData,
         ImuDataPreparerConfig(
@@ -79,25 +81,18 @@ def test_data_prep():
     imu_data = sample_imu_data()
     odometry_data = sample_odometry_data()
 
-    # 6D state: [x, y, vx, vy, angle, omega]
-    context_x = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-    context_P = np.eye(6)
+    context = ExtrapolationContext(filter=_FakeFilter(), has_gotten_rotation=False)
 
-    imu_input = data_preparer_manager.prepare_data(
-        imu_data,
-        "0",
-        ExtrapolationContext(x=context_x, P=context_P, has_gotten_rotation=False),
-    )
-    odometry_input = data_preparer_manager.prepare_data(
-        odometry_data,
-        "odom",
-        ExtrapolationContext(x=context_x, P=context_P, has_gotten_rotation=False),
-    )
+    imu_input = data_preparer_manager.prepare_data(imu_data, "0", context)
+    odometry_input = data_preparer_manager.prepare_data(odometry_data, "odom", context)
 
     assert imu_input is not None and odometry_input is not None
+    assert len(imu_input) == 1
+    assert len(odometry_input) == 1
 
+    imu_vals = imu_input[0].get_input()
     assert np.allclose(
-        imu_input.get_input_list()[0].data,
+        imu_vals,
         np.array(
             [
                 imu_data.velocity.x,
@@ -107,11 +102,12 @@ def test_data_prep():
             ]
         ),
     )
-    assert imu_input.sensor_id == "0"
-    assert imu_input.sensor_type == KalmanFilterSensorType.IMU
+    assert imu_input[0].sensor_id == "0"
+    assert imu_input[0].sensor_type == KalmanFilterSensorType.IMU
 
+    odom_vals = odometry_input[0].get_input()
     assert np.allclose(
-        odometry_input.get_input_list()[0].data,
+        odom_vals,
         np.array(
             [
                 odometry_data.position.position.x,
@@ -125,8 +121,8 @@ def test_data_prep():
             ]
         ),
     )
-    assert odometry_input.sensor_id == "odom"
-    assert odometry_input.sensor_type == KalmanFilterSensorType.ODOMETRY
+    assert odometry_input[0].sensor_id == "odom"
+    assert odometry_input[0].sensor_type == KalmanFilterSensorType.ODOMETRY
 
 
 def test_get_config():
@@ -145,11 +141,7 @@ def test_get_config():
     )
 
     imu = sample_imu_data()
-    ctx = ExtrapolationContext(
-        x=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-        P=np.eye(6),
-        has_gotten_rotation=False,
-    )
+    ctx = ExtrapolationContext(filter=_FakeFilter(), has_gotten_rotation=False)
     imu_input = preparer_manager.prepare_data(imu, "0", ctx)
     assert imu_input is not None
 

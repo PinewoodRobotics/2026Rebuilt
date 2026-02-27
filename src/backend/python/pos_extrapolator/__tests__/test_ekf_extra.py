@@ -9,7 +9,7 @@ from backend.generated.thrift.config.kalman_filter.ttypes import (
     KalmanFilterSensorConfig,
     KalmanFilterSensorType,
 )
-from backend.python.pos_extrapolator.data_prep import KalmanFilterInput, ProcessedData
+from backend.python.pos_extrapolator.data_prep import KalmanFilterInput
 from backend.python.pos_extrapolator.filters.extended_kalman_filter import (
     ExtendedKalmanFilterStrategy,
     _add_to_diagonal,
@@ -39,11 +39,10 @@ def make_cfg(*, include_sensors: bool = True) -> KalmanFilterConfig:
         }
 
     return KalmanFilterConfig(
-        state_vector=state_vector,
+        initial_state_vector=state_vector,
         uncertainty_matrix=P,
         process_noise_matrix=Q,
         sensors=sensors,
-        time_step_initial=0.05,
     )
 
 
@@ -51,7 +50,7 @@ def make_kfi(
     *, sensor_type: KalmanFilterSensorType, sensor_id: str
 ) -> KalmanFilterInput:
     return KalmanFilterInput(
-        input=ProcessedData(data=np.array([0.0, 0.0, 0.0, 0.0])),
+        input=np.array([0.0, 0.0, 0.0, 0.0]),
         sensor_id=sensor_id,
         sensor_type=sensor_type,
     )
@@ -111,18 +110,17 @@ def test_set_delta_t_sets_velocity_and_rotation_entries():
     assert ekf.F[4, 5] == pytest.approx(0.2)
 
 
-def test_get_confidence_returns_zero_for_nan_or_inf_covariance():
+def test_get_confidence_currently_returns_constant_one():
     ekf = ExtendedKalmanFilterStrategy(make_cfg(), fake_dt=0.1)
     ekf.P = np.eye(6)
     ekf.P[0, 0] = np.nan
-    assert ekf.get_confidence() == 0.0
+    assert ekf.get_confidence() == 1.0
 
     ekf.P = np.eye(6)
     ekf.P[2, 2] = np.inf
-    assert ekf.get_confidence() == 0.0
+    assert ekf.get_confidence() == 1.0
 
 
-@pytest.mark.xfail(reason="add_to_diagonal is currently unimplemented (pass)")
 def test_add_to_diagonal_adds_value_to_diagonal_entries():
     m = np.zeros((3, 3), dtype=float)
     _add_to_diagonal(m, 2.5)

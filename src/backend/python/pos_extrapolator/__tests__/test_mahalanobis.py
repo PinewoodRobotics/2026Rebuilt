@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from backend.python.pos_extrapolator.filters.gate.mahalanobis import (
+from backend.python.pos_extrapolator.util.mahalanobis import (
     mahalanobis_distance,
     percent_confidence,
 )

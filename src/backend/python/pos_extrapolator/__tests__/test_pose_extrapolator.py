@@ -10,19 +10,16 @@ from backend.generated.proto.python.util.position_pb2 import RobotPosition
 from backend.generated.thrift.config.kalman_filter.ttypes import KalmanFilterSensorType
 from backend.generated.thrift.config.pos_extrapolator.ttypes import (
     AprilTagConfig,
+    DataSources,
     ImuConfig,
     OdomConfig,
     OdometryPositionSource,
     PosExtrapolator,
     PosExtrapolatorMessageConfig,
-    TagDisambiguationMode,
+    TagNoiseAdjustConfig,
     TagUseImuRotation,
 )
-from backend.python.pos_extrapolator.data_prep import (
-    ExtrapolationContext,
-    KalmanFilterInput,
-    ProcessedData,
-)
+from backend.python.pos_extrapolator.data_prep import ExtrapolationContext, KalmanFilterInput
 from backend.python.pos_extrapolator.position_extrapolator import PositionExtrapolator
 
 
@@ -53,7 +50,7 @@ class FakeFilterStrategy:
 
 @dataclass
 class FakeDataPreparerManager:
-    next_return: KalmanFilterInput | None = None
+    next_return: list[KalmanFilterInput] | None = None
     last_data: object | None = None
     last_sensor_id: str | None = None
     last_context: ExtrapolationContext | None = None
@@ -61,7 +58,7 @@ class FakeDataPreparerManager:
 
     def prepare_data(
         self, data: object, sensor_id: str, context: ExtrapolationContext | None = None
-    ) -> KalmanFilterInput | None:
+    ) -> list[KalmanFilterInput] | None:
         self.calls += 1
         self.last_data = data
         self.last_sensor_id = sensor_id
@@ -86,10 +83,14 @@ def make_min_config(
 
     april_tag_config = AprilTagConfig(
         tag_position_config={},
-        tag_disambiguation_mode=TagDisambiguationMode.NONE,
         camera_position_config={},
         tag_use_imu_rotation=tag_use_imu_rotation,
-        disambiguation_time_window_s=0.1,
+        noise_change_modes=[],
+        tag_noise_adjust_config=TagNoiseAdjustConfig(
+            weight_per_m_from_distance_from_tag=0.0,
+            weight_per_degree_from_angle_error_tag=0.0,
+            weight_per_confidence_tag=0.0,
+        ),
     )
 
     odom_config = OdomConfig(
@@ -105,13 +106,9 @@ def make_min_config(
         )
     }
 
-    # Note: we intentionally leave kalman_filter_config unset (None) because these unit
-    # tests use a fake filter strategy and never call validate().
     return PosExtrapolator(
         message_config=message_config,
-        enable_imu=True,
-        enable_odom=True,
-        enable_tags=True,
+        enabled_data_sources=[DataSources.APRIL_TAG, DataSources.ODOMETRY, DataSources.IMU],
         april_tag_config=april_tag_config,
         odom_config=odom_config,
         imu_config=imu_config,
@@ -124,7 +121,7 @@ def make_kfi(
     sensor_type: KalmanFilterSensorType, sensor_id: str = "s0"
 ) -> KalmanFilterInput:
     return KalmanFilterInput(
-        input=ProcessedData(data=np.array([0.0])),
+        input=np.array([0.0]),
         sensor_id=sensor_id,
         sensor_type=sensor_type,
     )
@@ -179,10 +176,7 @@ def test_initial_has_gotten_rotation_false_when_tags_use_imu_rotation():
 
 
 def test_insert_sensor_data_passes_context_state_and_flag():
-    x = np.array([1.0, 2.0, 3.0, 4.0, 0.5, 0.0])
-    pe, fake_filter, mgr = make_subject(
-        tag_use_imu_rotation=TagUseImuRotation.ALWAYS, x=x
-    )
+    pe, fake_filter, mgr = make_subject(tag_use_imu_rotation=TagUseImuRotation.ALWAYS)
     assert pe.has_gotten_rotation is False
 
     mgr.next_return = None
@@ -190,7 +184,7 @@ def test_insert_sensor_data_passes_context_state_and_flag():
 
     assert mgr.calls == 1
     assert mgr.last_context is not None
-    assert np.allclose(mgr.last_context.x, fake_filter.x)
+    assert mgr.last_context.filter is fake_filter
     assert mgr.last_context.has_gotten_rotation is False
 
 
@@ -205,7 +199,7 @@ def test_april_tag_does_not_set_has_gotten_rotation():
     pe, _, mgr = make_subject(tag_use_imu_rotation=TagUseImuRotation.ALWAYS)
     assert pe.has_gotten_rotation is False
 
-    mgr.next_return = make_kfi(KalmanFilterSensorType.APRIL_TAG, sensor_id="cam0")
+    mgr.next_return = [make_kfi(KalmanFilterSensorType.APRIL_TAG, sensor_id="cam0")]
     pe.insert_sensor_data(data=object(), sensor_id="cam0")
     assert pe.has_gotten_rotation is False
 
@@ -215,7 +209,7 @@ def test_odom_sets_has_gotten_rotation_only_when_config_use_rotation_true():
         tag_use_imu_rotation=TagUseImuRotation.ALWAYS,
         odom_use_rotation=False,
     )
-    mgr1.next_return = make_kfi(KalmanFilterSensorType.ODOMETRY, sensor_id="odom")
+    mgr1.next_return = [make_kfi(KalmanFilterSensorType.ODOMETRY, sensor_id="odom")]
     pe1.insert_sensor_data(data=object(), sensor_id="odom")
     assert pe1.has_gotten_rotation is False
 
@@ -223,7 +217,7 @@ def test_odom_sets_has_gotten_rotation_only_when_config_use_rotation_true():
         tag_use_imu_rotation=TagUseImuRotation.ALWAYS,
         odom_use_rotation=True,
     )
-    mgr2.next_return = make_kfi(KalmanFilterSensorType.ODOMETRY, sensor_id="odom")
+    mgr2.next_return = [make_kfi(KalmanFilterSensorType.ODOMETRY, sensor_id="odom")]
     pe2.insert_sensor_data(data=object(), sensor_id="odom")
     assert pe2.has_gotten_rotation is True
 
@@ -234,7 +228,7 @@ def test_imu_sets_has_gotten_rotation_only_when_config_use_rotation_true():
         imu_use_rotation=False,
         imu_sensor_id="imu0",
     )
-    mgr1.next_return = make_kfi(KalmanFilterSensorType.IMU, sensor_id="imu0")
+    mgr1.next_return = [make_kfi(KalmanFilterSensorType.IMU, sensor_id="imu0")]
     pe1.insert_sensor_data(data=object(), sensor_id="imu0")
     assert pe1.has_gotten_rotation is False
 
@@ -243,7 +237,7 @@ def test_imu_sets_has_gotten_rotation_only_when_config_use_rotation_true():
         imu_use_rotation=True,
         imu_sensor_id="imu0",
     )
-    mgr2.next_return = make_kfi(KalmanFilterSensorType.IMU, sensor_id="imu0")
+    mgr2.next_return = [make_kfi(KalmanFilterSensorType.IMU, sensor_id="imu0")]
     pe2.insert_sensor_data(data=object(), sensor_id="imu0")
     assert pe2.has_gotten_rotation is True
 
@@ -252,11 +246,13 @@ def test_unknown_sensor_type_defaults_to_rotation_gotten_true():
     pe, _, mgr = make_subject(tag_use_imu_rotation=TagUseImuRotation.ALWAYS)
     assert pe.has_gotten_rotation is False
 
-    mgr.next_return = KalmanFilterInput(
-        input=ProcessedData(data=np.array([0.0])),
-        sensor_id="s",
-        sensor_type=999,  # pyright: ignore[reportArgumentType]
-    )
+    mgr.next_return = [
+        KalmanFilterInput(
+            input=np.array([0.0]),
+            sensor_id="s",
+            sensor_type=999,  # pyright: ignore[reportArgumentType]
+        )
+    ]
     pe.insert_sensor_data(data=object(), sensor_id="s")
     assert pe.has_gotten_rotation is True
 

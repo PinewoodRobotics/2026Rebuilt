@@ -4,7 +4,6 @@ import pytest
 
 from backend.generated.thrift.config.pos_extrapolator.ttypes import (
     AprilTagConfig,
-    TagDisambiguationMode,
     TagNoiseAdjustConfig,
     TagNoiseAdjustMode,
     TagUseImuRotation,
@@ -15,37 +14,27 @@ from backend.generated.proto.python.sensor.apriltags_pb2 import (
     ProcessedTag,
     WorldTags,
 )
-from backend.generated.thrift.config.common.ttypes import (
-    GenericMatrix,
-    GenericVector,
-    Point3,
-)
+from backend.generated.thrift.config.common.ttypes import GenericMatrix, GenericVector, Point3
 from backend.python.pos_extrapolator.data_prep import DataPreparer, ExtrapolationContext
 from backend.python.pos_extrapolator.position_extrapolator import PositionExtrapolator
-from backend.python.pos_extrapolator.preparers import AprilTagPreparer
 from backend.python.pos_extrapolator.preparers.AprilTagPreparer import (
-    AprilTagPreparerConfig,
     AprilTagDataPreparer,
     AprilTagDataPreparerConfig,
+    AprilTagPreparerConfig,
 )
 
 
-def from_theta_to_rotation_state(theta: float) -> NDArray[np.float64]:
-    return np.array([0, 0, 0, 0, np.cos(np.radians(theta)), np.sin(np.radians(theta))])
+class _FakeFilter:
+    def __init__(self, angle_rad: float = 0.0):
+        self._angle_rad = angle_rad
+
+    def angle(self) -> NDArray[np.float64]:
+        return np.array([np.cos(self._angle_rad), np.sin(self._angle_rad)])
 
 
 def from_np_to_point3(
     pose: NDArray[np.float64], rotation: NDArray[np.float64]
 ) -> Point3:
-    """
-    Convert a pose and rotation from robot coordinates to camera coordinates.
-    The pose is a 3D vector in robot coordinates.
-    The rotation is a 3x3 matrix in robot coordinates.
-    """
-
-    # pose = from_robot_coords_to_camera_coords(pose)
-    # rotation = from_robot_rotation_to_camera_rotation(rotation)
-
     return Point3(
         position=GenericVector(values=[pose[0], pose[1], pose[2]], size=3),
         rotation=GenericMatrix(
@@ -115,10 +104,14 @@ def construct_tag_world(use_imu_rotation: bool = False) -> AprilTagPreparerConfi
     )
     april_tag_config = AprilTagConfig(
         tag_position_config=tags_in_world,
-        tag_disambiguation_mode=TagDisambiguationMode.NONE,
         camera_position_config=cameras_in_robot,
         tag_use_imu_rotation=tag_use_imu_rotation,
-        disambiguation_time_window_s=0.1,
+        noise_change_modes=[],
+        tag_noise_adjust_config=TagNoiseAdjustConfig(
+            weight_per_m_from_distance_from_tag=0.0,
+            weight_per_degree_from_angle_error_tag=0.0,
+            weight_per_confidence_tag=0.0,
+        ),
     )
 
     return AprilTagPreparerConfig(
@@ -141,7 +134,7 @@ def make_noise_adjusted_preparer(
     mode: TagNoiseAdjustMode, config: TagNoiseAdjustConfig
 ) -> DataPreparer[AprilTagData, AprilTagDataPreparerConfig]:
     base_config = construct_tag_world()
-    base_config.april_tag_config.tag_noise_adjust_mode = mode
+    base_config.april_tag_config.noise_change_modes = [mode]
     base_config.april_tag_config.tag_noise_adjust_config = config
     return AprilTagDataPreparer(  # pyright: ignore[reportReturnType]
         AprilTagDataPreparerConfig(base_config)
@@ -149,11 +142,6 @@ def make_noise_adjusted_preparer(
 
 
 def test_april_tag_prep_one():
-    """
-    Tests the AprilTagDataPreparer with a single tag.
-    The tag is at 0, 0 in the world and the camera is expected to be in the -1, 0 position.
-    """
-
     preparer = make_april_tag_preparer()
 
     tag_one_R = from_robot_rotation_to_camera_rotation(from_theta_to_3x3_mat(0))
@@ -171,15 +159,18 @@ def test_april_tag_prep_one():
         )
     )
 
-    output = preparer.prepare_input(tag_vision_one, "camera_1")
+    output = preparer.prepare_input(
+        tag_vision_one,
+        "camera_1",
+        ExtrapolationContext(filter=_FakeFilter(), has_gotten_rotation=False),
+    )
     assert output is not None
-    inputs = output.get_input_list()
-    assert len(inputs) == 1
-    assert inputs[0].data.shape == (3,)
-    assert np.all(np.isfinite(inputs[0].data))
-    # The tag is 1m in front of the camera, tag in world at origin -> robot at (-1, 0).
-    assert float(inputs[0].data[0]) == pytest.approx(-1.0, abs=1e-6)
-    assert float(inputs[0].data[1]) == pytest.approx(0.0, abs=1e-6)
+    assert len(output) == 1
+    vals = output[0].get_input()
+    assert vals.shape == (3,)
+    assert np.all(np.isfinite(vals))
+    assert float(vals[0]) == pytest.approx(-1.0, abs=1e-6)
+    assert float(vals[1]) == pytest.approx(0.0, abs=1e-6)
 
 
 def test_april_tag_prep_two():
@@ -205,41 +196,45 @@ def test_april_tag_prep_two():
     output = preparer.prepare_input(
         tag_vision_one,
         "camera_1",
-        ExtrapolationContext(
-            x=np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
-            P=np.eye(7),
-            has_gotten_rotation=False,
-        ),
+        ExtrapolationContext(filter=_FakeFilter(), has_gotten_rotation=False),
     )
     assert output is not None
-    assert len(output.get_input_list()) == 1
+    assert len(output) == 1
 
 
 def test_weight_add_config_distance_mode():
     preparer = make_noise_adjusted_preparer(
-        TagNoiseAdjustMode.ADD_WEIGHT_PER_M_FROM_DISTANCE_ERROR,
-        TagNoiseAdjustConfig(weight_per_m_from_distance_error=2.0),
+        TagNoiseAdjustMode.ADD_WEIGHT_PER_M_DISTANCE_TAG,
+        TagNoiseAdjustConfig(
+            weight_per_m_from_distance_from_tag=2.0,
+            weight_per_degree_from_angle_error_tag=0.0,
+            weight_per_confidence_tag=0.0,
+        ),
     )
-    assert preparer.april_tag_config.tag_noise_adjust_mode == (
-        TagNoiseAdjustMode.ADD_WEIGHT_PER_M_FROM_DISTANCE_ERROR
-    )
+    assert preparer.april_tag_config.noise_change_modes == [
+        TagNoiseAdjustMode.ADD_WEIGHT_PER_M_DISTANCE_TAG
+    ]
     assert preparer.april_tag_config.tag_noise_adjust_config is not None
     assert (
-        preparer.april_tag_config.tag_noise_adjust_config.weight_per_m_from_distance_error
+        preparer.april_tag_config.tag_noise_adjust_config.weight_per_m_from_distance_from_tag
         == pytest.approx(2.0)
     )
 
 
 def test_weight_add_config_confidence_mode():
     preparer = make_noise_adjusted_preparer(
-        TagNoiseAdjustMode.ADD_WEIGHT_PER_DEGREE_FROM_ANGLE_ERROR,
-        TagNoiseAdjustConfig(weight_per_degree_from_angle_error=4.0),
+        TagNoiseAdjustMode.ADD_WEIGHT_PER_TAG_CONFIDENCE,
+        TagNoiseAdjustConfig(
+            weight_per_m_from_distance_from_tag=0.0,
+            weight_per_degree_from_angle_error_tag=0.0,
+            weight_per_confidence_tag=4.0,
+        ),
     )
-    assert preparer.april_tag_config.tag_noise_adjust_mode == (
-        TagNoiseAdjustMode.ADD_WEIGHT_PER_DEGREE_FROM_ANGLE_ERROR
-    )
+    assert preparer.april_tag_config.noise_change_modes == [
+        TagNoiseAdjustMode.ADD_WEIGHT_PER_TAG_CONFIDENCE
+    ]
     assert preparer.april_tag_config.tag_noise_adjust_config is not None
     assert (
-        preparer.april_tag_config.tag_noise_adjust_config.weight_per_degree_from_angle_error
+        preparer.april_tag_config.tag_noise_adjust_config.weight_per_confidence_tag
         == pytest.approx(4.0)
     )
