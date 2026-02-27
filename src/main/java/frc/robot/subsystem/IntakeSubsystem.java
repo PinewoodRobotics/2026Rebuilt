@@ -1,5 +1,7 @@
 package frc.robot.subsystem;
 
+import org.littletonrobotics.junction.Logger;
+
 import com.revrobotics.PersistMode;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.ClosedLoopSlot;
@@ -23,7 +25,7 @@ public class IntakeSubsystem extends SubsystemBase {
   private final SparkMax m_intakeIntakerMotor;
   private final SparkMax m_intakeWristMotor;
 
-  private Rotation2d m_wristSetpoint = IntakeConstants.intakeWristStowedAngle;
+  private Rotation2d m_wristSetpoint = IntakeConstants.wristStowedAngle;
 
   public static IntakeSubsystem GetInstance() {
     if (instance == null) {
@@ -51,8 +53,7 @@ public class IntakeSubsystem extends SubsystemBase {
     SparkMaxConfig wristConfig = new SparkMaxConfig();
     wristConfig.smartCurrentLimit(IntakeConstants.intakeWristCurrentLimit);
     wristConfig.inverted(IntakeConstants.intakeWristInverted);
-    wristConfig.closedLoop.feedbackSensor(FeedbackSensor.kPrimaryEncoder);
-    wristConfig.encoder.positionConversionFactor(IntakeConstants.intakeWristGearingRatio);
+    wristConfig.closedLoop.feedbackSensor(FeedbackSensor.kAbsoluteEncoder);
     wristConfig.idleMode(IdleMode.kBrake);
     wristConfig.closedLoop.pid(
         IntakeConstants.intakeWristP,
@@ -60,52 +61,31 @@ public class IntakeSubsystem extends SubsystemBase {
         IntakeConstants.intakeWristD)
         .iZone(IntakeConstants.intakeWristIZone);
 
-    wristConfig.absoluteEncoder.inverted(true).zeroOffset(IntakeConstants.intakeWristOffset.getRotations());
+    wristConfig.absoluteEncoder.zeroOffset(IntakeConstants.intakeWristOffset.getRotations());
 
     m_intakeWristMotor.configure(wristConfig, ResetMode.kResetSafeParameters,
         PersistMode.kPersistParameters);
-    calibrateWrist();
   }
 
   private double calculateFeedForward() {
     return IntakeConstants.intakeWristFeedForwardK
-        * Math.cos(getWristPosition().getRadians() - IntakeConstants.intakeWristFFOffset.getRadians());
-  }
-
-  public void stopWrist() {
-    setWristPosition(getWristPosition());
+        * Math.cos(getWristPosition().getRadians());
   }
 
   public Rotation2d getWristPosition() {
-    return Rotation2d.fromRotations(m_intakeWristMotor.getEncoder().getPosition());
+    return Rotation2d.fromRotations(m_intakeWristMotor.getAbsoluteEncoder().getPosition());
   }
 
   public void setWristPosition(Rotation2d position) {
     m_wristSetpoint = position;
   }
 
-  public Rotation2d getSetpoint() {
-    return m_wristSetpoint;
-  }
-
-  public boolean atSetpoint() {
-    return Math.abs(getWristPosition().minus(m_wristSetpoint).getRotations()) < IntakeConstants.kTolerance
-        .getRotations();
-  }
-
-  public void calibrateWrist() {
-    m_intakeWristMotor.getEncoder()
-        .setPosition(plusMinusHalf(m_intakeWristMotor.getAbsoluteEncoder().getPosition()));
-  }
-
-  private static double plusMinusHalf(double in) {
-    while (in > 0.5) {
-      in -= 1;
+  public void _toggleWristPosition() {
+    if (m_wristSetpoint.getRotations() == IntakeConstants.wristTopAngle.getRotations()) {
+      m_wristSetpoint = IntakeConstants.wristStowedAngle;
+    } else {
+      m_wristSetpoint = IntakeConstants.wristTopAngle;
     }
-    while (in < -0.5) {
-      in += 1;
-    }
-    return in;
   }
 
   public void runMotor(double speed) {
@@ -124,5 +104,8 @@ public class IntakeSubsystem extends SubsystemBase {
         ClosedLoopSlot.kSlot0,
         calculateFeedForward());
 
+    Logger.recordOutput("IntakeSubsystem/WristPosition", getWristPosition().getRotations());
+    Logger.recordOutput("IntakeSubsystem/WristSetpoint", m_wristSetpoint.getRotations());
+    Logger.recordOutput("IntakeSubsystem/FeedForward", calculateFeedForward());
   }
 }

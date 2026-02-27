@@ -3,6 +3,7 @@ package frc.robot;
 import edu.wpi.first.math.geometry.Rotation2d;
 // import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import frc.robot.command.SwerveMoveTeleop;
 import frc.robot.command.scoring.ContinuousAimCommand;
 import frc.robot.command.scoring.ManualAimCommand;
@@ -13,6 +14,7 @@ import frc.robot.command.testing.IntakeCommand;
 import frc.robot.command.testing.SetWristPos;
 import frc.robot.constant.BotConstants;
 import frc.robot.constant.IndexConstants;
+import frc.robot.constant.IntakeConstants;
 import frc.robot.hardware.AHRSGyro;
 import frc.robot.subsystem.CameraSubsystem;
 import frc.robot.subsystem.GlobalPosition;
@@ -40,25 +42,27 @@ public class RobotContainer {
 
   public RobotContainer() {
 
-    GlobalPosition.GetInstance();
-    OdometrySubsystem.GetInstance();
-    AHRSGyro.GetInstance();
-    SwerveSubsystem.GetInstance();
-    CameraSubsystem.GetInstance();
+    // GlobalPosition.GetInstance();
+    // OdometrySubsystem.GetInstance();
+    // AHRSGyro.GetInstance();
+    // SwerveSubsystem.GetInstance();
+    // CameraSubsystem.GetInstance();
 
-    TurretSubsystem.GetInstance();
+    // TurretSubsystem.GetInstance();
     // ShooterSubsystem.GetInstance();
     // IndexSubsystem.GetInstance();
     // LEDSubsystem.GetInstance();
 
-    // IntakeSubsystem.GetInstance();
+    IntakeSubsystem.GetInstance();
 
     // Initialize publication subsystem for sending data to Pi
-    PublicationSubsystem.GetInstance(Robot.getCommunicationClient());
-    PathPlannerSubsystem.GetInstance();
+    // PublicationSubsystem.GetInstance(Robot.getCommunicationClient());
+    // PathPlannerSubsystem.GetInstance();
 
-    setSwerveCommands();
-    setTurretCommands();
+    setIntakeCommands();
+
+    // setSwerveCommands();
+    // setTurretCommands();
     // setIndexCommands();
     // setShooterCommands();
 
@@ -116,6 +120,13 @@ public class RobotContainer {
     m_rightFlightStick.trigger().whileTrue(new IndexCommand(indexSubsystem, IndexConstants.kIndexMotorSpeed));
   }
 
+  private void setIntakeCommands() {
+    IntakeSubsystem intakeSubsystem = IntakeSubsystem.GetInstance();
+
+    m_rightFlightStick.B5()
+        .onTrue(new InstantCommand(() -> intakeSubsystem._toggleWristPosition()));
+  }
+
   private void setShooterCommands() {
     ShooterSubsystem shooterSubsystem = ShooterSubsystem.GetInstance();
     LEDSubsystem.GetInstance().setDefaultCommand(
@@ -129,17 +140,20 @@ public class RobotContainer {
   }
 
   public void onAnyModeStart() {
-    TurretSubsystem.GetInstance().reset();
-    var position = GlobalPosition.Get();
-    if (position != null) {
-      AHRSGyro.GetInstance().setAngleAdjustment(position.getRotation().getDegrees());
-      OdometrySubsystem.GetInstance().setOdometryPosition(position);
-    }
-
-    if (BotConstants.currentMode == BotConstants.Mode.REAL) {
-      PublicationSubsystem.addDataClasses(
-          OdometrySubsystem.GetInstance(),
-          AHRSGyro.GetInstance());
-    }
+    /*
+     * TurretSubsystem.GetInstance().reset();
+     * var position = GlobalPosition.Get();
+     * if (position != null) {
+     * AHRSGyro.GetInstance().setAngleAdjustment(position.getRotation().getDegrees()
+     * );
+     * OdometrySubsystem.GetInstance().setOdometryPosition(position);
+     * }
+     * 
+     * if (BotConstants.currentMode == BotConstants.Mode.REAL) {
+     * PublicationSubsystem.addDataClasses(
+     * OdometrySubsystem.GetInstance(),
+     * AHRSGyro.GetInstance());
+     * }
+     */
   }
 }
