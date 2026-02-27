@@ -20,11 +20,11 @@ import frc.robot.subsystem.IndexSubsystem;
 import frc.robot.subsystem.IntakeSubsystem;
 import frc.robot.subsystem.LEDSubsystem;
 import frc.robot.subsystem.OdometrySubsystem;
+import frc.robot.subsystem.PathPlannerSubsystem;
 import frc.robot.subsystem.ShooterSubsystem;
 import frc.robot.subsystem.SwerveSubsystem;
 import frc.robot.subsystem.TurretSubsystem;
 import frc.robot.util.AimPoint;
-import frc.robot.util.PathPlannerSetup;
 import pwrup.frc.core.controller.FlightModule;
 import pwrup.frc.core.controller.FlightStick;
 import pwrup.frc.core.controller.OperatorPanel;
@@ -47,20 +47,20 @@ public class RobotContainer {
     CameraSubsystem.GetInstance();
 
     TurretSubsystem.GetInstance();
-    ShooterSubsystem.GetInstance();
-    IndexSubsystem.GetInstance();
-    LEDSubsystem.GetInstance();
+    // ShooterSubsystem.GetInstance();
+    // IndexSubsystem.GetInstance();
+    // LEDSubsystem.GetInstance();
 
     // IntakeSubsystem.GetInstance();
 
     // Initialize publication subsystem for sending data to Pi
     PublicationSubsystem.GetInstance(Robot.getCommunicationClient());
-    PathPlannerSetup.configure(); // swerve not connected
+    PathPlannerSubsystem.GetInstance();
 
     setSwerveCommands();
     setTurretCommands();
     // setIndexCommands();
-    setShooterCommands();
+    // setShooterCommands();
 
     // setTestCommands();
   }
@@ -125,7 +125,7 @@ public class RobotContainer {
   }
 
   public Command getAutonomousCommand() {
-    return PathPlannerSetup.getAutonomousCommand();
+    return PathPlannerSubsystem.GetInstance().getAutoCommand();
   }
 
   public void onAnyModeStart() {

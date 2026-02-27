@@ -139,9 +139,10 @@ public class AHRSGyro implements IGyroscopeLike, IDataClass {
     var yaw = Rotation2d.fromDegrees(getYPR()[0]);
     var angularVelocity = getAngularVelocityXYZ();
 
-    Logger.recordOutput("Imu/yaw", yaw.getDegrees());
-    Logger.recordOutput("Imu/AngularVel", angularVelocity[2]);
-    Logger.recordOutput("Imu/Velocity", new ChassisSpeeds(velocityXYZ[0], velocityXYZ[1], 0));
+    // Logger.recordOutput("Imu/yaw", yaw.getDegrees());
+    // Logger.recordOutput("Imu/AngularVel", angularVelocity[2]);
+    // Logger.recordOutput("Imu/Velocity", new ChassisSpeeds(velocityXYZ[0],
+    // velocityXYZ[1], 0));
 
     var position = Vector3.newBuilder()
         .setX((float) poseXYZ[0])

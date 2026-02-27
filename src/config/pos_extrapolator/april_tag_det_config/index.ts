@@ -27,11 +27,14 @@ const april_tag_pos_config: AprilTagConfig = {
     },
   },
   tag_use_imu_rotation: TagUseImuRotation.WHILE_NO_OTHER_ROTATION_DATA,
-  noise_change_modes: [TagNoiseAdjustMode.ADD_WEIGHT_PER_M_DISTANCE_TAG],
+  noise_change_modes: [
+    // TagNoiseAdjustMode.ADD_WEIGHT_PER_M_DISTANCE_TAG,
+    TagNoiseAdjustMode.ADD_WEIGHT_PER_TAG_CONFIDENCE,
+  ],
   tag_noise_adjust_config: {
-    weight_per_m_from_distance_from_tag: 0.0,
+    weight_per_m_from_distance_from_tag: 0.3,
     weight_per_degree_from_angle_error_tag: 0.0,
-    weight_per_confidence_tag: 0.0,
+    weight_per_confidence_tag: 0.01,
   },
 };
 

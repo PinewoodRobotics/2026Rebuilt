@@ -11,7 +11,6 @@ import autobahn.client.Address;
 import autobahn.client.AutobahnClient;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import frc.robot.util.PathPlannerSetup;
 import frc.robot.util.RPC;
 import lombok.Getter;
 import pwrup.frc.core.constant.RaspberryPiConstants;
