@@ -23,3 +23,7 @@
 ## TODO
 
 - Confirm whether automation should keep `TEAM_NUMBER=4765` and `EXPECTED_NUM_OF_PIS=2` as defaults or document per-robot override policy.
+
+## Agent docs
+
+- Lighting API and extension guide: `docs/LightingApiForAgents.md`

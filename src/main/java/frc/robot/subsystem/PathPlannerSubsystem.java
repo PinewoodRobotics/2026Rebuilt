@@ -39,6 +39,8 @@ public final class PathPlannerSubsystem extends SubsystemBase {
 
   private static PathPlannerSubsystem self;
 
+  public Command currentAutoCommand;
+
   public static PathPlannerSubsystem GetInstance() {
     if (self == null) {
       self = new PathPlannerSubsystem();
@@ -89,20 +91,21 @@ public final class PathPlannerSubsystem extends SubsystemBase {
     return selectedAuto.getCurrentAuto().isPresent();
   }
 
-  public Command getAutoCommand(boolean pathfindIfNotAtStart) {
+  public Command getAndInitAutoCommand(boolean pathfindIfNotAtStart) {
     if (!isSelectedAutoValid()) {
       return Commands.none();
     }
 
-    PathedAuto currentAuto = selectedAuto.getCurrentAuto().get();
+    currentAutoCommand = selectedAuto.getCurrentAuto().get();
     Pose2d[] pathPoses = selectedAuto.getPathPoses(0);
     if (pathfindIfNotAtStart && pathPoses.length > 0 && pathPoses[0].getTranslation()
         .getDistance(GlobalPosition.Get().getTranslation()) > PathPlannerConstants.distanceConsideredOffTarget
             .in(Units.Meters)) {
-      return AutoBuilder.pathfindToPose(pathPoses[0], PathPlannerConstants.defaultPathfindingConstraints);
+      currentAutoCommand = AutoBuilder.pathfindToPose(pathPoses[0],
+          PathPlannerConstants.defaultPathfindingConstraints);
     }
 
-    return currentAuto;
+    return currentAutoCommand;
   }
 
   private static boolean shouldFlipForAlliance() {

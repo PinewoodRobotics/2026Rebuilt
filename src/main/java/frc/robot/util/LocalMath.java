@@ -31,6 +31,10 @@ public class LocalMath {
         .collect(Collectors.toList());
   }
 
+  public static int randomInt(int min, int max) {
+    return (int) (Math.random() * (max - min + 1)) + min;
+  }
+
   public static Translation2d fromGlobalToRelative(Translation2d global, Translation2d relative) {
     return global.minus(relative);
   }

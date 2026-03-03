@@ -92,16 +92,27 @@ public class TurretSubsystem extends SubsystemBase {
   }
 
   public int getAimTimeLeftMs() {
-    double maxVelRadPerSec = TurretConstants.kTurretMaxVelocity.in(Units.RadiansPerSecond);
-    if (lastAimTarget == null || maxVelRadPerSec <= 0.0) {
+    if (lastAimTarget == null) {
       return 0;
     }
 
-    double currentPositionRad = getTurretPosition().in(Units.Radians);
-    double distanceRad = Math.abs(lastAimTarget.in(Units.Radians) - currentPositionRad);
-    double timeLeftSec = distanceRad / maxVelRadPerSec;
-    double timeLeftMs = Math.max(0.0, timeLeftSec) * 1000.0;
-    return (int) Math.ceil(timeLeftMs);
+    double maxVelRotPerSec = TurretConstants.kTurretMaxVelocity.in(Units.RotationsPerSecond);
+    if (maxVelRotPerSec <= 0.0) {
+      return 0;
+    }
+
+    double currentRot = getTurretPosition().in(Units.Rotations);
+    double targetRot = lastAimTarget.in(Units.Rotations);
+
+    // shortest-path wrapped error (-0.5 .. 0.5 rotations)
+    double errorRot = targetRot - currentRot;
+    errorRot = errorRot - Math.floor(errorRot + 0.5);
+
+    double distanceRot = Math.abs(errorRot);
+
+    double timeSec = distanceRot / maxVelRotPerSec;
+
+    return (int) Math.ceil(timeSec * 1000.0);
   }
 
   public Angle getTurretPosition() {

@@ -5,10 +5,12 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import frc.robot.command.SwerveMoveTeleop;
+import frc.robot.command.lighting.AutonomousStateLighting;
+import frc.robot.command.lighting.ShooterSpeedLighting;
+import frc.robot.command.lighting.TurretStateLighting;
 import frc.robot.command.scoring.ContinuousAimCommand;
 import frc.robot.command.scoring.ManualAimCommand;
 import frc.robot.command.shooting.ShooterCommand;
-import frc.robot.command.shooting.ShooterSpeedCommand;
 import frc.robot.command.testing.IndexCommand;
 import frc.robot.command.testing.IntakeCommand;
 import frc.robot.command.testing.SetWristPos;
@@ -21,7 +23,7 @@ import frc.robot.subsystem.CameraSubsystem;
 import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.IndexSubsystem;
 import frc.robot.subsystem.IntakeSubsystem;
-import frc.robot.subsystem.LEDSubsystem;
+import frc.robot.subsystem.LightsSubsystem;
 import frc.robot.subsystem.OdometrySubsystem;
 import frc.robot.subsystem.PathPlannerSubsystem;
 import frc.robot.subsystem.ShooterSubsystem;
@@ -53,7 +55,7 @@ public class RobotContainer {
     // TurretSubsystem.GetInstance();
     // ShooterSubsystem.GetInstance();
     // IndexSubsystem.GetInstance();
-    // LEDSubsystem.GetInstance();
+    // LightsSubsystem.GetInstance();
 
     // IntakeSubsystem.GetInstance();
 
@@ -131,14 +133,16 @@ public class RobotContainer {
 
   private void setShooterCommands() {
     ShooterSubsystem shooterSubsystem = ShooterSubsystem.GetInstance();
-    LEDSubsystem.GetInstance().setDefaultCommand(
-        new ShooterSpeedCommand(LEDSubsystem.GetInstance(), m_rightFlightStick));
+
+    LightsSubsystem.GetInstance().addLightsCommand(
+        new TurretStateLighting(), new AutonomousStateLighting());
+
     m_rightFlightStick.trigger()
-        .whileTrue(new ShooterCommand(shooterSubsystem, ShooterSpeedCommand::getTargetShooterSpeed));
+        .whileTrue(new ShooterCommand(shooterSubsystem, ShooterSpeedLighting::getTargetShooterSpeed));
   }
 
   public Command getAutonomousCommand() {
-    return PathPlannerSubsystem.GetInstance().getAutoCommand(true);
+    return PathPlannerSubsystem.GetInstance().getAndInitAutoCommand(true);
   }
 
   public void onAnyModeStart() {
