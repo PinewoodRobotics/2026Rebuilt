@@ -3,6 +3,7 @@ import {
   CameraType,
 } from "generated/thrift/gen-nodejs/camera_types";
 import { MatrixUtil, VectorUtil } from "../../util/math";
+import { CameraConstants } from "../camera_constants";
 
 const front_left: CameraParameters = {
   pi_to_run_on: "agatha-king",
@@ -24,8 +25,8 @@ const front_left: CameraParameters = {
   exposure_time: 8,
   camera_type: CameraType.OV2311,
   video_options: {
-    send_feed: false,
-    compression_quality: 40,
+    send_feed: CameraConstants.kSendFeed,
+    compression_quality: CameraConstants.kCompressionQuality,
     publication_topic: "camera/front_left/video",
     do_compression: true,
     overlay_tags: true,
