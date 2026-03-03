@@ -13,8 +13,12 @@ import edu.wpi.first.networktables.NetworkTableEvent;
 import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.networktables.StringSubscriber;
 import edu.wpi.first.networktables.StringTopic;
+import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Robot;
 import frc.robot.util.PathedAuto;
+import frc.robot.util.SharedStringTopic;
+import lombok.Getter;
 
 public class PathPlannerConstants {
   /**
@@ -26,42 +30,39 @@ public class PathPlannerConstants {
     private static final String kNoneSelection = "NONE";
 
     private String name;
-    private Optional<PathedAuto> currentAuto = Optional.empty();
+    private Optional<PathedAuto> currentAuto;
 
     private final boolean shouldFlip;
-    private final StringSubscriber requestSubscriber;
-    private final StringPublisher statePublisher;
+    private final SharedStringTopic kAutoSelect;
+
+    public SelectedAuto(boolean shouldFlip) {
+      this(shouldFlip, kAutoSelectTopic);
+    }
 
     /**
      * Creates a SelectedAuto that listens for auto selection changes.
      *
      * @param shouldFlip whether to flip the auto for the opposite alliance
      */
-    public SelectedAuto(boolean shouldFlip) {
+    public SelectedAuto(boolean shouldFlip, String topicBase) {
+      this.kAutoSelect = new SharedStringTopic(topicBase);
       this.shouldFlip = shouldFlip;
-      this.requestSubscriber = kAutoSelectRequestTopic.subscribe(kNoneSelection);
-      this.statePublisher = kAutoSelectStateTopic.publish();
-      clearSelection();
-      statePublisher.set(kNoneSelection);
+      this.name = kNoneSelection;
+      this.currentAuto = Optional.empty();
 
-      Robot.getNetworkTableInstance().addListener(
-          requestSubscriber,
-          EnumSet.of(NetworkTableEvent.Kind.kValueAll),
-          event -> {
-            if (event.valueData == null || event.valueData.value == null) {
-              return;
-            }
+      kAutoSelect.setState(this.name);
+    }
 
-            String value = event.valueData.value.getString();
-            if (value == null) {
-              return;
-            }
-
-            updateFromSelection(value);
-          });
+    private void clearSelection() {
+      name = kNoneSelection;
+      currentAuto = Optional.empty();
+      kAutoSelect.setState(name);
     }
 
     private void updateFromSelection(String selected) {
+      if (selected == name)
+        return;
+
       if (selected == null || selected.isEmpty() || kNoneSelection.equalsIgnoreCase(selected)) {
         clearSelection();
         return;
@@ -69,20 +70,16 @@ public class PathPlannerConstants {
 
       name = selected;
       currentAuto = Optional.of(new PathedAuto(name, shouldFlip));
-      statePublisher.set(name);
+      kAutoSelect.setState(name);
     }
 
-    private void clearSelection() {
-      name = kNoneSelection;
-      currentAuto = Optional.empty();
-      statePublisher.set(kNoneSelection);
-    }
-
-    public String getName() {
-      return name;
+    private void updateFromSelection() {
+      updateFromSelection(kAutoSelect.getState());
     }
 
     public Pose2d[] getPathPoses(int index) {
+      updateFromSelection();
+
       if (!currentAuto.isPresent()) {
         return new Pose2d[0];
       }
@@ -94,7 +91,13 @@ public class PathPlannerConstants {
       return getPathPoses(0);
     }
 
+    public String getName() {
+      updateFromSelection();
+      return name;
+    }
+
     public Optional<PathedAuto> getCurrentAuto() {
+      updateFromSelection();
       return currentAuto;
     }
   }
@@ -102,12 +105,11 @@ public class PathPlannerConstants {
   public static final PPHolonomicDriveController defaultPathfindingController = new PPHolonomicDriveController(
       new PIDConstants(3.0, 0.0, 0.1),
       new PIDConstants(0.5, 0.0, 0.3));
+
   public static final PathConstraints defaultPathfindingConstraints = new PathConstraints(1.0, 1.0,
       Units.degreesToRadians(360), Units.degreesToRadians(720));
-  public static final double distanceConsideredOffTarget = 1;
 
-  public static final StringTopic kAutoSelectRequestTopic = CommunicationConstants.kDashboardTable
-      .getStringTopic(CommunicationConstants.kAutoSelectRequestTopic);
-  public static final StringTopic kAutoSelectStateTopic = CommunicationConstants.kDashboardTable
-      .getStringTopic(CommunicationConstants.kAutoSelectStateTopic);
+  public static final Distance distanceConsideredOffTarget = edu.wpi.first.units.Units.Meters.of(1.0);
+
+  public static final String kAutoSelectTopic = "PathPlanner/SelectedPath";
 }

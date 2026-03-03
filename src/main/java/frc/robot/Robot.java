@@ -10,9 +10,11 @@ import org.littletonrobotics.junction.networktables.NT4Publisher;
 
 import autobahn.client.Address;
 import autobahn.client.AutobahnClient;
+import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.constant.CommunicationConstants;
 import frc.robot.util.RPC;
 import lombok.Getter;
 import pwrup.frc.core.constant.RaspberryPiConstants;
@@ -27,6 +29,8 @@ public class Robot extends LoggedRobot {
   private static OptionalAutobahn communicationClient = new OptionalAutobahn();
   @Getter
   private static NetworkTableInstance networkTableInstance = NetworkTableInstance.getDefault();
+  @Getter
+  private static NetworkTable dashboard = networkTableInstance.getTable(CommunicationConstants.kSharedTable);
 
   private int retryCounter;
   private volatile boolean networkAttemptInProgress;

@@ -10,10 +10,7 @@ public class CommunicationConstants {
   public static final String kCameraViewTopic = "apriltag/camera";
   public static final String kCameraTagsViewTopic = "apriltag/tag";
 
-  public static final String kSharedTable = "Shared";
-  public static final String kAutoSelectRequestTopic = "PathPlanner/SelectedPath/Request";
-  public static final String kAutoSelectStateTopic = "PathPlanner/SelectedPath/State";
   public static final String kOdometrySensorId = "odom";
 
-  public static final NetworkTable kDashboardTable = Robot.getNetworkTableInstance().getTable(kSharedTable);
+  public static final String kSharedTable = "Shared";
 }

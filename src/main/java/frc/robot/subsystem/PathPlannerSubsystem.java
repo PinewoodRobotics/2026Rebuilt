@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.networktables.NetworkTableEvent;
 import edu.wpi.first.networktables.StringSubscriber;
 import edu.wpi.first.networktables.StringTopic;
+import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -96,7 +97,8 @@ public final class PathPlannerSubsystem extends SubsystemBase {
     PathedAuto currentAuto = selectedAuto.getCurrentAuto().get();
     Pose2d[] pathPoses = selectedAuto.getPathPoses(0);
     if (pathfindIfNotAtStart && pathPoses.length > 0 && pathPoses[0].getTranslation()
-        .getDistance(GlobalPosition.Get().getTranslation()) > PathPlannerConstants.distanceConsideredOffTarget) {
+        .getDistance(GlobalPosition.Get().getTranslation()) > PathPlannerConstants.distanceConsideredOffTarget
+            .in(Units.Meters)) {
       return AutoBuilder.pathfindToPose(pathPoses[0], PathPlannerConstants.defaultPathfindingConstraints);
     }
 
