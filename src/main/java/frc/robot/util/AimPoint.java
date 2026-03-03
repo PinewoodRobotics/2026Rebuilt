@@ -10,7 +10,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import frc.robot.constant.FieldConstants;
+import frc.robot.constant.BotConstants;
 
 public final class AimPoint {
 
@@ -20,8 +20,8 @@ public final class AimPoint {
     FRONT_OF_HUB,
   }
 
-  private static final double FIELD_LENGTH_METERS = FieldConstants.kFieldLayout.getFieldLength();
-  private static final double FIELD_WIDTH_METERS = FieldConstants.kFieldLayout.getFieldWidth();
+  private static final double FIELD_LENGTH_METERS = BotConstants.kFieldLayout.getFieldLength();
+  private static final double FIELD_WIDTH_METERS = BotConstants.kFieldLayout.getFieldWidth();
 
   private static final List<Zone> ZONES = List.of(
       new Zone(ZoneName.FRONT_OF_HUB,

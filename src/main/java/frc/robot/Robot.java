@@ -1,6 +1,7 @@
 package frc.robot;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.littletonrobotics.junction.LoggedRobot;
@@ -9,6 +10,7 @@ import org.littletonrobotics.junction.networktables.NT4Publisher;
 
 import autobahn.client.Address;
 import autobahn.client.AutobahnClient;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.util.RPC;
@@ -23,6 +25,8 @@ public class Robot extends LoggedRobot {
 
   @Getter
   private static OptionalAutobahn communicationClient = new OptionalAutobahn();
+  @Getter
+  private static NetworkTableInstance networkTableInstance = NetworkTableInstance.getDefault();
 
   private int retryCounter;
   private volatile boolean networkAttemptInProgress;

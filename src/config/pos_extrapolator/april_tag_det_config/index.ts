@@ -35,7 +35,9 @@ const april_tag_pos_config: AprilTagConfig = {
     weight_per_m_from_distance_from_tag: 0.3,
     weight_per_degree_from_angle_error_tag: 0.0,
     weight_per_confidence_tag: 0.01,
+    min_distance_from_tag_to_use_noise_adjustment: 1,
   },
+  insert_predicted_global_rotation: true,
 };
 
 export default april_tag_pos_config;

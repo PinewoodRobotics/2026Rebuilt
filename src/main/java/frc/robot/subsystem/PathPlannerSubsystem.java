@@ -1,34 +1,40 @@
 package frc.robot.subsystem;
 
-import java.io.IOException;
+import java.util.EnumSet;
 
-import org.json.simple.parser.ParseException;
 import org.littletonrobotics.junction.Logger;
 
-import com.google.protobuf.InvalidProtocolBufferException;
+import java.util.List;
+
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.PathfindingCommand;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.pathfinding.LocalADStar;
 import com.pathplanner.lib.pathfinding.Pathfinding;
-import com.pathplanner.lib.util.FileVersionException;
 import com.pathplanner.lib.util.PathPlannerLogging;
 
-import autobahn.client.NamedCallback;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.networktables.NetworkTableEvent;
+import edu.wpi.first.networktables.StringSubscriber;
+import edu.wpi.first.networktables.StringTopic;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robot;
+import frc.robot.constant.BotConstants;
+import frc.robot.constant.CommunicationConstants;
 import frc.robot.constant.PathPlannerConstants;
+import frc.robot.constant.PathPlannerConstants.SelectedAuto;
 import frc.robot.subsystem.GlobalPosition.GMFrame;
-import frc4765.proto.util.Other.SelectedPath;
+import frc.robot.util.PathedAuto;
 
 public final class PathPlannerSubsystem extends SubsystemBase {
   private final RobotConfig robotConfig;
-  private volatile Pose2d[] activePath = new Pose2d[0];
-  private volatile PathPlannerPath activePathObject;
+  private volatile SelectedAuto selectedAuto;
 
   private static PathPlannerSubsystem self;
 
@@ -42,15 +48,23 @@ public final class PathPlannerSubsystem extends SubsystemBase {
 
   public PathPlannerSubsystem() {
     Pathfinding.setPathfinder(new LocalADStar());
-    PathfindingCommand.warmupCommand();
+    CommandScheduler.getInstance().schedule(PathfindingCommand.warmupCommand());
 
+    this.robotConfig = loadRobotConfig();
+    configureAutoBuilder();
+
+    this.selectedAuto = new SelectedAuto(shouldFlipForAlliance());
+  }
+
+  private RobotConfig loadRobotConfig() {
     try {
-      robotConfig = RobotConfig.fromGUISettings();
+      return RobotConfig.fromGUISettings();
     } catch (Exception e) {
-      e.printStackTrace();
-      throw new RuntimeException("Failed to load RobotConfig", e);
+      throw new RuntimeException("Failed to load RobotConfig from GUI settings", e);
     }
+  }
 
+  private void configureAutoBuilder() {
     AutoBuilder.configure(
         () -> GlobalPosition.Get(),
         OdometrySubsystem.GetInstance()::setOdometryPosition,
@@ -60,66 +74,44 @@ public final class PathPlannerSubsystem extends SubsystemBase {
         robotConfig,
         PathPlannerSubsystem::shouldFlipForAlliance,
         SwerveSubsystem.GetInstance());
-
-    PathPlannerLogging.setLogActivePathCallback(path -> {
-      activePath = path.toArray(Pose2d[]::new);
-    });
-
-    Robot.getCommunicationClient().subscribe(PathPlannerConstants.kPathSelectedTopic,
-        NamedCallback.FromConsumer(this::subscription));
   }
 
   public Command getAutoCommand() {
-    if (GlobalPosition.Get() == null || activePathObject == null) {
+    if (!isSelectedAutoValid()) {
       return Commands.none();
     }
 
-    var startPose = activePathObject.getPathPoses().get(0);
-    if (GlobalPosition.Get().getTranslation().getDistance(startPose.getTranslation()) < 1) {
-      return AutoBuilder.followPath(activePathObject);
-    }
-
-    return AutoBuilder.pathfindToPose(activePathObject.getPathPoses().get(0),
-        PathPlannerConstants.defaultPathfindingConstraints, 0);
+    return selectedAuto.getCurrentAuto().get();
   }
 
-  private Pose2d[] pathToPose2dArray(PathPlannerPath path) {
-    return path.getPathPoses().toArray(new Pose2d[0]);
+  public boolean isSelectedAutoValid() {
+    return selectedAuto.getCurrentAuto().isPresent();
   }
 
-  private void subscription(byte[] payload) {
-    SelectedPath selectedPath;
-    try {
-      selectedPath = SelectedPath.parseFrom(payload);
-    } catch (InvalidProtocolBufferException e) {
-      e.printStackTrace();
-      return;
+  public Command getAutoCommand(boolean pathfindIfNotAtStart) {
+    if (!isSelectedAutoValid()) {
+      return Commands.none();
     }
 
-    String pathName = selectedPath.getPathName();
-
-    PathPlannerPath path;
-    try {
-      path = PathPlannerPath.fromPathFile(pathName);
-    } catch (FileVersionException | IOException | ParseException e) {
-      e.printStackTrace();
-      return;
+    PathedAuto currentAuto = selectedAuto.getCurrentAuto().get();
+    Pose2d[] pathPoses = selectedAuto.getPathPoses(0);
+    if (pathfindIfNotAtStart && pathPoses.length > 0 && pathPoses[0].getTranslation()
+        .getDistance(GlobalPosition.Get().getTranslation()) > PathPlannerConstants.distanceConsideredOffTarget) {
+      return AutoBuilder.pathfindToPose(pathPoses[0], PathPlannerConstants.defaultPathfindingConstraints);
     }
 
-    activePath = pathToPose2dArray(path);
-    activePathObject = path;
+    return currentAuto;
   }
 
   private static boolean shouldFlipForAlliance() {
-    // TODO: Make this dynamic based on the alliance color.
-    // In the test field, we always start as red.
-    return false;
+    return BotConstants.alliance != Alliance.Red;
   }
 
   @Override
   public void periodic() {
-    Logger.recordOutput("PathPlanner/FollowingPath", activePath.length > 0);
-    Logger.recordOutput("PathPlanner/CurrentPath", activePath);
-    Logger.recordOutput("PathPlanner/CurrentPathPointCount", activePath.length);
+    Logger.recordOutput("PathPlanner/CurrentPath", selectedAuto.getAllPathPoses());
+    Logger.recordOutput("PathPlanner/CurrentSelectedAuto", selectedAuto.getName());
+    Logger.recordOutput("PathPlanner/SelectedAutoValid", isSelectedAutoValid());
+    Logger.recordOutput("PathPlanner/ValidNames/Autos", AutoBuilder.getAllAutoNames().toArray(new String[0]));
   }
 }

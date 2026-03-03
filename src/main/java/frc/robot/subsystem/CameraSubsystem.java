@@ -1,6 +1,7 @@
 package frc.robot.subsystem;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -12,12 +13,12 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robot;
-import frc.robot.constant.FieldConstants;
-import frc.robot.constant.TopicConstants;
+import frc.robot.constant.BotConstants;
+import frc.robot.constant.CommunicationConstants;
 import frc.robot.util.CustomUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import frc4765.proto.sensor.Apriltags.AprilTagData;
+import frc4765.proto.sensor.Apriltags.ProcessedTag;
 import frc4765.proto.sensor.GeneralSensorDataOuterClass.GeneralSensorData;
 import frc4765.proto.sensor.GeneralSensorDataOuterClass.SensorName;;
 
@@ -25,19 +26,39 @@ public class CameraSubsystem extends SubsystemBase {
 
   private static CameraSubsystem self;
 
+  private static final long kTagTimeoutMs = 200;
+
   /**
    * Queue of timed tags. This is fully instant concurrently because you only need
    * to retrieve the head of the queue when reading. Therefore, the writer
    * (another thread) only adds to the end of the queue. Therefore, they don't
    * contradict each other.
    */
-  private final ConcurrentLinkedQueue<TimedTags> q = new ConcurrentLinkedQueue<>();
+  private volatile ConcurrentLinkedQueue<TimedTag> q = new ConcurrentLinkedQueue<>();
+  private HashSet<TimedTag> localQ = new HashSet<>();
 
   @Getter
   @AllArgsConstructor
-  private static class TimedTags {
-    public AprilTagData tags;
+  private static class TimedTag {
+    public ProcessedTag tag;
     public long timestamp;
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null || getClass() != obj.getClass()) {
+        return false;
+      }
+      TimedTag other = (TimedTag) obj;
+      return tag.getId() == other.tag.getId();
+    }
+
+    @Override
+    public int hashCode() {
+      return 31 * tag.getId();
+    }
   }
 
   public static CameraSubsystem GetInstance() {
@@ -49,7 +70,7 @@ public class CameraSubsystem extends SubsystemBase {
   }
 
   public CameraSubsystem() {
-    Robot.getCommunicationClient().subscribe(TopicConstants.kCameraTagsViewTopic,
+    Robot.getCommunicationClient().subscribe(CommunicationConstants.kCameraTagsViewTopic,
         NamedCallback.FromConsumer(this::subscription));
   }
 
@@ -57,8 +78,12 @@ public class CameraSubsystem extends SubsystemBase {
     GeneralSensorData data = CustomUtil.DeserializeSilent(payload, GeneralSensorData.class);
     if (data == null || data.getSensorName() != SensorName.APRIL_TAGS)
       return;
-
-    q.add(new TimedTags(data.getApriltags(), System.currentTimeMillis()));
+    if (!data.getApriltags().hasWorldTags())
+      return;
+    long now = System.currentTimeMillis();
+    for (ProcessedTag tag : data.getApriltags().getWorldTags().getTagsList()) {
+      q.add(new TimedTag(tag, now));
+    }
   }
 
   @Override
@@ -66,28 +91,30 @@ public class CameraSubsystem extends SubsystemBase {
     List<Pose2d> positionsRobot = new ArrayList<>();
     List<Pose3d> positionsReal = new ArrayList<>();
 
-    TimedTags timedTags;
-    while ((timedTags = q.poll()) != null) {
-      for (var tag : timedTags.getTags().getWorldTags().getTagsList()) {
-        int id = tag.getId();
-        double confidence = tag.getConfidence();
-        var posRaw = tag.getPositionWPILib();
-        var rotRaw = tag.getRotationWPILib();
+    localQ.removeIf(timedTag -> System.currentTimeMillis() - timedTag.timestamp > kTagTimeoutMs);
 
-        Pose2d positionRobot = new Pose2d(
-            (double) posRaw.getX(), (double) posRaw.getY(),
-            new Rotation2d((double) rotRaw.getDirectionX().getX(), (double) rotRaw.getDirectionX().getY()));
-
-        Pose3d positionField = FieldConstants.kFieldLayout.getTagPose(id).orElse(new Pose3d());
-
-        positionsRobot.add(positionRobot);
-        positionsReal.add(positionField);
-
-        Logger.recordOutput("Camera/Tags/" + id + "/Confidence", confidence);
-      }
+    TimedTag timedTag;
+    while ((timedTag = q.poll()) != null) {
+      localQ.add(timedTag);
     }
 
-    if (positionsReal.size() > 0) {
+    for (var t : localQ) {
+      var tag = t.getTag();
+      int id = tag.getId();
+      double confidence = tag.getConfidence();
+      var posRaw = tag.getPositionWPILib();
+      var rotRaw = tag.getRotationWPILib();
+
+      Pose2d positionRobot = new Pose2d(
+          (double) posRaw.getX(), (double) posRaw.getY(),
+          new Rotation2d((double) rotRaw.getDirectionX().getX(), (double) rotRaw.getDirectionX().getY()));
+
+      Pose3d positionField = BotConstants.kFieldLayout.getTagPose(id).orElse(new Pose3d());
+
+      positionsRobot.add(positionRobot);
+      positionsReal.add(positionField);
+
+      Logger.recordOutput("Camera/Tags/Confidences/" + id, confidence);
     }
 
     Logger.recordOutput("Camera/Tags/PositionsRobot", positionsRobot.toArray(new Pose2d[0]));

@@ -13,7 +13,7 @@ import edu.wpi.first.util.protobuf.ProtobufSerializable;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robot;
-import frc.robot.constant.TopicConstants;
+import frc.robot.constant.CommunicationConstants;
 import frc.robot.util.AimPoint;
 import frc4765.proto.util.Position.RobotPosition;
 
@@ -38,7 +38,7 @@ public class GlobalPosition extends SubsystemBase {
 
   public GlobalPosition() {
     lastUpdateTime = System.currentTimeMillis();
-    Robot.getCommunicationClient().subscribe(TopicConstants.kPoseSubscribeTopic,
+    Robot.getCommunicationClient().subscribe(CommunicationConstants.kPoseSubscribeTopic,
         NamedCallback.FromConsumer(this::subscription));
   }
 

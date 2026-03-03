@@ -16,6 +16,7 @@ import frc.robot.constant.BotConstants;
 import frc.robot.constant.IndexConstants;
 import frc.robot.constant.IntakeConstants;
 import frc.robot.hardware.AHRSGyro;
+import frc.robot.hardware.PigeonGyro;
 import frc.robot.subsystem.CameraSubsystem;
 import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.IndexSubsystem;
@@ -42,26 +43,27 @@ public class RobotContainer {
 
   public RobotContainer() {
 
-    // GlobalPosition.GetInstance();
+    GlobalPosition.GetInstance();
     // OdometrySubsystem.GetInstance();
     // AHRSGyro.GetInstance();
-    // SwerveSubsystem.GetInstance();
-    // CameraSubsystem.GetInstance();
+    PigeonGyro.GetInstance();
+    SwerveSubsystem.GetInstance();
+    CameraSubsystem.GetInstance();
 
     // TurretSubsystem.GetInstance();
     // ShooterSubsystem.GetInstance();
     // IndexSubsystem.GetInstance();
     // LEDSubsystem.GetInstance();
 
-    IntakeSubsystem.GetInstance();
+    // IntakeSubsystem.GetInstance();
 
     // Initialize publication subsystem for sending data to Pi
-    // PublicationSubsystem.GetInstance(Robot.getCommunicationClient());
-    // PathPlannerSubsystem.GetInstance();
+    PublicationSubsystem.GetInstance(Robot.getCommunicationClient());
+    PathPlannerSubsystem.GetInstance();
 
-    setIntakeCommands();
+    // setIntakeCommands();
 
-    // setSwerveCommands();
+    setSwerveCommands();
     // setTurretCommands();
     // setIndexCommands();
     // setShooterCommands();
@@ -136,23 +138,31 @@ public class RobotContainer {
   }
 
   public Command getAutonomousCommand() {
-    return PathPlannerSubsystem.GetInstance().getAutoCommand();
+    return PathPlannerSubsystem.GetInstance().getAutoCommand(true);
   }
 
   public void onAnyModeStart() {
+    var globalPosition = GlobalPosition.Get();
+    if (globalPosition != null) {
+      PigeonGyro.GetInstance().resetRotation(globalPosition.getRotation());
+      OdometrySubsystem.GetInstance().setOdometryPosition(globalPosition);
+    }
+
+    PublicationSubsystem.addDataClasses(
+        PigeonGyro.GetInstance(), OdometrySubsystem.GetInstance());
+
     /*
      * TurretSubsystem.GetInstance().reset();
      * var position = GlobalPosition.Get();
      * if (position != null) {
-     * AHRSGyro.GetInstance().setAngleAdjustment(position.getRotation().getDegrees()
-     * );
+     * PigeonGyro.GetInstance().setYawDegrees(position.getRotation().getDegrees());
      * OdometrySubsystem.GetInstance().setOdometryPosition(position);
      * }
      * 
      * if (BotConstants.currentMode == BotConstants.Mode.REAL) {
      * PublicationSubsystem.addDataClasses(
      * OdometrySubsystem.GetInstance(),
-     * AHRSGyro.GetInstance());
+     * PigeonGyro.GetInstance());
      * }
      */
   }

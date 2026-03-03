@@ -18,7 +18,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constant.BotConstants;
 import frc.robot.constant.BotConstants.RobotVariant;
 import frc.robot.constant.swerve.SwerveConstants;
-import frc.robot.hardware.AHRSGyro;
+import frc.robot.hardware.PigeonGyro;
 import frc.robot.hardware.WheelMoverBase;
 import frc.robot.hardware.WheelMoverSpark;
 import frc.robot.hardware.WheelMoverTalonFX;
@@ -45,7 +45,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   public static SwerveSubsystem GetInstance() {
     if (self == null) {
-      self = new SwerveSubsystem(AHRSGyro.GetInstance());
+      self = new SwerveSubsystem(PigeonGyro.GetInstance());
     }
 
     return self;
@@ -228,12 +228,16 @@ public class SwerveSubsystem extends SubsystemBase {
     resetGyro(0);
   }
 
+  private double getGyroYawDegrees() {
+    return -m_gyro.getRotation().toRotation2d().getDegrees();
+  }
+
   public void resetGyro(double offset) {
-    gyroOffset = -m_gyro.getYaw() + offset;
+    gyroOffset = -getGyroYawDegrees() + offset;
   }
 
   public double getSwerveGyroAngle() {
-    return Math.toRadians(LocalMath.wrapTo180(m_gyro.getYaw() + gyroOffset));
+    return Math.toRadians(LocalMath.wrapTo180(getGyroYawDegrees() + gyroOffset));
   }
 
   public void setShouldWork(boolean value) {

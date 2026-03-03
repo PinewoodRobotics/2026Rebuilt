@@ -183,6 +183,17 @@ class AprilTagDataPreparer(DataPreparer[AprilTagData, AprilTagDataPreparerConfig
                 )
             )
 
+            if self.april_tag_config.insert_predicted_global_rotation:
+                _, rotation_pred = get_translation_rotation_components(
+                    get_robot_in_world(
+                        T_tag_in_camera=T_tag_in_camera,
+                        T_camera_in_robot=T_camera_in_robot,
+                        T_tag_in_world=T_tag_in_world,
+                    )
+                )
+
+                rotation = rotation_pred
+
             direction_vector = rotation[0:3, 0]  # extract cos and sin
             angle_rad = np.atan2(direction_vector[1], direction_vector[0])
             datapoint = np.array(
