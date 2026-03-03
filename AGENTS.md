@@ -1,0 +1,25 @@
+# AGENTS
+
+## Verified workflows
+
+- Full robot build: `./gradlew build`
+  - Also runs dynamic vendor dependency build (`scripts/clone_and_build_repos.py --config-file-path config.ini`) and protobuf generation.
+- Java simulation: `./gradlew simulateJava`
+- Robot deploy: `./gradlew deploy -PteamNumber=<TEAM_NUMBER>`
+- Combined deploy flow: `./gradlew deployAll`
+  - Runs robot deploy plus backend deploy task.
+- Python backend deploy directly: `make deploy-backend`
+- Python test flow: `make initialize` (creates `.venv`, installs `requirements.txt`, then runs tests) and `make test`
+- Config generation from TypeScript: `npm run config -- --dir src/config`
+- Regenerate Thrift TS bindings: `npm run generate-thrift`
+- Generate backend code artifacts: `make generate` (Python protobuf + Python thrift + Java proto task)
+
+## Command notes
+
+- `make build` and `make deploy` enforce Java 17 via `/usr/libexec/java_home -v 17`.
+- `make deploy` defaults `TEAM_NUMBER=4765` unless overridden.
+- `./gradlew deployBackend` expects deployment on `EXPECTED_NUM_OF_PIS` (currently `2`) and fails if mismatch.
+
+## TODO
+
+- Confirm whether automation should keep `TEAM_NUMBER=4765` and `EXPECTED_NUM_OF_PIS=2` as defaults or document per-robot override policy.
