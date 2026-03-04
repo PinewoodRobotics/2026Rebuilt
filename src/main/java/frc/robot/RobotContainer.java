@@ -1,5 +1,8 @@
 package frc.robot;
 
+import java.util.HashMap;
+
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 // import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -44,7 +47,6 @@ public class RobotContainer {
       m_rightFlightStick);
 
   public RobotContainer() {
-
     GlobalPosition.GetInstance();
     // OdometrySubsystem.GetInstance();
     // AHRSGyro.GetInstance();
@@ -71,6 +73,8 @@ public class RobotContainer {
     // setShooterCommands();
 
     // setTestCommands();
+    // LightsSubsystem.GetInstance().addLightsCommand(
+    // /* new TurretStateLighting(), */new AutonomousStateLighting());
   }
 
   private void setTestCommands() {
@@ -96,8 +100,9 @@ public class RobotContainer {
   private void setSwerveCommands() {
     SwerveSubsystem swerveSubsystem = SwerveSubsystem.GetInstance();
 
-    swerveSubsystem.setDefaultCommand(new SwerveMoveTeleop(swerveSubsystem,
-        m_flightModule));
+    HashMap<Pose2d, Double> lanes = new HashMap<>();
+    lanes.put(new Pose2d(11.94, 7.52, new Rotation2d(1, 0)), 1.0);
+    swerveSubsystem.setDefaultCommand(new SwerveMoveTeleop(swerveSubsystem, m_flightModule, lanes));
 
     m_rightFlightStick
         .B5()
@@ -133,9 +138,6 @@ public class RobotContainer {
 
   private void setShooterCommands() {
     ShooterSubsystem shooterSubsystem = ShooterSubsystem.GetInstance();
-
-    LightsSubsystem.GetInstance().addLightsCommand(
-        new TurretStateLighting(), new AutonomousStateLighting());
 
     m_rightFlightStick.trigger()
         .whileTrue(new ShooterCommand(shooterSubsystem, ShooterSpeedLighting::getTargetShooterSpeed));

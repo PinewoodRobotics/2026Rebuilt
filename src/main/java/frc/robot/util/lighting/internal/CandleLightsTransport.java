@@ -5,6 +5,7 @@ import com.ctre.phoenix6.hardware.CANdle;
 import com.ctre.phoenix6.signals.RGBWColor;
 
 import frc.robot.util.lighting.LedColor;
+import frc.robot.util.lighting.LightsEngine;
 import frc.robot.util.lighting.LightsEngine.LedSegment;
 
 import java.util.List;
@@ -16,7 +17,6 @@ public class CandleLightsTransport implements LightsTransport {
     this.candle = candle;
   }
 
-  @Override
   public void writeSegments(List<LedSegment> segments) {
     for (LedSegment segment : segments) {
       LedColor color = segment.color();

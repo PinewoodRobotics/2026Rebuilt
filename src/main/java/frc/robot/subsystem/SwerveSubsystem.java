@@ -157,6 +157,23 @@ public class SwerveSubsystem extends SubsystemBase {
     RAW,
   }
 
+  /**
+   * Applies the given robot-relative chassis speeds via gyro-relative driving
+   * so the resulting motion is the same vector as if driven raw (robot-relative).
+   * Converts robot-relative -> field-relative, then driveWithGyro rotates back
+   * to robot, reproducing the original command.
+   */
+  public ChassisSpeeds fromRawToGyroRelative(ChassisSpeeds speeds) {
+    Rotation2d gyro = new Rotation2d(getSwerveGyroAngle());
+    ChassisSpeeds fieldRelative = ChassisSpeeds.fromRobotRelativeSpeeds(
+        speeds.vxMetersPerSecond,
+        speeds.vyMetersPerSecond,
+        speeds.omegaRadiansPerSecond,
+        gyro);
+    var actualSpeeds = toSwerveOrientation(fieldRelative);
+    return actualSpeeds;
+  }
+
   public void drive(ChassisSpeeds speeds, DriveType driveType) {
     if (!shouldWork) {
       stop();
