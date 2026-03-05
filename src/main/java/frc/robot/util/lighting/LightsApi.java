@@ -41,6 +41,15 @@ public interface LightsApi {
       int priority,
       BlendMode blend);
 
+  EffectHandle<String> addMorseCode(
+      LedRange range,
+      String message,
+      LedColor onColor,
+      LedColor offColor,
+      double unitSeconds,
+      int priority,
+      BlendMode blend);
+
   EffectHandle<Double> addConvergingArrows(
       LedRange range,
       LedColor color,

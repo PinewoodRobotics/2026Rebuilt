@@ -41,6 +41,8 @@ public final class PathPlannerSubsystem extends SubsystemBase {
 
   public Command currentAutoCommand;
 
+  private String[] allAutos;
+
   public static PathPlannerSubsystem GetInstance() {
     if (self == null) {
       self = new PathPlannerSubsystem();
@@ -57,6 +59,7 @@ public final class PathPlannerSubsystem extends SubsystemBase {
     configureAutoBuilder();
 
     this.selectedAuto = new SelectedAuto(shouldFlipForAlliance());
+    this.allAutos = AutoBuilder.getAllAutoNames().toArray(new String[0]);
   }
 
   private RobotConfig loadRobotConfig() {
@@ -116,7 +119,7 @@ public final class PathPlannerSubsystem extends SubsystemBase {
   public void periodic() {
     Logger.recordOutput("PathPlanner/CurrentPath", selectedAuto.getAllPathPoses());
     Logger.recordOutput("PathPlanner/CurrentSelectedAuto", selectedAuto.getName());
-    Logger.recordOutput("PathPlanner/SelectedAutoValid", isSelectedAutoValid());
-    Logger.recordOutput("PathPlanner/ValidNames/Autos", AutoBuilder.getAllAutoNames().toArray(new String[0]));
+    Logger.recordOutput("PathPlanner/SelectedAutoValid", selectedAuto.getCurrentAuto().isPresent());
+    Logger.recordOutput("PathPlanner/ValidNames/Autos", allAutos);
   }
 }

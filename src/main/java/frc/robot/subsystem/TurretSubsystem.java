@@ -127,5 +127,6 @@ public class TurretSubsystem extends SubsystemBase {
     Logger.recordOutput("Turret/DesiredOutputRot", lastAimTarget != null ? lastAimTarget.in(Units.Rotations) : 0);
     Logger.recordOutput("Turret/AppliedOutput", m_turretMotor.getAppliedOutput());
     Logger.recordOutput("Turret/BusVoltage", m_turretMotor.getBusVoltage());
+    Logger.recordOutput("Turret/TimeTillGoal", getAimTimeLeftMs());
   }
 }

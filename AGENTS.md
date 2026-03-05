@@ -2,10 +2,13 @@
 
 ## Verified workflows
 
+- Workspace bootstrap: `git submodule update --init --recursive` then `npm install`
 - Full robot build: `./gradlew build`
   - Also runs dynamic vendor dependency build (`scripts/clone_and_build_repos.py --config-file-path config.ini`) and protobuf generation.
+- Java build wrapper: `make build`
 - Java simulation: `./gradlew simulateJava`
 - Robot deploy: `./gradlew deploy -PteamNumber=<TEAM_NUMBER>`
+- Robot deploy wrapper: `make deploy` (uses `TEAM_NUMBER`, default `4765`)
 - Combined deploy flow: `./gradlew deployAll`
   - Runs robot deploy plus backend deploy task.
 - Python backend deploy directly: `make deploy-backend`

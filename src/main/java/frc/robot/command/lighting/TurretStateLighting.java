@@ -1,6 +1,6 @@
 package frc.robot.command.lighting;
 
-import frc.robot.command.util.PollingCommand.IdCommand;
+import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystem.LightsSubsystem;
 import frc.robot.subsystem.TurretSubsystem;
 import frc.robot.util.lighting.BlendMode;
@@ -9,22 +9,24 @@ import frc.robot.util.lighting.LedColor;
 import frc.robot.util.lighting.LedRange;
 import frc.robot.util.lighting.LightsApi;
 
-public class TurretStateLighting extends IdCommand {
-  private static final int kMaxAimTimeMs = 500;
-  private static final LedColor kTargetColor = new LedColor(0, 255, 0, 0);
-  private static final LedRange kTargetRange = new LedRange(0, 100);
+public class TurretStateLighting extends Command {
+  private static final int kMaxAimTimeMs = 50;
+  private static final LedColor kTargetColor = new LedColor(255, 0, 0, 0);
+  private static final LedRange kTargetRange = new LedRange(75, 90);
 
   private final LightsApi lightsApi;
+  private final TurretSubsystem turretSubsystem;
+
   private EffectHandle<Double> targetBarHandle;
-  private TurretSubsystem turretSubsystem;
 
   public TurretStateLighting() {
-    this(LightsSubsystem.GetInstance());
+    this(LightsSubsystem.GetInstance(), TurretSubsystem.GetInstance());
   }
 
-  public TurretStateLighting(LightsSubsystem lightsSubsystem) {
+  public TurretStateLighting(LightsSubsystem lightsSubsystem, TurretSubsystem turretSubsystem) {
     super();
     this.lightsApi = lightsSubsystem;
+    this.turretSubsystem = turretSubsystem;
   }
 
   @Override

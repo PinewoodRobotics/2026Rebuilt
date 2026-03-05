@@ -7,7 +7,6 @@ import java.util.function.Supplier;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
-import frc.robot.util.LocalMath;
 
 /**
  * Default command for {@link frc.robot.subsystem.LightsSubsystem} that runs a
@@ -16,38 +15,11 @@ import frc.robot.util.LocalMath;
  * command is interrupted.
  */
 public class PollingCommand extends Command {
-  public static abstract class IdCommand extends Command {
-    private final int id;
 
-    public IdCommand() {
-      id = LocalMath.randomInt(0, 1000000);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (this == obj) {
-        return true;
-      }
-      if (!(obj instanceof IdCommand other)) {
-        return false;
-      }
-      return id == other.id;
-    }
-
-    @Override
-    public int hashCode() {
-      return id;
-    }
-
-    public int getCommandId() {
-      return id;
-    }
-  }
-
-  private final Supplier<List<IdCommand>> commandSupplier;
+  private final Supplier<List<Command>> commandSupplier;
   private final Set<Integer> initializedCommandIds = new HashSet<>();
 
-  public PollingCommand(Subsystem subsystem, Supplier<List<IdCommand>> commandSupplier) {
+  public PollingCommand(Subsystem subsystem, Supplier<List<Command>> commandSupplier) {
     this.commandSupplier = commandSupplier;
     addRequirements(subsystem);
   }
@@ -60,8 +32,8 @@ public class PollingCommand extends Command {
 
   @Override
   public void execute() {
-    for (IdCommand command : commandSupplier.get()) {
-      int commandId = command.getCommandId();
+    for (Command command : commandSupplier.get()) {
+      int commandId = command.getName().hashCode();
       if (!initializedCommandIds.contains(commandId) && !command.isFinished()) {
         command.initialize();
         initializedCommandIds.add(commandId);
@@ -79,8 +51,8 @@ public class PollingCommand extends Command {
 
   @Override
   public void end(boolean interrupted) {
-    for (IdCommand command : commandSupplier.get()) {
-      if (initializedCommandIds.contains(command.getCommandId())) {
+    for (Command command : commandSupplier.get()) {
+      if (initializedCommandIds.contains(command.getName().hashCode())) {
         command.end(interrupted);
       }
     }
@@ -94,11 +66,8 @@ public class PollingCommand extends Command {
   }
 
   public boolean isCommandAlreadyInserted(Command command) {
-    if (!(command instanceof IdCommand idCommand)) {
-      return false;
-    }
-    for (IdCommand existing : commandSupplier.get()) {
-      if (existing.equals(idCommand)) {
+    for (Command existing : commandSupplier.get()) {
+      if (existing.getName().equals(command.getName())) {
         return true;
       }
     }

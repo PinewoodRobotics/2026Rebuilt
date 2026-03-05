@@ -60,7 +60,7 @@ public class PathPlannerConstants {
     }
 
     private void updateFromSelection(String selected) {
-      if (selected == name)
+      if (selected.equals(name))
         return;
 
       if (selected == null || selected.isEmpty() || kNoneSelection.equalsIgnoreCase(selected)) {

@@ -7,13 +7,13 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Climber Middle"
+            "pathName": "Climber Right Left"
           }
         }
       ]
     }
   },
-  "resetOdom": false,
-  "folder": null,
+  "resetOdom": true,
+  "folder": "Climber",
   "choreoAuto": false
 }

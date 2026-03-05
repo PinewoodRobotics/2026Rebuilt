@@ -1,6 +1,6 @@
 package frc.robot.command.lighting;
 
-import frc.robot.command.util.PollingCommand.IdCommand;
+import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystem.LightsSubsystem;
 import frc.robot.subsystem.PathPlannerSubsystem;
 import frc.robot.util.lighting.BlendMode;
@@ -9,11 +9,12 @@ import frc.robot.util.lighting.LedColor;
 import frc.robot.util.lighting.LedRange;
 import frc.robot.util.lighting.LightsApi;
 
-public class AutonomousStateLighting extends IdCommand {
+public class AutonomousStateLighting extends Command {
   private static final LedColor kChaseColor = new LedColor(255, 0, 0, 0);
   private static final LedRange kAutonomousRangeL = new LedRange(15, 75);
   private static final LedRange kAutonomousRangeR = new LedRange(90, 150);
   private static final LedColor kSolidColor = new LedColor(0, 255, 0, 0);
+
   private static final double kHz = 70;
   private static final int kWidth = 30;
 

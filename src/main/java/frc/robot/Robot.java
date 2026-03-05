@@ -1,7 +1,6 @@
 package frc.robot;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.littletonrobotics.junction.LoggedRobot;
@@ -121,6 +120,12 @@ public class Robot extends LoggedRobot {
     new Thread(() -> {
       try {
         List<PiInfo> pisFound = PiDiscoveryUtil.discover(4);
+        if (pisFound.isEmpty()) {
+          System.out.println("NO PIS FOUND!");
+          networkAttemptInProgress = false;
+          return;
+        }
+
         var pi = pisFound.get(0);
         var address = new Address(pi.getHostnameLocal(),
             pi.getAutobahnPort().orElse(RaspberryPiConstants.DEFAULT_PORT_AUTOB));

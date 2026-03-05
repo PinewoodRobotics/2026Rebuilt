@@ -1,9 +1,8 @@
 package frc.robot.command;
 
-import java.util.Comparator;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import org.littletonrobotics.junction.Logger;
 import org.pwrup.util.Vec2;
@@ -12,12 +11,10 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constant.ControllerConstants;
-import frc.robot.constant.swerve.SwerveConstants;
 import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.SwerveSubsystem;
 import frc.robot.util.LocalMath;
@@ -29,68 +26,151 @@ import pwrup.frc.core.controller.FlightStick;
  */
 public class SwerveMoveTeleop extends Command {
 
+  public enum AxisConstraint {
+    X,
+    Y,
+    XY
+  }
+
+  /**
+   * Lane segment: pose = center, length = total length (extends length/2 each
+   * way).
+   */
+  public record Lane(Pose2d pose, double length, AxisConstraint axisConstant) {
+    public void log() {
+      Translation2d direction = new Translation2d(1, 0).rotateBy(pose.getRotation());
+      Translation2d half = direction.times(length / 2);
+      Pose2d startPose = new Pose2d(pose.getTranslation().minus(half), pose.getRotation());
+      Pose2d endPose = new Pose2d(pose.getTranslation().plus(half), pose.getRotation());
+      Logger.recordOutput("SwerveMoveTeleop/Lane/Endpoints", new Pose2d[] { startPose, endPose });
+      Logger.recordOutput("SwerveMoveTeleop/Lane/Length", length);
+    }
+
+    public Pose2d nearestPoint(Pose2d otherPose) {
+      Pose2d lanePose = this.pose();
+      double laneLength = this.length();
+
+      Translation2d dir = new Translation2d(1, 0).rotateBy(lanePose.getRotation());
+      Translation2d a = lanePose.getTranslation().minus(dir.times(laneLength / 2));
+      Translation2d ab = dir.times(laneLength);
+      Translation2d p = otherPose.getTranslation();
+      Translation2d ap = p.minus(a);
+      double ab2 = ab.getX() * ab.getX() + ab.getY() * ab.getY();
+      if (ab2 < 1e-9) {
+        return new Pose2d(a, lanePose.getRotation());
+      }
+      double t = (ap.getX() * ab.getX() + ap.getY() * ab.getY()) / ab2;
+      t = Math.max(0, Math.min(1, t));
+      Translation2d closest = a.plus(ab.times(t));
+      return new Pose2d(closest, lanePose.getRotation());
+    }
+  }
+
   private final SwerveSubsystem m_swerveSubsystem;
   private final FlightModule controller;
-  private final HashMap<Pose2d, Double> lanes;
-  /** Max magnitude (m/s) of lane Y correction added to vy. */
-  private static final double kLaneYVelocityGain = 0.6;
-  private static final Distance minDistance = Distance.ofRelativeUnits(0.4, Units.Meters);
-  private final PIDController laneYVelocityPIDController;
+  private final List<Lane> lanes;
+  private final PIDController lanePullPid;
+  private double filteredXPercent;
+  private double filteredYPercent;
+  private double filteredRPercent;
+
+  private static final double kLanePullMaxSpeed = 0.2;
+  private static final Distance minDistance = Distance.ofRelativeUnits(0.8, Units.Meters);
+  private static final double kDefaultJoystickAlpha = 0.7;
+  private static final double kNearLaneJoystickAlpha = 0.2;
+  private static final double kFarLaneJoystickAlpha = 0.6;
+  private static final double kMaxPerpendicularScale = 1.0;
+  private static final double kMinPerpendicularScale = 0.2;
 
   public SwerveMoveTeleop(
       SwerveSubsystem swerveSubsystem,
       FlightModule controller) {
-    this(swerveSubsystem, controller, new HashMap<>());
+    this(swerveSubsystem, controller, new ArrayList<>());
   }
 
   public SwerveMoveTeleop(
       SwerveSubsystem swerveSubsystem,
       FlightModule controller,
-      HashMap<Pose2d, Double> lanes) {
+      Lane[] lanes) {
+    this(swerveSubsystem, controller, Arrays.asList(lanes));
+  }
+
+  public SwerveMoveTeleop(
+      SwerveSubsystem swerveSubsystem,
+      FlightModule controller,
+      List<Lane> lanes) {
     this.m_swerveSubsystem = swerveSubsystem;
     this.controller = controller;
     this.lanes = lanes;
-    laneYVelocityPIDController = new PIDController(1, 0, 0);
-
+    this.lanePullPid = new PIDController(0.5, 0, 0);
     addRequirements(m_swerveSubsystem);
   }
 
   @Override
   public void execute() {
-    double r = LocalMath.deadband(
+    double rawR = LocalMath.deadband(
         controller.leftFlightStick.getRawAxis(
             FlightStick.AxisEnum.JOYSTICKROTATION.value) * -1,
         ControllerConstants.kRotDeadband,
         ControllerConstants.kRotMinValue);
 
-    double x = LocalMath.deadband(
+    double rawX = LocalMath.deadband(
         controller.rightFlightStick.getRawAxis(
             FlightStick.AxisEnum.JOYSTICKY.value),
         ControllerConstants.kXSpeedDeadband,
         ControllerConstants.kXSpeedMinValue);
 
-    double y = LocalMath.deadband(
+    double rawY = LocalMath.deadband(
         controller.rightFlightStick.getRawAxis(
             FlightStick.AxisEnum.JOYSTICKX.value),
         ControllerConstants.kYSpeedDeadband,
         ControllerConstants.kYSpeedMinValue);
 
-    var velocity = SwerveSubsystem.fromPercentToVelocity(new Vec2(x, y), r);
+    Pose2d currentPose = GlobalPosition.Get();
 
     Lane nearestLane = null;
-    if (!lanes.isEmpty()
-        && (nearestLane = getNearestLane(GlobalPosition.Get(),
-            minDistance)) != null) {
-      var nearestLanePoint = getNearestLanePoint(GlobalPosition.Get(), nearestLane);
+    Pose2d nearestLanePoint = null;
+    double distanceRatio = 1.0;
+    if (currentPose != null
+        && !lanes.isEmpty()
+        && (nearestLane = getNearestLanePoint(currentPose, minDistance)) != null) {
+      nearestLanePoint = nearestLane.nearestPoint(currentPose);
+      distanceRatio = MathUtil.clamp(
+          currentPose.getTranslation().getDistance(nearestLanePoint.getTranslation()) / minDistance.in(Units.Meters),
+          0,
+          1);
 
-      double addedYVelocity = getAddedYVelocity(nearestLanePoint, GlobalPosition.Get(), velocity);
-      velocity.vyMetersPerSecond -= addedYVelocity;
-
-      Logger.recordOutput("SwerveMoveTeleop/AddedYVelocity", addedYVelocity);
-      nearestLane.log();
       Logger.recordOutput("SwerveMoveTeleop/NearestLanePoint", nearestLanePoint);
+      nearestLane.log();
     } else {
-      laneYVelocityPIDController.reset();
+      lanePullPid.reset();
+    }
+
+    double laneSmoothingAlpha = nearestLane == null
+        ? kDefaultJoystickAlpha
+        : MathUtil.interpolate(kNearLaneJoystickAlpha, kFarLaneJoystickAlpha, distanceRatio);
+    filteredXPercent = MathUtil.interpolate(filteredXPercent, rawX, laneSmoothingAlpha);
+    filteredYPercent = MathUtil.interpolate(filteredYPercent, rawY, laneSmoothingAlpha);
+    filteredRPercent = MathUtil.interpolate(filteredRPercent, rawR, kDefaultJoystickAlpha);
+
+    var velocity = SwerveSubsystem.fromPercentToVelocity(
+        new Vec2(filteredXPercent, filteredYPercent),
+        filteredRPercent);
+
+    if (nearestLanePoint != null && currentPose != null) {
+      Translation2d laneDriveScale = getLaneDriveScale(nearestLane.axisConstant(), distanceRatio);
+      velocity.vxMetersPerSecond *= laneDriveScale.getX();
+      velocity.vyMetersPerSecond *= laneDriveScale.getY();
+
+      Translation2d lanePullVelocity = getLanePull(nearestLanePoint, currentPose);
+      velocity.vxMetersPerSecond += lanePullVelocity.getX();
+      velocity.vyMetersPerSecond += lanePullVelocity.getY();
+
+      Logger.recordOutput("SwerveMoveTeleop/LaneDriveScaleX", laneDriveScale.getX());
+      Logger.recordOutput("SwerveMoveTeleop/LaneDriveScaleY", laneDriveScale.getY());
+      Logger.recordOutput("SwerveMoveTeleop/LanePullVelocityX", lanePullVelocity.getX());
+      Logger.recordOutput("SwerveMoveTeleop/LanePullVelocityY", lanePullVelocity.getY());
+      Logger.recordOutput("SwerveMoveTeleop/LaneDistanceRatio", distanceRatio);
     }
 
     Logger.recordOutput("SwerveMoveTeleop/Velocity", velocity);
@@ -104,59 +184,51 @@ public class SwerveMoveTeleop extends Command {
   }
 
   /**
-   * Returns a velocity (m/s) to add to vy. Velocity fed into swerve is
-   * field-relative.
-   * Uses PID on field Y error (nearest lane point minus robot).
+   * Returns a velocity vector (m/s) that pulls the robot toward the nearest lane
+   * point, independent of lane orientation.
    */
-  private double getAddedYVelocity(Pose2d nearestLanePoint, Pose2d relativeTo, ChassisSpeeds velocityUserInput) {
-    double errorY = nearestLanePoint.getTranslation().getY() - relativeTo.getTranslation().getY();
-    double output = laneYVelocityPIDController.calculate(errorY, 0);
-    return MathUtil.clamp(output, -kLaneYVelocityGain, kLaneYVelocityGain);
-  }
-
-  private record Lane(Pose2d pose, double length) {
-    public void log() {
-      Pose2d frontPose = pose;
-      Translation2d direction = new Translation2d(1, 0).rotateBy(pose.getRotation());
-      Translation2d endTranslation = pose.getTranslation().plus(direction.times(length));
-      Pose2d endPose = new Pose2d(endTranslation, pose.getRotation());
-      Pose2d[] endpoints = new Pose2d[] { frontPose, endPose };
-
-      Logger.recordOutput("SwerveMoveTeleop/Lane/Endpoints", endpoints);
-      Logger.recordOutput("SwerveMoveTeleop/Lane/Length", length);
+  private Translation2d getLanePull(Pose2d nearestLanePoint, Pose2d relativeTo) {
+    Translation2d error = nearestLanePoint.getTranslation().minus(relativeTo.getTranslation());
+    double errorDistance = error.getNorm();
+    if (errorDistance < 1e-6) {
+      return new Translation2d();
     }
+
+    double pullSpeed = MathUtil.clamp(
+        Math.abs(lanePullPid.calculate(errorDistance, 0)),
+        0,
+        kLanePullMaxSpeed);
+    Translation2d pullDirection = error.div(errorDistance);
+
+    return pullDirection.times(pullSpeed);
   }
 
-  public Lane getNearestLane(Pose2d relativeTo, Distance distanceLimit) {
-    return lanes.entrySet().stream()
-        .min(Comparator.comparingDouble(entry -> entry.getKey().getY() - relativeTo.getY()))
-        .map(entry -> new Lane(entry.getKey(), entry.getValue()))
-        .filter(lane -> lane.pose.getY() - relativeTo.getY() < distanceLimit.in(Units.Meters))
-        .orElse(null);
+  private Translation2d getLaneDriveScale(AxisConstraint axisConstraint, double distanceRatio) {
+    double constrainedScale = MathUtil.interpolate(kMinPerpendicularScale, kMaxPerpendicularScale, distanceRatio);
+
+    return switch (axisConstraint) {
+      case X -> new Translation2d(kMaxPerpendicularScale, constrainedScale);
+      case Y -> new Translation2d(constrainedScale, kMaxPerpendicularScale);
+      case XY -> new Translation2d(constrainedScale, constrainedScale);
+    };
   }
 
-  /**
-   * Returns the closest point on the lane segment to the given pose.
-   * Lane is a zero-width segment: start = relativeTo position, direction =
-   * relativeTo rotation (+X),
-   * length = laneLength.
-   */
-  public Pose2d getNearestLanePoint(Pose2d pose, Lane lane) {
-    Pose2d lanePose = lane.pose();
-    double laneLength = lane.length();
+  public Lane getNearestLanePoint(Pose2d relativeTo, Distance distanceLimit) {
+    Lane nearestLane = null;
+    double nearestDistance = Double.POSITIVE_INFINITY;
+    double maxDistanceMeters = distanceLimit.in(Units.Meters);
 
-    Translation2d a = lanePose.getTranslation();
-    Translation2d dir = new Translation2d(1, 0).rotateBy(lanePose.getRotation());
-    Translation2d ab = dir.times(laneLength);
-    Translation2d p = pose.getTranslation();
-    Translation2d ap = p.minus(a);
-    double ab2 = ab.getX() * ab.getX() + ab.getY() * ab.getY();
-    if (ab2 < 1e-9) {
-      return new Pose2d(a, lanePose.getRotation());
+    for (Lane lane : lanes) {
+      Pose2d lanePoint = lane.nearestPoint(relativeTo);
+      double laneDistance = lanePoint.getTranslation().getDistance(relativeTo.getTranslation());
+      if (laneDistance < maxDistanceMeters) {
+        if (laneDistance < nearestDistance) {
+          nearestLane = lane;
+          nearestDistance = laneDistance;
+        }
+      }
     }
-    double t = (ap.getX() * ab.getX() + ap.getY() * ab.getY()) / ab2;
-    t = Math.max(0, Math.min(1, t));
-    Translation2d closest = a.plus(ab.times(t));
-    return new Pose2d(closest, lanePose.getRotation());
+
+    return nearestLane;
   }
 }

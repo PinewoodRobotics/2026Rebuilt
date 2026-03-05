@@ -50,6 +50,12 @@ public class GlobalPosition extends SubsystemBase {
       var direction = position.getPosition2D().getDirection();
       var rotationSpeed = position.getPosition2D().getRotationSpeedRadS();
 
+      if (pose == null || (direction.getX() == 0 && direction.getY() == 0) || Double.isNaN(direction.getX())
+          || Double.isNaN(direction.getY())) {
+        System.out.println("Invalid position or direction! + " + pose + " + " + direction);
+        return;
+      }
+
       GlobalPosition.position = new Pose2d(pose.getX(),
           pose.getY(),
           new Rotation2d(direction.getX(), direction.getY()));

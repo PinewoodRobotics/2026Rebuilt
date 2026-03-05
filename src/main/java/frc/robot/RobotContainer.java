@@ -1,6 +1,8 @@
 package frc.robot;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -8,7 +10,10 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import frc.robot.command.SwerveMoveTeleop;
+import frc.robot.command.SwerveMoveTeleop.AxisConstraint;
 import frc.robot.command.lighting.AutonomousStateLighting;
+import frc.robot.command.lighting.MorseCodeLighting;
+import frc.robot.command.lighting.PulsingLightingCommand;
 import frc.robot.command.lighting.ShooterSpeedLighting;
 import frc.robot.command.lighting.TurretStateLighting;
 import frc.robot.command.scoring.ContinuousAimCommand;
@@ -54,7 +59,7 @@ public class RobotContainer {
     SwerveSubsystem.GetInstance();
     CameraSubsystem.GetInstance();
 
-    // TurretSubsystem.GetInstance();
+    TurretSubsystem.GetInstance();
     // ShooterSubsystem.GetInstance();
     // IndexSubsystem.GetInstance();
     // LightsSubsystem.GetInstance();
@@ -68,13 +73,16 @@ public class RobotContainer {
     // setIntakeCommands();
 
     setSwerveCommands();
-    // setTurretCommands();
+    setTurretCommands();
     // setIndexCommands();
     // setShooterCommands();
 
     // setTestCommands();
-    // LightsSubsystem.GetInstance().addLightsCommand(
-    // /* new TurretStateLighting(), */new AutonomousStateLighting());
+    LightsSubsystem.GetInstance().addLightsCommand(
+        // new TurretStateLighting(),
+        // new AutonomousStateLighting(),
+        // new PulsingLightingCommand(),
+        new MorseCodeLighting());
   }
 
   private void setTestCommands() {
@@ -100,8 +108,8 @@ public class RobotContainer {
   private void setSwerveCommands() {
     SwerveSubsystem swerveSubsystem = SwerveSubsystem.GetInstance();
 
-    HashMap<Pose2d, Double> lanes = new HashMap<>();
-    lanes.put(new Pose2d(11.94, 7.52, new Rotation2d(1, 0)), 1.0);
+    List<SwerveMoveTeleop.Lane> lanes = new ArrayList<>();
+    lanes.add(new SwerveMoveTeleop.Lane(new Pose2d(11.94, 7.52, new Rotation2d(1, 0)), 1.0, AxisConstraint.X));
     swerveSubsystem.setDefaultCommand(new SwerveMoveTeleop(swerveSubsystem, m_flightModule, lanes));
 
     m_rightFlightStick

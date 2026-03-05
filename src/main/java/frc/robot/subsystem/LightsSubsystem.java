@@ -4,13 +4,14 @@ import com.ctre.phoenix6.hardware.CANdle;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.command.util.PollingCommand;
-import frc.robot.command.util.PollingCommand.IdCommand;
+import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constant.LEDConstants;
 import frc.robot.util.lighting.effects.BlinkEffect;
 import frc.robot.util.lighting.effects.BreatheEffect;
 import frc.robot.util.lighting.effects.ChaseEffect;
 import frc.robot.util.lighting.effects.ConvergingArrowsEffect;
 import frc.robot.util.lighting.effects.LarsonScannerEffect;
+import frc.robot.util.lighting.effects.MorseCodeEffect;
 import frc.robot.util.lighting.effects.ProgressBarEffect;
 import frc.robot.util.lighting.effects.RainbowEffect;
 import frc.robot.util.lighting.effects.SolidEffect;
@@ -42,7 +43,7 @@ public final class LightsSubsystem extends SubsystemBase implements LightsApi {
   private final CANdle candle;
   private final LightsEngine engine;
   private final LightsTransport transport;
-  private final List<IdCommand> pollingCommands;
+  private final List<Command> pollingCommands;
   private final PollingCommand pollingCommand;
 
   public LightsSubsystem() {
@@ -143,6 +144,19 @@ public final class LightsSubsystem extends SubsystemBase implements LightsApi {
   }
 
   @Override
+  public EffectHandle<String> addMorseCode(
+      LedRange range,
+      String message,
+      LedColor onColor,
+      LedColor offColor,
+      double unitSeconds,
+      int priority,
+      BlendMode blend) {
+    return engine.addEffect(
+        new MorseCodeEffect(range, message, onColor, offColor, unitSeconds, priority, blend));
+  }
+
+  @Override
   public EffectHandle<Double> addConvergingArrows(
       LedRange range,
       LedColor color,
@@ -187,10 +201,10 @@ public final class LightsSubsystem extends SubsystemBase implements LightsApi {
    * Does not replace the default command; the single default is always the
    * poller that runs these.
    */
-  public void addLightsCommand(IdCommand... commands) {
-    for (IdCommand command : commands) {
+  public void addLightsCommand(Command... commands) {
+    for (Command command : commands) {
       if (pollingCommand.isCommandAlreadyInserted(command)) {
-        throw new IllegalArgumentException("Command " + command.getName() + " is already inserted");
+        continue;
       }
 
       pollingCommands.add(command);
@@ -202,7 +216,7 @@ public final class LightsSubsystem extends SubsystemBase implements LightsApi {
    * Does not replace the default command; the single default is always the
    * poller that runs these.
    */
-  public void addLightsCommands(IdCommand command) {
+  public void addLightsCommands(Command command) {
     addLightsCommand(command);
   }
 

@@ -2,7 +2,7 @@ package frc.robot.command.lighting;
 
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.AngularVelocity;
-import frc.robot.command.util.PollingCommand.IdCommand;
+import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constant.ShooterConstants;
 import frc.robot.subsystem.LightsSubsystem;
 import frc.robot.subsystem.ShooterSubsystem;
@@ -20,7 +20,7 @@ import pwrup.frc.core.controller.FlightStick;
  * Infinitely-running command that reads the speed slider and updates the
  * shooter speed display.
  */
-public class ShooterSpeedLighting extends IdCommand {
+public class ShooterSpeedLighting extends Command {
   private static final LedRange SHOOTER_BAR_RANGE = new LedRange(8, 67);
   private static final LedColor TARGET_FILL_COLOR = new LedColor(0, 255, 0, 0);
   private static final LedColor TARGET_EMPTY_COLOR = new LedColor(15, 15, 15, 0);

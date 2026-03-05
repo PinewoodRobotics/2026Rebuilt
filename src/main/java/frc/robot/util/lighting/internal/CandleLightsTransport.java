@@ -10,6 +10,8 @@ import frc.robot.util.lighting.LightsEngine.LedSegment;
 
 import java.util.List;
 
+import org.littletonrobotics.junction.Logger;
+
 public class CandleLightsTransport implements LightsTransport {
   private final CANdle candle;
 
@@ -18,6 +20,8 @@ public class CandleLightsTransport implements LightsTransport {
   }
 
   public void writeSegments(List<LedSegment> segments) {
+    Logger.recordOutput("Lights/Transport/SegmentWriteCount", segments.size());
+
     for (LedSegment segment : segments) {
       LedColor color = segment.color();
       candle.setControl(

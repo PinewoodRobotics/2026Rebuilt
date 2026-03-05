@@ -7,13 +7,13 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Ball Shooter Left"
+            "pathName": "Climber Right Right"
           }
         }
       ]
     }
   },
   "resetOdom": false,
-  "folder": null,
+  "folder": "Climber",
   "choreoAuto": false
 }
