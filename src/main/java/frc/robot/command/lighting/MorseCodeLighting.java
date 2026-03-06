@@ -10,7 +10,7 @@ import frc.robot.util.lighting.LedRange;
 import frc.robot.util.lighting.LightsApi;
 
 public class MorseCodeLighting extends Command {
-  private static final String kMessage = "Jay, STOP SAYING THE N WORD!";
+  private static final String kMessage = "Jay STOP SAYING THE N WORD!";
   private static final LedRange kRange = new LedRange(LEDConstants.onboardStartIndex, LEDConstants.ledEndIndex);
   private static final LedColor kOnColor = new LedColor(0, 200, 255, 0);
   private static final LedColor kOffColor = LedColor.BLACK;

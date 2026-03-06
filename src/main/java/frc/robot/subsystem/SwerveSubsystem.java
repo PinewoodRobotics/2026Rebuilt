@@ -23,6 +23,8 @@ import frc.robot.hardware.WheelMoverBase;
 import frc.robot.hardware.WheelMoverSpark;
 import frc.robot.hardware.WheelMoverTalonFX;
 import frc.robot.util.LocalMath;
+import lombok.Getter;
+import lombok.Setter;
 import pwrup.frc.core.hardware.sensor.IGyroscopeLike;
 
 /**
@@ -43,6 +45,16 @@ public class SwerveSubsystem extends SubsystemBase {
 
   private final SwerveDriveKinematics kinematics;
 
+  private boolean shouldAdjustVelocity;
+
+  public boolean getShouldAdjustVelocity() {
+    return shouldAdjustVelocity;
+  }
+
+  public void setShouldAdjustVelocity(boolean shouldAdjustVelocity) {
+    this.shouldAdjustVelocity = shouldAdjustVelocity;
+  }
+
   public static SwerveSubsystem GetInstance() {
     if (self == null) {
       self = new SwerveSubsystem(PigeonGyro.GetInstance());
@@ -54,6 +66,7 @@ public class SwerveSubsystem extends SubsystemBase {
   public SwerveSubsystem(IGyroscopeLike gyro) {
     this.m_gyro = gyro;
     final var c = SwerveConstants.INSTANCE;
+    this.shouldAdjustVelocity = true;
 
     if (BotConstants.robotType == RobotVariant.BBOT) {
       this.m_frontLeftSwerveModule = new WheelMoverSpark(
@@ -278,5 +291,6 @@ public class SwerveSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     Logger.recordOutput("SwerveSubsystem/swerve/states", getSwerveModuleStates());
+    Logger.recordOutput("SwerveSubsystem/AdjustingVelocity", shouldAdjustVelocity);
   }
 }

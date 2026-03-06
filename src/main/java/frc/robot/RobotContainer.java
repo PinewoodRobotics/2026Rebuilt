@@ -25,6 +25,7 @@ import frc.robot.command.testing.SetWristPos;
 import frc.robot.constant.BotConstants;
 import frc.robot.constant.IndexConstants;
 import frc.robot.constant.IntakeConstants;
+import frc.robot.constant.PathPlannerConstants;
 import frc.robot.hardware.AHRSGyro;
 import frc.robot.hardware.PigeonGyro;
 import frc.robot.subsystem.CameraSubsystem;
@@ -79,10 +80,9 @@ public class RobotContainer {
 
     // setTestCommands();
     LightsSubsystem.GetInstance().addLightsCommand(
-        // new TurretStateLighting(),
-        // new AutonomousStateLighting(),
-        // new PulsingLightingCommand(),
-        new MorseCodeLighting());
+        new TurretStateLighting(),
+        new AutonomousStateLighting(),
+        new PulsingLightingCommand());
   }
 
   private void setTestCommands() {
@@ -108,9 +108,14 @@ public class RobotContainer {
   private void setSwerveCommands() {
     SwerveSubsystem swerveSubsystem = SwerveSubsystem.GetInstance();
 
-    List<SwerveMoveTeleop.Lane> lanes = new ArrayList<>();
-    lanes.add(new SwerveMoveTeleop.Lane(new Pose2d(11.94, 7.52, new Rotation2d(1, 0)), 1.0, AxisConstraint.X));
-    swerveSubsystem.setDefaultCommand(new SwerveMoveTeleop(swerveSubsystem, m_flightModule, lanes));
+    swerveSubsystem
+        .setDefaultCommand(
+            new SwerveMoveTeleop(swerveSubsystem, m_flightModule, PathPlannerConstants.kLanes,
+                swerveSubsystem::getShouldAdjustVelocity));
+
+    m_leftFlightStick.B5().onTrue(new InstantCommand(() -> {
+      swerveSubsystem.setShouldAdjustVelocity(!swerveSubsystem.getShouldAdjustVelocity());
+    }));
 
     m_rightFlightStick
         .B5()
