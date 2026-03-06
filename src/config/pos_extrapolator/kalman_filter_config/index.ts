@@ -16,31 +16,35 @@ export const kalman_filter: KalmanFilterConfig = {
     [KalmanFilterSensorType.APRIL_TAG]: {
       front_left: {
         measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
-          2.0, 2.0, 5.0,
+          2.0, 2.0, 2.0,
         ]),
       },
       front_right: {
         measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
-          2.0, 2.0, 5.0,
+          2.0, 2.0, 2.0,
         ]),
       },
       rear_left: {
         measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
-          2.0, 2.0, 5.0,
+          2.0, 2.0, 2.0,
         ]),
       },
       rear_right: {
         measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
-          2.0, 2.0, 5.0,
+          2.0, 2.0, 2.0,
         ]),
       },
     },
     [KalmanFilterSensorType.IMU]: {
       0: {
-        measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([0, 0]),
+        measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
+          0.15, 0.15,
+        ]),
       },
       1: {
-        measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([0, 0]),
+        measurement_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
+          0.15, 0.15,
+        ]),
       },
     },
     [KalmanFilterSensorType.ODOMETRY]: {
