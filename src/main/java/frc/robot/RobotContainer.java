@@ -6,6 +6,8 @@ import java.util.List;
 
 import org.littletonrobotics.junction.Logger;
 
+import com.pathplanner.lib.auto.NamedCommands;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 // import edu.wpi.first.math.geometry.Translation3d;
@@ -22,6 +24,7 @@ import frc.robot.command.lighting.ShooterSpeedLighting;
 import frc.robot.command.lighting.TurretStateLighting;
 import frc.robot.command.scoring.ContinuousAimCommand;
 import frc.robot.command.scoring.ManualAimCommand;
+import frc.robot.command.shooting.ContinuousShooter;
 import frc.robot.command.shooting.ShooterCommand;
 import frc.robot.command.testing.IndexCommand;
 import frc.robot.command.testing.IntakeCommand;
@@ -149,6 +152,8 @@ public class RobotContainer {
     TurretSubsystem.GetInstance().setDefaultCommand(
         new ContinuousAimCommand(
             () -> AimPoint.getTarget(GlobalPosition.Get())));
+
+    NamedCommands.registerCommand("ContinuousShooter", new ContinuousShooter());
 
     /*
      * TurretSubsystem.GetInstance()

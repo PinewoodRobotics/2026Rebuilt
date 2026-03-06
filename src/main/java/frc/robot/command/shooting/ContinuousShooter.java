@@ -1,4 +1,4 @@
-package frc.robot.command.scoring;
+package frc.robot.command.shooting;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -25,6 +25,8 @@ public class ContinuousShooter extends Command {
   private final ShooterSubsystem shooterSubsystem;
   private final TurretSubsystem turretSubsystem;
 
+  public static boolean isShooting = false;
+
   public ContinuousShooter(Supplier<Translation3d> targetGlobalPoseSupplier,
       Supplier<Translation3d> selfGlobalPoseSupplier, Function<Void, Void> feedShooter) {
     this.targetGlobalPoseSupplier = targetGlobalPoseSupplier;
@@ -45,10 +47,21 @@ public class ContinuousShooter extends Command {
     });
   }
 
+  public ContinuousShooter() {
+    this(() -> new Translation3d());
+  }
+
   @Override
   public void execute() {
-    Translation3d targetGlobalPose = targetGlobalPoseSupplier.get();
-    Translation3d selfGlobalPose = selfGlobalPoseSupplier.get();
+    // Translation3d targetGlobalPose = targetGlobalPoseSupplier.get();
+    // Translation3d selfGlobalPose = selfGlobalPoseSupplier.get();
+
+    if (turretSubsystem.getAimTimeLeftMs() > TurretConstants.kTurretOffByMs) {
+      isShooting = false;
+      return;
+    }
+
+    isShooting = true;
   }
 
   /*

@@ -7,6 +7,7 @@ import org.littletonrobotics.junction.Logger;
 import java.util.List;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.PathfindingCommand;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.path.PathPlannerPath;
@@ -26,6 +27,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robot;
+import frc.robot.command.shooting.ContinuousShooter;
 import frc.robot.constant.BotConstants;
 import frc.robot.constant.CommunicationConstants;
 import frc.robot.constant.PathPlannerConstants;

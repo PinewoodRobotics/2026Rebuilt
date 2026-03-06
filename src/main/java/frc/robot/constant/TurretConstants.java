@@ -27,7 +27,7 @@ public class TurretConstants {
   public static final Angle kTurretMinAngle = Units.Degrees.of(-180.0);
   public static final Angle kTurretMaxAngle = Units.Degrees.of(180.0);
 
-  public static final int kTurretOffByMs = 200;
+  public static final int kTurretOffByMs = 20;
   public static final Translation2d turretPositionInRobot = new Translation2d(0, 1);
 
   public static final boolean kMotorInverted = true;
