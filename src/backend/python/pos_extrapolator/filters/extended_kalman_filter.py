@@ -7,6 +7,7 @@ import warnings
 
 from numpy.typing import NDArray
 
+from backend.python.common.debug.logger import warning
 from backend.python.common.util.math import (
     get_np_from_matrix,
     get_np_from_vector,
@@ -186,6 +187,15 @@ class ExtendedKalmanFilterStrategy(ExtendedKalmanFilter, GenericFilterStrategy):
             )
             return
 
+        if (
+            self.get_standard_deviations_away(
+                data.get_input(), [FilterStateType.POS_X, FilterStateType.POS_Y]
+            )
+            > self.kStandardDeviationsAwayThreshold
+        ):
+            warning(f"Position is too far away from expected position, skipping update")
+            return
+
         self.prediction_step()
 
         R_sensor = self.R_sensors[data.sensor_type][data.sensor_id]
@@ -217,6 +227,29 @@ class ExtendedKalmanFilterStrategy(ExtendedKalmanFilter, GenericFilterStrategy):
             R=R,
             residual=residual_fn,
         )
+
+    def get_standard_deviations_away(
+        self,
+        state: NDArray[np.float64],
+        state_types: list[FilterStateType] | FilterStateType,
+    ) -> float:
+        """Mahalanobis distance (number of std devs) of state from current estimate."""
+        types = (
+            [state_types]
+            if isinstance(state_types, FilterStateType)
+            else list(state_types)
+        )
+        idx = np.array([t.value for t in types])
+        r = np.asarray(state, dtype=np.float64).flatten()[idx] - self.x[idx]
+        P_sub = self.P[np.ix_(idx, idx)]
+        if len(idx) == 1:
+            var = float(P_sub[0, 0])
+            return float("inf") if var <= 0 else float(np.abs(r[0]) / np.sqrt(var))
+        try:
+            d_sq = float(r @ np.linalg.solve(P_sub, r))
+        except np.linalg.LinAlgError:
+            return float("inf")
+        return float(np.sqrt(max(0.0, d_sq)))
 
     def get_P(self) -> NDArray[np.float64]:
         return self.P

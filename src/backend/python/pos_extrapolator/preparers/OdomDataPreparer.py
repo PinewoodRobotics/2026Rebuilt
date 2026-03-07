@@ -93,9 +93,6 @@ class OdomDataPreparer(DataPreparer[OdometryData, OdomDataPreparerConfig]):
                 np.atan2(data.position.direction.y, data.position.direction.x)
             )
 
-        if values[0] > 1000000 or values[1] > 1000000:
-            return None
-
         return KalmanFilterInput(
             input=np.array(values),
             sensor_id=sensor_id,

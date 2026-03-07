@@ -23,6 +23,8 @@ class GenericFilterStrategy:
     kNumStates = 6
     kNumOutputs = 6
 
+    kStandardDeviationsAwayThreshold = 5.0
+
     def __init__(self, x: NDArray[np.float64]):
         self.x = x
 
