@@ -29,7 +29,9 @@ public class ShooterConstants {
   public static final AngularVelocity kShooterMaxVelocity = Units.RotationsPerSecond.of(100.0);
   public static final AngularAcceleration kShooterMaxAcceleration = Units.RotationsPerSecondPerSecond.of(1000.0);
 
-  public static final int kShooterOffByMs = 200;
+  public static final AngularVelocity kShooterBaseSpeed = Units.RotationsPerSecond.of(5.0);
+
+  public static final int kShooterOffByMs = 40;
 
   ///////////////// AIMING CONSTANTS /////////////////
 
@@ -37,6 +39,10 @@ public class ShooterConstants {
   public static final double kTimeVsDistanceIntercept = 0.316;
 
   public static double DistanceFromTargetToTime(double distance) {
+    return kTimeVsDistanceSlope * distance + kTimeVsDistanceIntercept;
+  }
+
+  public static double DistanceFromTargetToVelocity(double distance) {
     return kTimeVsDistanceSlope * distance + kTimeVsDistanceIntercept;
   }
 }

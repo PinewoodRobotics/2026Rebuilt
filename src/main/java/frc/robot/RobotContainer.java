@@ -1,39 +1,26 @@
 package frc.robot;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
 import org.littletonrobotics.junction.Logger;
 
 import com.pathplanner.lib.auto.NamedCommands;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-// import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.command.SwerveMoveTeleop;
-import frc.robot.command.SwerveMoveTeleop.AxisConstraint;
+import frc.robot.command.intake.IntakeCommand;
 import frc.robot.command.lighting.AutonomousStateLighting;
-import frc.robot.command.lighting.MorseCodeLighting;
 import frc.robot.command.lighting.PulsingLightingCommand;
 import frc.robot.command.lighting.ShooterSpeedLighting;
 import frc.robot.command.lighting.TurretStateLighting;
 import frc.robot.command.scoring.ContinuousAimCommand;
-import frc.robot.command.scoring.ManualAimCommand;
 import frc.robot.command.shooting.ContinuousShooter;
 import frc.robot.command.shooting.ShooterCommand;
 import frc.robot.command.testing.IndexCommand;
-import frc.robot.command.testing.IntakeCommand;
-import frc.robot.command.testing.SetWristPos;
-import frc.robot.constant.BotConstants;
 import frc.robot.constant.IndexConstants;
 import frc.robot.constant.IntakeConstants;
 import frc.robot.constant.PathPlannerConstants;
-import frc.robot.hardware.AHRSGyro;
 import frc.robot.hardware.PigeonGyro;
 import frc.robot.subsystem.CameraSubsystem;
 import frc.robot.subsystem.GlobalPosition;
@@ -94,22 +81,9 @@ public class RobotContainer {
 
   private void setTestCommands() {
     IndexSubsystem indexSubsystem = IndexSubsystem.GetInstance();
-    IntakeSubsystem intakeSubsystem = IntakeSubsystem.GetInstance();
     m_leftFlightStick
         .B17()
         .whileTrue(new IndexCommand(indexSubsystem, 0.45));
-    m_rightFlightStick
-        .B16()
-        .whileTrue(new IntakeCommand(intakeSubsystem, 0.60));
-    m_rightFlightStick
-        .B17()
-        .whileTrue(new IntakeCommand(intakeSubsystem, -0.30));
-    m_leftFlightStick
-        .B7()
-        .onTrue(new SetWristPos(intakeSubsystem, Rotation2d.fromRotations(0.245)));
-    m_leftFlightStick
-        .B8()
-        .onTrue(new SetWristPos(intakeSubsystem, Rotation2d.fromRotations(0)));
   }
 
   private void setSwerveCommands() {
@@ -149,17 +123,11 @@ public class RobotContainer {
 
   private void setTurretCommands() {
 
-    TurretSubsystem.GetInstance().setDefaultCommand(
-        new ContinuousAimCommand(
-            () -> AimPoint.getTarget(GlobalPosition.Get())));
+    var continuousAimCommand = new ContinuousAimCommand(
+        () -> AimPoint.getTarget());
 
-    NamedCommands.registerCommand("ContinuousShooter", new ContinuousShooter());
-
-    /*
-     * TurretSubsystem.GetInstance()
-     * .setDefaultCommand(new ManualAimCommand(TurretSubsystem.GetInstance(), () ->
-     * m_leftFlightStick.getTwist()));
-     */
+    TurretSubsystem.GetInstance().setDefaultCommand(continuousAimCommand);
+    NamedCommands.registerCommand("ContinuousAimCommand", continuousAimCommand);
   }
 
   private void setIndexCommands() {
@@ -170,15 +138,19 @@ public class RobotContainer {
   private void setIntakeCommands() {
     IntakeSubsystem intakeSubsystem = IntakeSubsystem.GetInstance();
 
-    m_rightFlightStick.B5()
-        .onTrue(new InstantCommand(() -> intakeSubsystem._toggleWristPosition()));
+    intakeSubsystem
+        .setDefaultCommand(new IntakeCommand(intakeSubsystem, () -> m_rightFlightStick.trigger().getAsBoolean(),
+            () -> m_rightFlightStick.B17().getAsBoolean()));
   }
 
   private void setShooterCommands() {
-    ShooterSubsystem shooterSubsystem = ShooterSubsystem.GetInstance();
+    var continuousShooter = new ContinuousShooter(() -> AimPoint.getTarget());
 
-    m_rightFlightStick.trigger()
-        .whileTrue(new ShooterCommand(shooterSubsystem, ShooterSpeedLighting::getTargetShooterSpeed));
+    new JoystickButton(
+        m_operatorPanel,
+        OperatorPanel.ButtonEnum.STICKUP.value)
+        .whileTrue(continuousShooter);
+    NamedCommands.registerCommand("ContinuousShooterCommand", continuousShooter);
   }
 
   public Command getAutonomousCommand() {

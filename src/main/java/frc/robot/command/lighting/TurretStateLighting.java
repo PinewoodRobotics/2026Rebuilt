@@ -51,8 +51,8 @@ public class TurretStateLighting extends Command {
 
   @Override
   public void execute() {
-    lightsApi.setEnabled(redHandle, !ContinuousShooter.isShooting);
-    lightsApi.setEnabled(greenHandle, ContinuousShooter.isShooting);
+    lightsApi.setEnabled(redHandle, !ContinuousShooter.isShooting());
+    lightsApi.setEnabled(greenHandle, ContinuousShooter.isShooting());
   }
 
   @Override

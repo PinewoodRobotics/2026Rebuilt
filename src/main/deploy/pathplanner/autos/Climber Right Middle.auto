@@ -17,7 +17,13 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "ContinuousShooter"
+                  "name": "ContinuousAimCommand"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ContinuousShooterCommand"
                 }
               }
             ]

@@ -11,6 +11,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import frc.robot.constant.BotConstants;
+import frc.robot.subsystem.GlobalPosition;
 
 public final class AimPoint {
 
@@ -70,6 +71,10 @@ public final class AimPoint {
 
   public static Translation2d getTarget(Pose2d pose) {
     return getTarget(pose, DriverStation.getAlliance());
+  }
+
+  public static Translation2d getTarget() {
+    return getTarget(GlobalPosition.Get());
   }
 
   public static Translation2d getTarget(Pose2d pose, Optional<Alliance> alliance) {

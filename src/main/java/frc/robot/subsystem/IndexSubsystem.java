@@ -40,6 +40,10 @@ public class IndexSubsystem extends SubsystemBase {
     m_indexMotor.set(MathUtil.clamp(speed, -1.0, 1.0));
   }
 
+  public void runMotor() {
+    runMotor(IndexConstants.kIndexMotorSpeed);
+  }
+
   public void stopMotor() {
     m_indexMotor.set(0.0);
   }

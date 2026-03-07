@@ -131,6 +131,10 @@ public class ShooterSubsystem extends SubsystemBase {
     return setShooterVelocity(lastShooterVelocitySetpoint);
   }
 
+  public void runMotorBaseSpeed() {
+    setShooterVelocity(ShooterConstants.kShooterBaseSpeed);
+  }
+
   /**
    * Estimates the time (in milliseconds) to reach the provided shooter velocity.
    * Returns 0 if target velocity is already achieved or if acceleration is

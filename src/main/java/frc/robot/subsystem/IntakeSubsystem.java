@@ -7,17 +7,17 @@ import com.revrobotics.ResetMode;
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.FeedbackSensor;
 import com.revrobotics.spark.SparkBase.ControlType;
-// import com.revrobotics.spark.SparkFlex;
+import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-// import com.revrobotics.spark.config.SparkFlexConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constant.IntakeConstants;
+import frc.robot.constant.IntakeConstants.WristRaiseLocation;
 
 public class IntakeSubsystem extends SubsystemBase {
   private static IntakeSubsystem instance;
@@ -25,18 +25,19 @@ public class IntakeSubsystem extends SubsystemBase {
   private final SparkMax m_intakeIntakerMotor;
   private final SparkMax m_intakeWristMotor;
 
-  private Rotation2d m_wristSetpoint = IntakeConstants.wristStowedAngle;
+  private Rotation2d m_wristSetpoint;
 
   public static IntakeSubsystem GetInstance() {
     if (instance == null) {
-      instance = new IntakeSubsystem();
+      instance = new IntakeSubsystem(IntakeConstants.intakeIntakerMotorID, IntakeConstants.intakeWristMotorID);
     }
+
     return instance;
   }
 
-  private IntakeSubsystem() {
-    m_intakeIntakerMotor = new SparkMax(IntakeConstants.intakeIntakerMotorID, MotorType.kBrushless);
-    m_intakeWristMotor = new SparkMax(IntakeConstants.intakeWristMotorID, MotorType.kBrushless);
+  private IntakeSubsystem(int intakeMotorID, int wristMotorID) {
+    m_intakeIntakerMotor = new SparkMax(intakeMotorID, MotorType.kBrushless);
+    m_intakeWristMotor = new SparkMax(wristMotorID, MotorType.kBrushless);
     configureIntaker();
     configureWrist();
   }
@@ -76,33 +77,31 @@ public class IntakeSubsystem extends SubsystemBase {
     return Rotation2d.fromRotations(m_intakeWristMotor.getAbsoluteEncoder().getPosition());
   }
 
-  public void setWristPosition(Rotation2d position) {
+  private void setWristPosition(Rotation2d position) {
     m_wristSetpoint = position;
   }
 
-  public void _toggleWristPosition() {
-    if (m_wristSetpoint.getRotations() == IntakeConstants.wristTopAngle.getRotations()) {
-      m_wristSetpoint = IntakeConstants.wristStowedAngle;
-    } else {
-      m_wristSetpoint = IntakeConstants.wristTopAngle;
-    }
+  public void setWristPosition(WristRaiseLocation location) {
+    setWristPosition(location.position);
   }
 
-  public void runMotor(double speed) {
+  public void runIntakeMotor(double speed) {
     m_intakeIntakerMotor.set(MathUtil.clamp(speed, -1.0, 1.0));
   }
 
-  public void stopMotor() {
+  public void stopIntakeMotor() {
     m_intakeIntakerMotor.set(0.0);
   }
 
   @Override
   public void periodic() {
-    m_intakeWristMotor.getClosedLoopController().setSetpoint(
-        m_wristSetpoint.getRotations(),
-        ControlType.kPosition,
-        ClosedLoopSlot.kSlot0,
-        calculateFeedForward());
+    if (m_wristSetpoint != null) {
+      m_intakeWristMotor.getClosedLoopController().setSetpoint(
+          m_wristSetpoint.getRotations(),
+          ControlType.kPosition,
+          ClosedLoopSlot.kSlot0,
+          calculateFeedForward());
+    }
 
     Logger.recordOutput("IntakeSubsystem/WristPosition", getWristPosition().getRotations());
     Logger.recordOutput("IntakeSubsystem/WristSetpoint", m_wristSetpoint.getRotations());

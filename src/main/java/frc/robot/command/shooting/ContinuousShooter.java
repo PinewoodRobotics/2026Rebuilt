@@ -11,57 +11,72 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.constant.IndexConstants;
 import frc.robot.constant.ShooterConstants;
 import frc.robot.constant.TurretConstants;
 import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.ShooterSubsystem;
 import frc.robot.subsystem.TurretSubsystem;
 import frc.robot.util.LocalMath;
+import lombok.Getter;
+import frc.robot.subsystem.IndexSubsystem;
 
 public class ContinuousShooter extends Command {
-  private final Supplier<Translation3d> targetGlobalPoseSupplier;
-  private final Supplier<Translation3d> selfGlobalPoseSupplier;
-  private final Function<Void, Void> feedShooter;
+  private final Supplier<Translation2d> targetGlobalPoseSupplier;
+  private final Supplier<Translation2d> selfGlobalPoseSupplier;
   private final ShooterSubsystem shooterSubsystem;
   private final TurretSubsystem turretSubsystem;
+  private final IndexSubsystem indexSubsystem;
 
-  public static boolean isShooting = false;
+  @Getter
+  private static boolean isShooting = false;
 
-  public ContinuousShooter(Supplier<Translation3d> targetGlobalPoseSupplier,
-      Supplier<Translation3d> selfGlobalPoseSupplier, Function<Void, Void> feedShooter) {
+  public ContinuousShooter(Supplier<Translation2d> targetGlobalPoseSupplier,
+      Supplier<Translation2d> selfGlobalPoseSupplier) {
     this.targetGlobalPoseSupplier = targetGlobalPoseSupplier;
     this.selfGlobalPoseSupplier = selfGlobalPoseSupplier;
-    this.feedShooter = feedShooter;
     this.shooterSubsystem = ShooterSubsystem.GetInstance();
     this.turretSubsystem = TurretSubsystem.GetInstance();
+    this.indexSubsystem = IndexSubsystem.GetInstance();
 
-    addRequirements(this.shooterSubsystem);
+    addRequirements(this.shooterSubsystem, this.indexSubsystem);
   }
 
-  public ContinuousShooter(Supplier<Translation3d> targetGlobalPoseSupplier) {
+  public ContinuousShooter(Supplier<Translation2d> targetGlobalPoseSupplier) {
     this(targetGlobalPoseSupplier, () -> {
-      Pose2d selfGlobalPose = GlobalPosition.Get();
-      return new Translation3d(selfGlobalPose.getX(), selfGlobalPose.getY(), 0);
-    }, (Void) -> {
-      return null;
+      return GlobalPosition.Get().getTranslation();
     });
   }
 
   public ContinuousShooter() {
-    this(() -> new Translation3d());
+    this(() -> new Translation2d());
   }
 
   @Override
   public void execute() {
-    // Translation3d targetGlobalPose = targetGlobalPoseSupplier.get();
-    // Translation3d selfGlobalPose = selfGlobalPoseSupplier.get();
+    Translation2d target = targetGlobalPoseSupplier.get();
+    Translation2d self = selfGlobalPoseSupplier.get();
 
-    if (turretSubsystem.getAimTimeLeftMs() > TurretConstants.kTurretOffByMs) {
+    Translation2d targetRelative = LocalMath.fromGlobalToRelative(self, target);
+
+    var aimTimeLeft = shooterSubsystem.setShooterVelocity(
+        Units.RotationsPerSecond.of(ShooterConstants.DistanceFromTargetToVelocity(targetRelative.getNorm())));
+
+    if (aimTimeLeft > TurretConstants.kTurretOffByMs
+        || shooterSubsystem.timeLeftToReachVelocity() > ShooterConstants.kShooterOffByMs) {
       isShooting = false;
+      indexSubsystem.stopMotor();
       return;
     }
 
     isShooting = true;
+    indexSubsystem.runMotor();
+  }
+
+  @Override
+  public void end(boolean interrupted) {
+    isShooting = false;
+    shooterSubsystem.runMotorBaseSpeed();
   }
 
   /*
