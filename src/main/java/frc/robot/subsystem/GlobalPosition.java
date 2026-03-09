@@ -74,6 +74,10 @@ public class GlobalPosition extends SubsystemBase {
     return position;
   }
 
+  public static long getLastUpdateTimeMs() {
+    return lastUpdateTime;
+  }
+
   public static Translation2d Velocity2d(GMFrame velocityType) {
     var velocity = Velocity(velocityType);
     return new Translation2d(velocity.vxMetersPerSecond, velocity.vyMetersPerSecond);

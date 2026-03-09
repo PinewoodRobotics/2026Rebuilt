@@ -3,8 +3,6 @@ package frc.robot.hardware;
 import com.kauailabs.navx.frc.AHRS;
 
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.I2C;
 import frc.robot.util.LocalMath;
 import frc4765.proto.sensor.GeneralSensorDataOuterClass.GeneralSensorData;
@@ -114,6 +112,93 @@ public class AHRSGyro implements IGyroscopeLike, IDataClass {
   }
 
   @Override
+  public double[] getYPR() {
+    return new double[] {
+        getYawDegrees(),
+        m_gyro.getPitch(),
+        m_gyro.getRoll()
+    };
+  }
+
+  @Override
+  public double[] getLinearAccelerationXYZ() {
+    return new double[] {
+        m_gyro.getWorldLinearAccelX(),
+        m_gyro.getWorldLinearAccelY(),
+        m_gyro.getWorldLinearAccelZ()
+    };
+  }
+
+  @Override
+  public double[] getAngularVelocityXYZ() {
+    return new double[] {
+        Math.toRadians(m_gyro.getRawGyroX()),
+        Math.toRadians(m_gyro.getRawGyroY()),
+        Math.toRadians(m_gyro.getRawGyroZ())
+    };
+  }
+
+  @Override
+  public double[] getQuaternion() {
+    return new double[] {
+        m_gyro.getQuaternionW(),
+        m_gyro.getQuaternionX(),
+        m_gyro.getQuaternionY(),
+        m_gyro.getQuaternionZ()
+    };
+  }
+
+  @Override
+  public double[] getLinearVelocityXYZ() {
+    return new double[] {
+        m_gyro.getVelocityX(),
+        m_gyro.getVelocityY(),
+        m_gyro.getVelocityZ()
+    };
+  }
+
+  @Override
+  public double[] getPoseXYZ() {
+    return new double[] {
+        xOffset + m_gyro.getDisplacementX(),
+        yOffset + m_gyro.getDisplacementY(),
+        zOffset + m_gyro.getDisplacementZ()
+    };
+  }
+
+  @Override
+  public void reset() {
+    m_gyro.reset();
+    m_gyro.resetDisplacement();
+    xOffset = 0;
+    yOffset = 0;
+    zOffset = 0;
+    yawSoftOffsetDeg = 0.0;
+    resetYawRateState();
+  }
+
+  @Override
+  public void setAngleAdjustment(double angle) {
+    yawSoftOffsetDeg = LocalMath.wrapTo180(angle);
+    resetYawRateState();
+  }
+
+  @Override
+  public void setPositionAdjustment(double x, double y, double z) {
+    xOffset = x;
+    yOffset = y;
+    zOffset = z;
+  }
+
+  public void resetRotation(Rotation2d newRotation) {
+    setYawDegrees(newRotation.getDegrees());
+  }
+
+  public void resetRotation(edu.wpi.first.math.geometry.Rotation3d newRotation) {
+    resetRotation(newRotation.toRotation2d());
+  }
+
+  @Override
   public byte[] getRawConstructedProtoData() {
     return null;
   }
@@ -123,27 +208,4 @@ public class AHRSGyro implements IGyroscopeLike, IDataClass {
     return "imu/imu";
   }
 
-  @Override
-  public ChassisSpeeds getVelocity() {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'getVelocity'");
-  }
-
-  @Override
-  public ChassisSpeeds getAcceleration() {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'getAcceleration'");
-  }
-
-  @Override
-  public Rotation3d getRotation() {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'getRotation'");
-  }
-
-  @Override
-  public void resetRotation(Rotation3d newRotation) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'resetRotation'");
-  }
 }

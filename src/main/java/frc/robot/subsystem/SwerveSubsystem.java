@@ -259,7 +259,7 @@ public class SwerveSubsystem extends SubsystemBase {
   }
 
   private double getGyroYawDegrees() {
-    return -m_gyro.getRotation().toRotation2d().getDegrees();
+    return -m_gyro.getRotation2d().getDegrees();
   }
 
   public void resetGyro(double offset) {

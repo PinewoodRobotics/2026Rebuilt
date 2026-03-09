@@ -27,6 +27,7 @@ import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.IndexSubsystem;
 import frc.robot.subsystem.IntakeSubsystem;
 import frc.robot.subsystem.LightsSubsystem;
+import frc.robot.subsystem.MatchStatusSubsystem;
 import frc.robot.subsystem.OdometrySubsystem;
 import frc.robot.subsystem.PathPlannerSubsystem;
 import frc.robot.subsystem.ShooterSubsystem;
@@ -63,6 +64,7 @@ public class RobotContainer {
 
     // Initialize publication subsystem for sending data to Pi
     PublicationSubsystem.GetInstance(Robot.getCommunicationClient());
+    MatchStatusSubsystem.GetInstance();
     PathPlannerSubsystem.GetInstance();
 
     // setIntakeCommands();
