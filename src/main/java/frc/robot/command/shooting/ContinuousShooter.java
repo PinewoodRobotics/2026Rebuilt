@@ -77,6 +77,7 @@ public class ContinuousShooter extends Command {
   public void end(boolean interrupted) {
     isShooting = false;
     shooterSubsystem.runMotorBaseSpeed();
+    indexSubsystem.stopMotor();
   }
 
   /*

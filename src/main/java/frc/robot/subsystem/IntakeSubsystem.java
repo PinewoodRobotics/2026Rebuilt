@@ -25,7 +25,7 @@ public class IntakeSubsystem extends SubsystemBase {
   private final SparkMax m_intakeIntakerMotor;
   private final SparkMax m_intakeWristMotor;
 
-  private Rotation2d m_wristSetpoint;
+  private Rotation2d m_wristSetpoint = IntakeConstants.WristRaiseLocation.BOTTOM.position;
 
   public static IntakeSubsystem GetInstance() {
     if (instance == null) {

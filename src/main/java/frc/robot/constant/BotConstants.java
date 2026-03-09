@@ -17,7 +17,7 @@ public class BotConstants {
     BBOT
   }
 
-  public static final RobotVariant robotType = RobotVariant.BBOT;
+  public static final RobotVariant robotType = RobotVariant.ABOT;
 
   public static enum Mode {
     /** Running on a real robot. */

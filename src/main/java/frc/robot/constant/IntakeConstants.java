@@ -3,7 +3,7 @@ package frc.robot.constant;
 import edu.wpi.first.math.geometry.Rotation2d;
 
 public class IntakeConstants {
-  public static final int intakeIntakerMotorID = 2;
+  public static final int intakeIntakerMotorID = 3;
   public static final boolean intakeIntakerInverted = false;
   public static final double intakeMotorSpeed = 0.6;
   public static final double extakeMotorSpeed = -0.3;

@@ -9,6 +9,7 @@ import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.FeedbackSensor;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkClosedLoopController;
+import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
@@ -23,7 +24,7 @@ public class ShooterSubsystem extends SubsystemBase {
   private static final double kStopVelocityThresholdRpm = 1e-3;
   private static ShooterSubsystem instance;
 
-  private final SparkMax leaderMotor, followerMotor;
+  private final SparkFlex leaderMotor, followerMotor;
   private final SparkClosedLoopController leaderClosedLoopController, followerClosedLoopController;
   private final RelativeEncoder leaderEncoder, followerEncoder;
 
@@ -43,8 +44,8 @@ public class ShooterSubsystem extends SubsystemBase {
       MotorType leaderMotorType,
       int followerCanId,
       MotorType followerMotorType) {
-    this.leaderMotor = new SparkMax(leaderCanId, leaderMotorType);
-    this.followerMotor = new SparkMax(followerCanId, followerMotorType);
+    this.leaderMotor = new SparkFlex(leaderCanId, leaderMotorType);
+    this.followerMotor = new SparkFlex(followerCanId, followerMotorType);
 
     this.leaderClosedLoopController = leaderMotor.getClosedLoopController();
     this.followerClosedLoopController = followerMotor.getClosedLoopController();

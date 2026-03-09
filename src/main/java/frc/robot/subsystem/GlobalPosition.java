@@ -19,8 +19,8 @@ public class GlobalPosition extends SubsystemBase {
   private static volatile long lastUpdateTime;
   private static volatile double positionUpdateHz;
   private static GlobalPosition self;
-  private static Pose2d position;
-  private static ChassisSpeeds positionVelocity;
+  private static Pose2d position = new Pose2d(12.94, 3.52, new Rotation2d(1, 0));
+  private static ChassisSpeeds positionVelocity = new ChassisSpeeds(0, 0, 0);
 
   public static enum GMFrame {
     kFieldRelative,

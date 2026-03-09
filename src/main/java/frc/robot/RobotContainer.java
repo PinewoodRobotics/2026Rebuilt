@@ -48,35 +48,36 @@ public class RobotContainer {
 
   public RobotContainer() {
     GlobalPosition.GetInstance();
-    OdometrySubsystem.GetInstance();
+    // OdometrySubsystem.GetInstance();
     // AHRSGyro.GetInstance();
     PigeonGyro.GetInstance();
     SwerveSubsystem.GetInstance();
-    CameraSubsystem.GetInstance();
+    // CameraSubsystem.GetInstance();
 
     TurretSubsystem.GetInstance();
-    // ShooterSubsystem.GetInstance();
-    // IndexSubsystem.GetInstance();
+    ShooterSubsystem.GetInstance();
+    IndexSubsystem.GetInstance();
     // LightsSubsystem.GetInstance();
 
     // IntakeSubsystem.GetInstance();
 
     // Initialize publication subsystem for sending data to Pi
     PublicationSubsystem.GetInstance(Robot.getCommunicationClient());
-    PathPlannerSubsystem.GetInstance();
-
-    // setIntakeCommands();
+    // PathPlannerSubsystem.GetInstance();
 
     setSwerveCommands();
-    setTurretCommands();
+    // setTurretCommands();
     // setIndexCommands();
     // setShooterCommands();
+    // setIntakeCommands();
 
     // setTestCommands();
-    LightsSubsystem.GetInstance().addLightsCommand(
-        new TurretStateLighting(),
-        new AutonomousStateLighting(),
-        new PulsingLightingCommand());
+    /*
+     * LightsSubsystem.GetInstance().addLightsCommand(
+     * new TurretStateLighting(),
+     * new AutonomousStateLighting(),
+     * new PulsingLightingCommand());
+     */
   }
 
   private void setTestCommands() {
@@ -106,7 +107,7 @@ public class RobotContainer {
 
     new JoystickButton(
         m_operatorPanel,
-        OperatorPanel.ButtonEnum.METALSWITCHDOWN.value).whileFalse(Commands.run(() -> {
+        OperatorPanel.ButtonEnum.BLACKBUTTON.value).whileFalse(Commands.run(() -> {
           var position = GlobalPosition.Get();
           if (position != null) {
             PigeonGyro.GetInstance().resetRotation(position.getRotation());
@@ -118,11 +119,10 @@ public class RobotContainer {
         }));
 
     Logger.recordOutput("PigeonGyro/ResettingRotation",
-        !m_operatorPanel.getRawButton(OperatorPanel.ButtonEnum.METALSWITCHDOWN.value));
+        !m_operatorPanel.getRawButton(OperatorPanel.ButtonEnum.BLACKBUTTON.value));
   }
 
   private void setTurretCommands() {
-
     var continuousAimCommand = new ContinuousAimCommand(
         () -> AimPoint.getTarget());
 
@@ -148,7 +148,7 @@ public class RobotContainer {
 
     new JoystickButton(
         m_operatorPanel,
-        OperatorPanel.ButtonEnum.STICKUP.value)
+        OperatorPanel.ButtonEnum.METALSWITCHDOWN.value)
         .whileTrue(continuousShooter);
     NamedCommands.registerCommand("ContinuousShooterCommand", continuousShooter);
   }
@@ -158,14 +158,16 @@ public class RobotContainer {
   }
 
   public void onAnyModeStart() {
-    var globalPosition = GlobalPosition.Get();
-    if (globalPosition != null) {
-      PigeonGyro.GetInstance().resetRotation(globalPosition.getRotation());
-      OdometrySubsystem.GetInstance().setOdometryPosition(globalPosition);
-    }
-
-    PublicationSubsystem.addDataClasses(
-        PigeonGyro.GetInstance(), OdometrySubsystem.GetInstance());
+    /*
+     * var globalPosition = GlobalPosition.Get();
+     * if (globalPosition != null) {
+     * PigeonGyro.GetInstance().resetRotation(globalPosition.getRotation());
+     * OdometrySubsystem.GetInstance().setOdometryPosition(globalPosition);
+     * }
+     * 
+     * PublicationSubsystem.addDataClasses(
+     * PigeonGyro.GetInstance(), OdometrySubsystem.GetInstance());
+     */
 
     /*
      * TurretSubsystem.GetInstance().reset();
