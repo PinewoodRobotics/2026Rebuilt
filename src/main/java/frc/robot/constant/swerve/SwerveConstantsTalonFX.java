@@ -116,7 +116,7 @@ public class SwerveConstantsTalonFX {
   public static final double kDirectionMultiplier = 0.01;
 
   // PID values for the driving
-  public static final double kDriveP = 0.0; // 0.01;
+  public static final double kDriveP = 0.01; // 0.01;
   public static final double kDriveI = 0;
   public static final double kDriveD = 0;
   public static final double kDriveIZ = 0;
@@ -133,12 +133,12 @@ public class SwerveConstantsTalonFX {
 
   public static final double kDriveMaxRPM = 5700;
   public static final double kDriveStatorLimit = 70; // TEMP
-  public static final Current kDriveSupplyLimit = Units.Amps.of(40); // TEMP
+  public static final Current kDriveSupplyLimit = Units.Amps.of(30); // TEMP
 
   // PID values for the turning
-  public static final double kTurnP = 1.5; // * 12;
-  public static final double kTurnI = 0.0015; // * 12;
-  public static final double kTurnD = 0.12; // * 12;
+  public static final double kTurnP = 1; // 1.5; // * 12;
+  public static final double kTurnI = 0.0; // 0.0015; // * 12;
+  public static final double kTurnD = 0.0; // 0.12; // * 12;
   public static final double kTurnIZ = 0;
   public static final double kTurnFF = 0;
   public static final double kTurnMinOutput = -1;
