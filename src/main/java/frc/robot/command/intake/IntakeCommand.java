@@ -2,7 +2,6 @@ package frc.robot.command.intake;
 
 import java.util.function.Supplier;
 
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constant.IntakeConstants;
@@ -17,6 +16,11 @@ public class IntakeCommand extends Command {
   private final Supplier<Boolean> extakeOverrideSupplier;
 
   private final Timer timer;
+  /**
+   * True once we've started the timer for the current "released" period (boot or
+   * after release).
+   */
+  private boolean timerStartedForRelease;
 
   public IntakeCommand(IntakeSubsystem baseSubsystem, Supplier<Boolean> joystickSupplier,
       Supplier<Boolean> extakeOverrideSupplier) {
@@ -30,7 +34,8 @@ public class IntakeCommand extends Command {
   @Override
   public void initialize() {
     timer.reset();
-    timer.start();
+    timer.stop();
+    timerStartedForRelease = false;
   }
 
   @Override
@@ -39,7 +44,9 @@ public class IntakeCommand extends Command {
     WristRaiseLocation raiseLocation = getRaiseLocation(joystickValue);
     m_intakeSubsystem.setWristPosition(raiseLocation);
 
-    if (raiseLocation == WristRaiseLocation.BOTTOM) {
+    // Run intake only when operator is holding trigger (intent to intake), not just
+    // when wrist is down
+    if (raiseLocation == WristRaiseLocation.BOTTOM && joystickValue) {
       m_intakeSubsystem
           .runIntakeMotor(
               extakeOverrideSupplier.get() ? IntakeConstants.extakeMotorSpeed : IntakeConstants.intakeMotorSpeed);
@@ -50,18 +57,28 @@ public class IntakeCommand extends Command {
 
   private WristRaiseLocation getRaiseLocation(boolean joystickValue) {
     if (joystickValue) {
+      timerStartedForRelease = false;
+      timer.stop();
+      return WristRaiseLocation.BOTTOM;
+    }
+
+    // Start timer when released: either first cycle after let go, or cold start
+    // (boot with trigger not pressed)
+    if (!timerStartedForRelease) {
+      timerStartedForRelease = true;
       timer.reset();
       timer.start();
-    } else {
-      timer.stop();
     }
 
-    if (timer.get() > 0.5 && timer.get() < 1.0) {
+    double elapsed = timer.get();
+    /*
+     * if (elapsed > 1.0) {
+     * return WristRaiseLocation.TOP;
+     * }
+     */
+    if (elapsed > 1.5) {
       return WristRaiseLocation.MIDDLE;
-    } else if (timer.get() > 1.0) {
-      return WristRaiseLocation.TOP;
     }
-
     return WristRaiseLocation.BOTTOM;
   }
 

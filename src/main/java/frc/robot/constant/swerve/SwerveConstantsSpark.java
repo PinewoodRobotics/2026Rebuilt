@@ -101,12 +101,12 @@ public final class SwerveConstantsSpark {
   public static final double kDriveI = 0;
   public static final double kDriveD = 0;
   public static final double kDriveIZ = 0;
-  public static final Voltage kDriveV = Units.Volts.of(0.8); // Velocity feedforward - critical for velocity control
+  public static final double kDriveV = 0.8; // Velocity feedforward - critical for velocity control
   public static final double kDriveMinOutput = -1;
   public static final double kDriveMaxOutput = 1;
 
-  public static final double kDriveStatorLimit = 70; // TEMP
-  public static final Current kDriveSupplyLimit = Units.Amps.of(40); // TEMP
+  public static final Current kDriveStatorLimit = Units.Amps.of(70); // TEMP
+  public static final Current kDriveSupplyLimit = Units.Amps.of(30); // TEMP
 
   // PID values for the turning
   public static final double kTurnP = 1.5;

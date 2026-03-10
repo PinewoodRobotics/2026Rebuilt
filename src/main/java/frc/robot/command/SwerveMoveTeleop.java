@@ -126,7 +126,7 @@ public class SwerveMoveTeleop extends Command {
   public void execute() {
     double rawR = LocalMath.deadband(
         controller.leftFlightStick.getRawAxis(
-            FlightStick.AxisEnum.JOYSTICKROTATION.value) * -1,
+            FlightStick.AxisEnum.JOYSTICKROTATION.value),
         ControllerConstants.kRotDeadband,
         ControllerConstants.kRotMinValue);
 

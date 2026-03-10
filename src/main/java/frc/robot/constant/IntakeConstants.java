@@ -3,7 +3,7 @@ package frc.robot.constant;
 import edu.wpi.first.math.geometry.Rotation2d;
 
 public class IntakeConstants {
-  public static final int intakeIntakerMotorID = 3;
+  public static final int intakeIntakerMotorID = 16;
   public static final boolean intakeIntakerInverted = false;
   public static final double intakeMotorSpeed = 0.6;
   public static final double extakeMotorSpeed = -0.3;
@@ -20,12 +20,12 @@ public class IntakeConstants {
 
   public final static int intakeWristCurrentLimit = 20;
   public final static double intakeWristGearingRatio = 1.0 / 80.0;
-  public final static Rotation2d intakeWristOffset = Rotation2d.fromRotations(0.862); // when the wrist is fully down
+  public final static Rotation2d intakeWristOffset = Rotation2d.fromRotations(0.017); // when the wrist is fully down
 
   public static enum WristRaiseLocation {
     BOTTOM(Rotation2d.fromRotations(0)),
-    MIDDLE(Rotation2d.fromRotations(0.135)),
-    TOP(Rotation2d.fromRotations(0.27));
+    MIDDLE(Rotation2d.fromRotations(0.16)),
+    TOP(Rotation2d.fromRotations(0.338));
 
     public final Rotation2d position;
 

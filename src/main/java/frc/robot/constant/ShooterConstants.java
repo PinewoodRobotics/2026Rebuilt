@@ -43,6 +43,6 @@ public class ShooterConstants {
   }
 
   public static double DistanceFromTargetToVelocity(double distance) {
-    return 32;
+    return 30;
   }
 }

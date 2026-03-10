@@ -12,7 +12,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearAcceleration;
-import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.units.measure.LinearVelocity;
 
 public class SwerveConstantsTalonFX {
   public static final Translation2d rearLeftTranslation = new Translation2d(
@@ -31,20 +31,12 @@ public class SwerveConstantsTalonFX {
       -0.3429,
       0.3429);
 
-  public static final double kMaxSpeedMPSNormElevator = 2;
-  public static final double kMaxSpeedMPSTopElevator = 0.6;
-  public static double tempMaxSpeed = kMaxSpeedMPSNormElevator;
-
-  public static final AngularVelocity kMaxTurnSpeed = Units.RadiansPerSecond.of(Math.PI / 1.3); // 180 deg/s
-  public static final AngularAcceleration kMaxTurnAcceleration = Units.RadiansPerSecondPerSecond.of(10.0);
-  /** Units: radians/sec^3 */
-  public static final double kMaxTurnJerk = 100.0;
-
-  public static final LinearAcceleration kMaxLinearAcceleration = Units.MetersPerSecondPerSecond.of(3.0);
+  public static final LinearVelocity kMaxSpeed = Units.MetersPerSecond.of(0);
+  public static final LinearAcceleration kMaxLinearAcceleration = Units.MetersPerSecondPerSecond.of(0);
   /** Units: meters/sec^3 */
   public static final double kMaxLinearJerk = 20.0;
 
-  public static final Current kTurnCurrentLimit = Units.Amps.of(10);
+  public static final Current kTurnCurrentLimit = Units.Amps.of(30);
   public static final Current kDriveCurrentLimit = Units.Amps.of(30);
 
   // the driving motor ports
@@ -57,7 +49,7 @@ public class SwerveConstantsTalonFX {
   public static final InvertedValue kFrontLeftDriveMotorReversed = InvertedValue.Clockwise_Positive;
   public static final InvertedValue kRearLeftDriveMotorReversed = InvertedValue.Clockwise_Positive;
   public static final InvertedValue kFrontRightDriveMotorReversed = InvertedValue.Clockwise_Positive;
-  public static final InvertedValue kRearRightDriveMotorReversed = InvertedValue.Clockwise_Positive;
+  public static final InvertedValue kRearRightDriveMotorReversed = InvertedValue.CounterClockwise_Positive;
 
   // the turning motor ports
   public static final int kFrontLeftTurningMotorPort = 6;
@@ -89,10 +81,10 @@ public class SwerveConstantsTalonFX {
   // opening the Phoenix Tuner app, and taking snapshots of
   // the rotational values of the CANCoders while in they are in the forward state
   // units: rotations
-  public static final double kFrontLeftCANcoderMagnetOffset = -0.184;
-  public static final double kFrontRightCANcoderMagnetOffset = 0.459;
-  public static final double kRearLeftCANcoderMagnetOffset = -0.18;
-  public static final double kRearRightCANcoderMagnetOffset = 0.302;
+  public static final double kFrontLeftCANcoderMagnetOffset = -0.316;
+  public static final double kFrontRightCANcoderMagnetOffset = -0.208;
+  public static final double kRearLeftCANcoderMagnetOffset = 0.177;
+  public static final double kRearRightCANcoderMagnetOffset = 0.441;
 
   // stats used by SwerveSubsystem for math
   public static final Distance kWheelDiameter = Units.Meters.of(0.089);
@@ -116,12 +108,12 @@ public class SwerveConstantsTalonFX {
   public static final double kDirectionMultiplier = 0.01;
 
   // PID values for the driving
-  public static final double kDriveP = 0.01; // 0.01;
-  public static final double kDriveI = 0;
+  public static final double kDriveP = 0.5;
+  public static final double kDriveI = 1;
   public static final double kDriveD = 0;
   public static final double kDriveIZ = 0;
   public static final double kDriveFF = 0;
-  public static final Voltage kDriveV = Units.Volts.of(0.0); // Velocity feedforward - critical for velocity control
+  public static final double kDriveV = 0.6; // Velocity feedforward - critical for velocity control
   public static final double kDriveMinOutput = -1;
   public static final double kDriveMaxOutput = 1;
 
@@ -132,13 +124,13 @@ public class SwerveConstantsTalonFX {
   public static final double kAutonSpeedMultiplier = 0.5;
 
   public static final double kDriveMaxRPM = 5700;
-  public static final double kDriveStatorLimit = 70; // TEMP
+  public static final Current kDriveStatorLimit = Units.Amps.of(70); // TEMP
   public static final Current kDriveSupplyLimit = Units.Amps.of(30); // TEMP
 
   // PID values for the turning
-  public static final double kTurnP = 1; // 1.5; // * 12;
-  public static final double kTurnI = 0.0; // 0.0015; // * 12;
-  public static final double kTurnD = 0.0; // 0.12; // * 12;
+  public static final double kTurnP = 1.5 * 12;
+  public static final double kTurnI = 0.0015 * 12;
+  public static final double kTurnD = 0.12 * 12;
   public static final double kTurnIZ = 0;
   public static final double kTurnFF = 0;
   public static final double kTurnMinOutput = -1;
@@ -170,9 +162,8 @@ public class SwerveConstantsTalonFX {
 
   // Motion Magic configuration for turn motors (position control with trapezoid
   // profiling)
-  public static final double kTurnMotionMagicCruiseVelocity = 100; // rotations/sec - max turn speed
-  public static final double kTurnMotionMagicAcceleration = 200; // rotations/sec² - turn acceleration
-  public static final double kTurnMotionMagicJerk = 2000; // rotations/sec³ - smoothness of turn acceleration changes
+  public static final AngularVelocity kTurnMotionMagicCruiseVelocity = Units.RotationsPerSecond.of(0);
+  public static final AngularAcceleration kTurnMotionMagicAcceleration = Units.RotationsPerSecondPerSecond.of(0);
 
   public static final int kPigeonCANId = 40;
 }

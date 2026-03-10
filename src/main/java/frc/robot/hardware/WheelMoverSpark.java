@@ -175,7 +175,7 @@ public class WheelMoverSpark extends WheelMoverBase {
 
     final double wheelCircumference = Math.PI * c.kWheelDiameter.in(Units.Meters);
     final double wheelRps = wheelCircumference == 0.0 ? 0.0 : requestedMps / wheelCircumference;
-    double ffVolts = c.kDriveV.in(Units.Volts) * wheelRps;
+    double ffVolts = c.kDriveV * wheelRps;
     // Clamp to reasonable motor voltage.
     ffVolts = Math.max(-12.0, Math.min(12.0, ffVolts));
 

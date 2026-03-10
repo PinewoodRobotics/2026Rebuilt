@@ -217,10 +217,9 @@ public class SwerveSubsystem extends SubsystemBase {
   }
 
   public static ChassisSpeeds fromPercentToVelocity(Vec2 percentXY, double rotationPercent) {
-    final var c = SwerveConstants.INSTANCE;
-    double vx = clamp(percentXY.getX(), -1, 1) * c.kMaxSpeed.in(Units.MetersPerSecond);
-    double vy = clamp(percentXY.getY(), -1, 1) * c.kMaxSpeed.in(Units.MetersPerSecond);
-    double omega = clamp(rotationPercent, -1, 1) * c.kMaxTurnSpeed.in(Units.RadiansPerSecond);
+    double vx = clamp(percentXY.getX(), -1, 1) * SwerveConstants.kRobotMaxSpeed.in(Units.MetersPerSecond);
+    double vy = clamp(percentXY.getY(), -1, 1) * SwerveConstants.kRobotMaxSpeed.in(Units.MetersPerSecond);
+    double omega = clamp(rotationPercent, -1, 1) * SwerveConstants.kRobotMaxTurnSpeed.in(Units.RadiansPerSecond);
     return new ChassisSpeeds(vx, vy, omega);
   }
 

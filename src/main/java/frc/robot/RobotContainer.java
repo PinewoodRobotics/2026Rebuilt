@@ -1,9 +1,14 @@
 package frc.robot;
 
+import java.util.function.Supplier;
+
 import org.littletonrobotics.junction.Logger;
 
 import com.pathplanner.lib.auto.NamedCommands;
 
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -15,12 +20,15 @@ import frc.robot.command.lighting.PulsingLightingCommand;
 import frc.robot.command.lighting.ShooterSpeedLighting;
 import frc.robot.command.lighting.TurretStateLighting;
 import frc.robot.command.scoring.ContinuousAimCommand;
+import frc.robot.command.scoring.ManualAimCommand;
+import frc.robot.command.shooting.ContinuousManualShooter;
 import frc.robot.command.shooting.ContinuousShooter;
 import frc.robot.command.shooting.ShooterCommand;
 import frc.robot.command.testing.IndexCommand;
 import frc.robot.constant.IndexConstants;
 import frc.robot.constant.IntakeConstants;
 import frc.robot.constant.PathPlannerConstants;
+import frc.robot.constant.ShooterConstants;
 import frc.robot.hardware.PigeonGyro;
 import frc.robot.subsystem.CameraSubsystem;
 import frc.robot.subsystem.GlobalPosition;
@@ -46,6 +54,9 @@ public class RobotContainer {
       m_leftFlightStick,
       m_rightFlightStick);
 
+  /** When true, turret uses manual aim and shooter uses manual speed (slider). Toggled by green button. */
+  private boolean isManualScoringMode = false;
+
   public RobotContainer() {
     GlobalPosition.GetInstance();
     // OdometrySubsystem.GetInstance();
@@ -59,17 +70,17 @@ public class RobotContainer {
     IndexSubsystem.GetInstance();
     // LightsSubsystem.GetInstance();
 
-    // IntakeSubsystem.GetInstance();
+    IntakeSubsystem.GetInstance();
 
     // Initialize publication subsystem for sending data to Pi
     PublicationSubsystem.GetInstance(Robot.getCommunicationClient());
     // PathPlannerSubsystem.GetInstance();
 
     setSwerveCommands();
-    // setTurretCommands();
-    // setIndexCommands();
-    // setShooterCommands();
-    // setIntakeCommands();
+    setTurretCommands();
+    setIndexCommands();
+    setShooterCommands();
+    setIntakeCommands();
 
     // setTestCommands();
     /*
@@ -125,8 +136,24 @@ public class RobotContainer {
   private void setTurretCommands() {
     var continuousAimCommand = new ContinuousAimCommand(
         () -> AimPoint.getTarget());
+    var manualAimCommand = new ManualAimCommand(
+        TurretSubsystem.GetInstance(),
+        () -> MathUtil.clamp(
+            (m_rightFlightStick.getRightSlider() - m_leftFlightStick.getRightSlider()) / 2.0,
+            -1.0, 1.0));
 
     TurretSubsystem.GetInstance().setDefaultCommand(continuousAimCommand);
+
+    new JoystickButton(m_operatorPanel, OperatorPanel.ButtonEnum.GREENBUTTON.value)
+        .onTrue(new InstantCommand(() -> {
+          isManualScoringMode = !isManualScoringMode;
+          var current = TurretSubsystem.GetInstance().getCurrentCommand();
+          if (current != null) {
+            current.cancel();
+          }
+          TurretSubsystem.GetInstance().setDefaultCommand(
+              isManualScoringMode ? manualAimCommand : continuousAimCommand);
+        }));
     NamedCommands.registerCommand("ContinuousAimCommand", continuousAimCommand);
   }
 
@@ -145,12 +172,26 @@ public class RobotContainer {
 
   private void setShooterCommands() {
     var continuousShooter = new ContinuousShooter(() -> AimPoint.getTarget());
+    Supplier<AngularVelocity> manualSpeedSupplier = () -> {
+      double sliderRaw = m_rightFlightStick.getRightSlider();
+      double slider = MathUtil.clamp((sliderRaw + 1.0) / 2.0, 0.0, 1.0);
+      double rps = MathUtil.interpolate(
+          ShooterConstants.kShooterMinVelocity.in(Units.RotationsPerSecond),
+          ShooterConstants.kShooterMaxVelocity.in(Units.RotationsPerSecond),
+          slider);
+      return Units.RotationsPerSecond.of(rps);
+    };
+    var continuousManualShooter = new ContinuousManualShooter(manualSpeedSupplier);
 
     new JoystickButton(
         m_operatorPanel,
         OperatorPanel.ButtonEnum.METALSWITCHDOWN.value)
-        .whileTrue(continuousShooter);
+        .whileTrue(Commands.either(
+            continuousManualShooter,
+            continuousShooter,
+            () -> isManualScoringMode));
     NamedCommands.registerCommand("ContinuousShooterCommand", continuousShooter);
+    NamedCommands.registerCommand("ContinuousManualShooterCommand", continuousManualShooter);
   }
 
   public Command getAutonomousCommand() {
