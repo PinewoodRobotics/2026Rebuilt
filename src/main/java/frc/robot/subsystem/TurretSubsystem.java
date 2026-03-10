@@ -59,11 +59,8 @@ public class TurretSubsystem extends SubsystemBase {
     config
         .smartCurrentLimit(TurretConstants.kTurretCurrentLimit);
 
-    config.encoder.positionConversionFactor(TurretConstants.kGearRatio);
-    config.encoder.velocityConversionFactor(TurretConstants.kGearRatio / 60.0);
-
     config.closedLoop
-        .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
+        .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
         .pid(TurretConstants.kTurretP, TurretConstants.kTurretI, TurretConstants.kTurretD)
         .iZone(TurretConstants.kTurretIZ)
         .positionWrappingEnabled(true)

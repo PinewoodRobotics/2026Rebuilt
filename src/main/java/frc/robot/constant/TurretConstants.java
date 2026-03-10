@@ -10,6 +10,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 
 public class TurretConstants {
   public static final int kTurretCanId = 7;
+
   public static final int kTurretCurrentLimit = 40;
   public static final double feedForwardFactor = 1.0;
   public static final Angle kTurretTheta = Units.Degrees.of(45.0);
@@ -28,16 +29,6 @@ public class TurretConstants {
   public static final Angle kTurretMaxAngle = Units.Degrees.of(180.0);
 
   public static final int kTurretOffByMs = 20;
-  public static final Translation2d turretPositionInRobot = new Translation2d(0, 1);
 
   public static final boolean kMotorInverted = true;
-
-  // Total gearing from motor to turret.
-  // REV MAXPlanetary 3:1 + motor gear to turret gear stage.
-  public static final double kGearboxReduction = 3.0;
-  public static final int kPinionTeeth = 45; // outside gear on motor output
-  public static final int kTurretRingTeeth = 55; // inside gear on turret
-  public static final double kGearRatio = (1.0 / kGearboxReduction)
-      * ((double) kPinionTeeth / (double) kTurretRingTeeth);
-  // 1.0 / 3.0; for abot
 }
