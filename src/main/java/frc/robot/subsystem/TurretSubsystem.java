@@ -2,8 +2,8 @@ package frc.robot.subsystem;
 
 import org.littletonrobotics.junction.Logger;
 
+import com.revrobotics.AbsoluteEncoder;
 import com.revrobotics.PersistMode;
-import com.revrobotics.RelativeEncoder;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.FeedbackSensor;
@@ -22,16 +22,24 @@ import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkFlexConfig;
 
 import frc.robot.constant.TurretConstants;
+import lombok.Setter;
 
 public class TurretSubsystem extends SubsystemBase {
   private static TurretSubsystem instance;
 
   private SparkFlex m_turretMotor;
   private SparkClosedLoopController closedLoopController;
-  private final RelativeEncoder relativeEncoder;
+  private final AbsoluteEncoder absoluteEncoder;
 
   /** Last commanded turret goal angle (for logging / time estimate). */
   private Angle lastAimTarget;
+
+  @Setter
+  private static boolean isGpsAssistEnabled = true;
+
+  public static boolean getIsGpsAssistEnabled() {
+    return isGpsAssistEnabled;
+  }
 
   public static TurretSubsystem GetInstance() {
     if (instance == null) {
@@ -43,7 +51,7 @@ public class TurretSubsystem extends SubsystemBase {
 
   public TurretSubsystem(int canId, MotorType motorType) {
     configureSparkMax(canId, motorType);
-    relativeEncoder = m_turretMotor.getEncoder();
+    absoluteEncoder = m_turretMotor.getAbsoluteEncoder();
     reset();
   }
 
@@ -67,21 +75,25 @@ public class TurretSubsystem extends SubsystemBase {
         .positionWrappingMinInput(0)
         .positionWrappingMaxInput(1);
 
+    config.absoluteEncoder.zeroOffset(TurretConstants.kTurretOffset.in(Units.Rotations)).inverted(true);
+
     m_turretMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
   }
 
   public void reset() {
-    relativeEncoder.setPosition(0.0);
+    // Absolute encoder provides the turret angle reference; nothing to zero here.
+    lastAimTarget = getTurretPosition();
   }
 
   /**
    * Simple position PID (no MAXMotion).
    */
   public void setTurretPosition(Angle position, Voltage feedForward) {
-    lastAimTarget = position;
+    double wrappedSetpointRot = position.in(Units.Rotations);
+    lastAimTarget = Units.Rotations.of(wrappedSetpointRot);
 
     closedLoopController.setSetpoint(
-        position.in(Units.Rotations),
+        wrappedSetpointRot,
         ControlType.kPosition,
         ClosedLoopSlot.kSlot0,
         feedForward.in(Units.Volts),
@@ -113,13 +125,22 @@ public class TurretSubsystem extends SubsystemBase {
   }
 
   public Angle getTurretPosition() {
-    return Units.Rotations.of(m_turretMotor.getEncoder().getPosition());
+    return Units.Rotations.of(absoluteEncoder.getPosition());
+  }
+
+  private double wrapToUnitRotations(double rotations) {
+    double wrapped = rotations % 1.0;
+    if (wrapped < 0.0) {
+      wrapped += 1.0;
+    }
+    return wrapped;
   }
 
   @Override
   public void periodic() {
     Logger.recordOutput("Turret/PositionRot", getTurretPosition().in(Units.Rotations));
     Logger.recordOutput("Turret/PositionDeg", getTurretPosition().in(Units.Degrees));
+    Logger.recordOutput("Turret/AbsolutePositionRawRot", absoluteEncoder.getPosition());
     Logger.recordOutput("Turret/Velocity", m_turretMotor.getEncoder().getVelocity());
     Logger.recordOutput("Turret/DesiredOutputRot", lastAimTarget != null ? lastAimTarget.in(Units.Rotations) : 0);
     Logger.recordOutput("Turret/AppliedOutput", m_turretMotor.getAppliedOutput());

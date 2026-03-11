@@ -19,6 +19,7 @@ import frc.robot.constant.BotConstants;
 import frc.robot.constant.BotConstants.RobotVariant;
 import frc.robot.constant.swerve.SwerveConstants;
 import frc.robot.hardware.PigeonGyro;
+import frc.robot.hardware.UnifiedGyro;
 import frc.robot.hardware.WheelMoverBase;
 import frc.robot.hardware.WheelMoverSpark;
 import frc.robot.hardware.WheelMoverTalonFX;
@@ -45,19 +46,23 @@ public class SwerveSubsystem extends SubsystemBase {
 
   private final SwerveDriveKinematics kinematics;
 
-  private boolean shouldAdjustVelocity;
+  private boolean isGpsAssist = true;
 
-  public boolean getShouldAdjustVelocity() {
-    return shouldAdjustVelocity;
+  public boolean getIsGpsAssist() {
+    return isGpsAssist;
   }
 
-  public void setShouldAdjustVelocity(boolean shouldAdjustVelocity) {
-    this.shouldAdjustVelocity = shouldAdjustVelocity;
+  public void setGpsAssist(boolean isGpsAssist) {
+    this.isGpsAssist = isGpsAssist;
   }
 
   public static SwerveSubsystem GetInstance() {
+    return GetInstance(UnifiedGyro.GetInstance());
+  }
+
+  public static SwerveSubsystem GetInstance(IGyroscopeLike gyro) {
     if (self == null) {
-      self = new SwerveSubsystem(PigeonGyro.GetInstance());
+      self = new SwerveSubsystem(gyro);
     }
 
     return self;
@@ -66,7 +71,7 @@ public class SwerveSubsystem extends SubsystemBase {
   public SwerveSubsystem(IGyroscopeLike gyro) {
     this.m_gyro = gyro;
     final var c = SwerveConstants.INSTANCE;
-    this.shouldAdjustVelocity = true;
+    this.isGpsAssist = true;
 
     if (BotConstants.robotType == RobotVariant.BBOT) {
       this.m_frontLeftSwerveModule = new WheelMoverSpark(
@@ -166,7 +171,7 @@ public class SwerveSubsystem extends SubsystemBase {
   }
 
   public enum DriveType {
-    GYRO_RELATIVE,
+    FIELD_RELATIVE,
     RAW,
   }
 
@@ -194,7 +199,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     switch (driveType) {
-      case GYRO_RELATIVE:
+      case FIELD_RELATIVE:
         driveFieldRelative(speeds);
         break;
       case RAW:
@@ -290,6 +295,6 @@ public class SwerveSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     Logger.recordOutput("SwerveSubsystem/swerve/states", getSwerveModuleStates());
-    Logger.recordOutput("SwerveSubsystem/AdjustingVelocity", shouldAdjustVelocity);
+    Logger.recordOutput("SwerveSubsystem/AdjustingVelocity", isGpsAssist);
   }
 }

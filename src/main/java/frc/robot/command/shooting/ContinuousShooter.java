@@ -10,6 +10,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.LinearVelocity;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constant.IndexConstants;
 import frc.robot.constant.ShooterConstants;
@@ -54,6 +55,7 @@ public class ContinuousShooter extends Command {
 
   @Override
   public void execute() {
+    Logger.recordOutput("ContinuousShooter/Time", System.currentTimeMillis());
     Translation2d target = targetGlobalPoseSupplier.get();
     Translation2d self = selfGlobalPoseSupplier.get();
 
@@ -76,7 +78,6 @@ public class ContinuousShooter extends Command {
   @Override
   public void end(boolean interrupted) {
     isShooting = false;
-    shooterSubsystem.runMotorBaseSpeed();
     indexSubsystem.stopMotor();
   }
 

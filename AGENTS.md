@@ -25,6 +25,7 @@
 - `make build` and `make deploy` enforce Java 17 via `/usr/libexec/java_home -v 17`.
 - `make deploy` defaults `TEAM_NUMBER=4765` unless overridden.
 - `./gradlew deployBackend` expects deployment on `EXPECTED_NUM_OF_PIS` (currently `2`) and fails if mismatch.
+- Dynamic vendor dependency builds are intentionally forced every Gradle compile/build cycle (`buildDynamicDeps.outputs.upToDateWhen { false }`).
 
 ## TODO
 

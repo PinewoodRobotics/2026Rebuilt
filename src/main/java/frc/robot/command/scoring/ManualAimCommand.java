@@ -15,6 +15,10 @@ public class ManualAimCommand extends Command {
   private final DoubleSupplier joystickAxisSupplier;
   private final double deadband;
 
+  public ManualAimCommand(DoubleSupplier joystickAxisSupplier) {
+    this(TurretSubsystem.GetInstance(), joystickAxisSupplier);
+  }
+
   public ManualAimCommand(TurretSubsystem turretSubsystem, DoubleSupplier joystickAxisSupplier) {
     this(turretSubsystem, joystickAxisSupplier, 0.05);
   }
@@ -37,7 +41,7 @@ public class ManualAimCommand extends Command {
 
     double minRotations = TurretConstants.kTurretMinAngle.in(Units.Rotations);
     double maxRotations = TurretConstants.kTurretMaxAngle.in(Units.Rotations);
-    double targetRotations = MathUtil.interpolate(minRotations, maxRotations, (clampedAxis + 1.0) / 2.0);
+    double targetRotations = MathUtil.interpolate(minRotations, maxRotations, (-clampedAxis + 1.0) / 2.0);
 
     turretSubsystem.setTurretPosition(
         Units.Rotations.of(targetRotations),

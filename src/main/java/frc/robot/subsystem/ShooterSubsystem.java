@@ -19,6 +19,9 @@ import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constant.ShooterConstants;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 public class ShooterSubsystem extends SubsystemBase {
   private static final double kStopVelocityThresholdRpm = 1e-3;
@@ -29,6 +32,13 @@ public class ShooterSubsystem extends SubsystemBase {
   private final RelativeEncoder leaderEncoder, followerEncoder;
 
   private AngularVelocity lastShooterVelocitySetpoint;
+
+  @Setter
+  private static boolean isGpsAssistEnabled = true;
+
+  public static boolean getIsGpsAssistEnabled() {
+    return isGpsAssistEnabled;
+  }
 
   public static ShooterSubsystem GetInstance() {
     if (instance == null) {

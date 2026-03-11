@@ -1,40 +1,26 @@
 package frc.robot;
 
-import java.util.function.Supplier;
-
 import org.littletonrobotics.junction.Logger;
 
 import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.units.Units;
-import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.command.SwerveMoveTeleop;
 import frc.robot.command.intake.IntakeCommand;
-import frc.robot.command.lighting.AutonomousStateLighting;
-import frc.robot.command.lighting.PulsingLightingCommand;
-import frc.robot.command.lighting.ShooterSpeedLighting;
-import frc.robot.command.lighting.TurretStateLighting;
 import frc.robot.command.scoring.ContinuousAimCommand;
 import frc.robot.command.scoring.ManualAimCommand;
 import frc.robot.command.shooting.ContinuousManualShooter;
 import frc.robot.command.shooting.ContinuousShooter;
-import frc.robot.command.shooting.ShooterCommand;
 import frc.robot.command.testing.IndexCommand;
 import frc.robot.constant.IndexConstants;
-import frc.robot.constant.IntakeConstants;
 import frc.robot.constant.PathPlannerConstants;
-import frc.robot.constant.ShooterConstants;
-import frc.robot.hardware.PigeonGyro;
-import frc.robot.subsystem.CameraSubsystem;
+import frc.robot.hardware.UnifiedGyro;
 import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.IndexSubsystem;
 import frc.robot.subsystem.IntakeSubsystem;
-import frc.robot.subsystem.LightsSubsystem;
 import frc.robot.subsystem.OdometrySubsystem;
 import frc.robot.subsystem.PathPlannerSubsystem;
 import frc.robot.subsystem.ShooterSubsystem;
@@ -54,48 +40,24 @@ public class RobotContainer {
       m_leftFlightStick,
       m_rightFlightStick);
 
-  /** When true, turret uses manual aim and shooter uses manual speed (slider). Toggled by green button. */
-  private boolean isManualScoringMode = false;
-
   public RobotContainer() {
+    PublicationSubsystem.GetInstance(Robot.getCommunicationClient());
+
     GlobalPosition.GetInstance();
-    // OdometrySubsystem.GetInstance();
-    // AHRSGyro.GetInstance();
-    PigeonGyro.GetInstance();
-    SwerveSubsystem.GetInstance();
-    // CameraSubsystem.GetInstance();
+
+    UnifiedGyro.GetInstance();
+    OdometrySubsystem.GetInstance(UnifiedGyro.GetInstance());
+    SwerveSubsystem.GetInstance(UnifiedGyro.GetInstance());
 
     TurretSubsystem.GetInstance();
     ShooterSubsystem.GetInstance();
     IndexSubsystem.GetInstance();
-    // LightsSubsystem.GetInstance();
-
     IntakeSubsystem.GetInstance();
-
-    // Initialize publication subsystem for sending data to Pi
-    PublicationSubsystem.GetInstance(Robot.getCommunicationClient());
-    // PathPlannerSubsystem.GetInstance();
 
     setSwerveCommands();
     setTurretCommands();
-    setIndexCommands();
     setShooterCommands();
     setIntakeCommands();
-
-    // setTestCommands();
-    /*
-     * LightsSubsystem.GetInstance().addLightsCommand(
-     * new TurretStateLighting(),
-     * new AutonomousStateLighting(),
-     * new PulsingLightingCommand());
-     */
-  }
-
-  private void setTestCommands() {
-    IndexSubsystem indexSubsystem = IndexSubsystem.GetInstance();
-    m_leftFlightStick
-        .B17()
-        .whileTrue(new IndexCommand(indexSubsystem, 0.45));
   }
 
   private void setSwerveCommands() {
@@ -104,62 +66,66 @@ public class RobotContainer {
     swerveSubsystem
         .setDefaultCommand(
             new SwerveMoveTeleop(swerveSubsystem, m_flightModule, PathPlannerConstants.kLanes,
-                swerveSubsystem::getShouldAdjustVelocity));
+                swerveSubsystem::getIsGpsAssist));
 
+    // Toggle gps-based driving assist features
     m_leftFlightStick.B5().onTrue(new InstantCommand(() -> {
-      swerveSubsystem.setShouldAdjustVelocity(!swerveSubsystem.getShouldAdjustVelocity());
+      swerveSubsystem.setGpsAssist(!swerveSubsystem.getIsGpsAssist());
+      Logger.recordOutput("SwerveSubsystem/GPSAssistFeaturesEnabled", swerveSubsystem.getIsGpsAssist());
     }));
 
+    // Reset gyro rotation of the swerve dynamically
     m_rightFlightStick
         .B5()
         .onTrue(swerveSubsystem.runOnce(() -> {
           swerveSubsystem.resetGyro(0);
         }));
 
-    new JoystickButton(
-        m_operatorPanel,
-        OperatorPanel.ButtonEnum.BLACKBUTTON.value).whileFalse(Commands.run(() -> {
-          var position = GlobalPosition.Get();
-          if (position != null) {
-            PigeonGyro.GetInstance().resetRotation(position.getRotation());
-          }
-        })).onTrue(new InstantCommand(() -> {
-          Logger.recordOutput("PigeonGyro/ResettingRotation", false);
-        })).onFalse(new InstantCommand(() -> {
-          Logger.recordOutput("PigeonGyro/ResettingRotation", true);
-        }));
-
-    Logger.recordOutput("PigeonGyro/ResettingRotation",
-        !m_operatorPanel.getRawButton(OperatorPanel.ButtonEnum.BLACKBUTTON.value));
+    // Reset gyro rotation everywhere (including backend with button)
+    m_operatorPanel.blackButton().whileFalse(Commands.run(() -> {
+      var position = GlobalPosition.Get();
+      if (position != null) {
+        UnifiedGyro.GetInstance().resetRotation(position.getRotation());
+      }
+    })).onTrue(new InstantCommand(() -> {
+      Logger.recordOutput("UnifiedGyro/ResettingRotation", false);
+    })).onFalse(new InstantCommand(() -> {
+      Logger.recordOutput("UnifiedGyro/ResettingRotation", true);
+    }));
+    Logger.recordOutput("UnifiedGyro/ResettingRotation", false);
   }
 
   private void setTurretCommands() {
     var continuousAimCommand = new ContinuousAimCommand(
         () -> AimPoint.getTarget());
+
     var manualAimCommand = new ManualAimCommand(
-        TurretSubsystem.GetInstance(),
-        () -> MathUtil.clamp(
-            (m_rightFlightStick.getRightSlider() - m_leftFlightStick.getRightSlider()) / 2.0,
-            -1.0, 1.0));
+        () -> MathUtil.clamp(m_operatorPanel.getWheel(), -1.0, 1.0));
 
-    TurretSubsystem.GetInstance().setDefaultCommand(continuousAimCommand);
+    TurretSubsystem.GetInstance().setDefaultCommand(Commands.either(
+        continuousAimCommand,
+        manualAimCommand,
+        TurretSubsystem::getIsGpsAssistEnabled));
 
-    new JoystickButton(m_operatorPanel, OperatorPanel.ButtonEnum.GREENBUTTON.value)
-        .onTrue(new InstantCommand(() -> {
-          isManualScoringMode = !isManualScoringMode;
-          var current = TurretSubsystem.GetInstance().getCurrentCommand();
-          if (current != null) {
-            current.cancel();
-          }
-          TurretSubsystem.GetInstance().setDefaultCommand(
-              isManualScoringMode ? manualAimCommand : continuousAimCommand);
-        }));
-    NamedCommands.registerCommand("ContinuousAimCommand", continuousAimCommand);
-  }
+    m_operatorPanel.greenButton().onTrue(new InstantCommand(() -> {
+      TurretSubsystem.setGpsAssistEnabled(!TurretSubsystem.getIsGpsAssistEnabled());
+      ShooterSubsystem.setGpsAssistEnabled(!ShooterSubsystem.getIsGpsAssistEnabled());
 
-  private void setIndexCommands() {
-    IndexSubsystem indexSubsystem = IndexSubsystem.GetInstance();
-    m_rightFlightStick.trigger().whileTrue(new IndexCommand(indexSubsystem, IndexConstants.kIndexMotorSpeed));
+      var current = TurretSubsystem.GetInstance().getCurrentCommand();
+      if (current != null) {
+        current.cancel();
+      }
+
+      var currentShooterCommand = ShooterSubsystem.GetInstance().getCurrentCommand();
+      if (currentShooterCommand != null) {
+        currentShooterCommand.cancel();
+      }
+
+      Logger.recordOutput("TurretSubsystem/GPSAssistFeaturesEnabled", TurretSubsystem.getIsGpsAssistEnabled());
+      Logger.recordOutput("ShooterSubsystem/GPSAssistFeaturesEnabled", ShooterSubsystem.getIsGpsAssistEnabled());
+    }));
+
+    NamedCommands.registerCommand("ContinuousAimCommand", new ContinuousAimCommand(() -> AimPoint.getTarget()));
   }
 
   private void setIntakeCommands() {
@@ -172,26 +138,21 @@ public class RobotContainer {
 
   private void setShooterCommands() {
     var continuousShooter = new ContinuousShooter(() -> AimPoint.getTarget());
-    Supplier<AngularVelocity> manualSpeedSupplier = () -> {
-      double sliderRaw = m_rightFlightStick.getRightSlider();
-      double slider = MathUtil.clamp((sliderRaw + 1.0) / 2.0, 0.0, 1.0);
-      double rps = MathUtil.interpolate(
-          ShooterConstants.kShooterMinVelocity.in(Units.RotationsPerSecond),
-          ShooterConstants.kShooterMaxVelocity.in(Units.RotationsPerSecond),
-          slider);
-      return Units.RotationsPerSecond.of(rps);
-    };
-    var continuousManualShooter = new ContinuousManualShooter(manualSpeedSupplier);
+    var continuousManualShooter = new ContinuousManualShooter(
+        ContinuousManualShooter.GetBaseSpeedSupplier(m_rightFlightStick::getRightSlider));
 
-    new JoystickButton(
-        m_operatorPanel,
-        OperatorPanel.ButtonEnum.METALSWITCHDOWN.value)
+    // Enable shooter with metal switch down. While up, run motor base speed.
+    // When enabled, run indexer only when shooter up to speed.
+    m_operatorPanel.metalSwitchDown()
         .whileTrue(Commands.either(
-            continuousManualShooter,
             continuousShooter,
-            () -> isManualScoringMode));
-    NamedCommands.registerCommand("ContinuousShooterCommand", continuousShooter);
-    NamedCommands.registerCommand("ContinuousManualShooterCommand", continuousManualShooter);
+            continuousManualShooter,
+            ShooterSubsystem::getIsGpsAssistEnabled))
+        .whileFalse(new InstantCommand(() -> {
+          ShooterSubsystem.GetInstance().runMotorBaseSpeed();
+        }));
+
+    NamedCommands.registerCommand("ContinuousShooterCommand", new ContinuousShooter(() -> AimPoint.getTarget()));
   }
 
   public Command getAutonomousCommand() {
@@ -199,6 +160,10 @@ public class RobotContainer {
   }
 
   public void onAnyModeStart() {
+    PublicationSubsystem.ClearAll();
+    UnifiedGyro.Register();
+    PublicationSubsystem.addDataClass(OdometrySubsystem.GetInstance());
+
     /*
      * var globalPosition = GlobalPosition.Get();
      * if (globalPosition != null) {
