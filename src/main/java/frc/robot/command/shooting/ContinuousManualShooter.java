@@ -68,4 +68,12 @@ public class ContinuousManualShooter extends Command {
       return Units.RotationsPerSecond.of(rps);
     };
   }
+
+  public static double ReverseDirection(double speed) {
+    if (speed > 0) {
+      return 1 - speed;
+    } else {
+      return -1 + Math.abs(speed);
+    }
+  }
 }

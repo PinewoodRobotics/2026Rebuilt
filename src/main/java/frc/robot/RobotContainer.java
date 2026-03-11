@@ -100,7 +100,7 @@ public class RobotContainer {
         () -> AimPoint.getTarget());
 
     var manualAimCommand = new ManualAimCommand(
-        () -> MathUtil.clamp(m_operatorPanel.getWheel(), -1.0, 1.0));
+        () -> ContinuousManualShooter.ReverseDirection(m_operatorPanel.getWheel()));
 
     TurretSubsystem.GetInstance().setDefaultCommand(Commands.either(
         continuousAimCommand,
