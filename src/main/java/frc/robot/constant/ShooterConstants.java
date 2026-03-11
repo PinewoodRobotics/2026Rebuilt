@@ -9,10 +9,10 @@ import edu.wpi.first.units.measure.AngularVelocity;
 public class ShooterConstants {
   public static final int kShooterCurrentLimit = 60;
 
-  public static final double kShooterP = 0.00025;
+  public static final double kShooterP = 0.002;
   public static final double kShooterFollowerP = kShooterP; // 0.0025;
   public static final double kShooterI = 0.0;
-  public static final double kShooterD = 0.0;
+  public static final double kShooterD = 0.1;
   public static final double kShooterIZ = 0.0;
   public static final double kFF = 0.0; // 0.0018;
 
@@ -43,6 +43,6 @@ public class ShooterConstants {
   }
 
   public static double DistanceFromTargetToVelocity(double distance) {
-    return kTimeVsDistanceSlope * distance + kTimeVsDistanceIntercept;
+    return 30;
   }
 }

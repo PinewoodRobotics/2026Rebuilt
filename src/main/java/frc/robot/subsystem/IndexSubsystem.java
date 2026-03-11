@@ -31,7 +31,7 @@ public class IndexSubsystem extends SubsystemBase {
   private void configureMotor() {
     SparkFlexConfig config = new SparkFlexConfig();
     config.idleMode(IdleMode.kBrake);
-    config.inverted(true);
+    config.inverted(false);
 
     m_indexMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
   }

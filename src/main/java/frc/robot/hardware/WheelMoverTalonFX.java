@@ -10,8 +10,9 @@ import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -31,8 +32,8 @@ public class WheelMoverTalonFX extends WheelMoverBase {
 
   private TalonFX m_driveMotor;
   private TalonFX m_turnMotor;
-  private final MotionMagicVelocityVoltage velocityRequest = new MotionMagicVelocityVoltage(0).withSlot(0);
-  private final MotionMagicVoltage positionRequest = new MotionMagicVoltage(0).withSlot(0);
+  private final VelocityVoltage velocityRequest = new VelocityVoltage(0).withSlot(0);
+  private final PositionVoltage positionRequest = new PositionVoltage(0).withSlot(0);
   private final int port;
 
   private CANcoder turnCANcoder;
@@ -52,7 +53,7 @@ public class WheelMoverTalonFX extends WheelMoverBase {
 
     turnCANcoder = new CANcoder(CANCoderEncoderChannel);
     CANcoderConfiguration config = new CANcoderConfiguration();
-    config.MagnetSensor.MagnetOffset = -CANCoderMagnetOffset;
+    config.MagnetSensor.MagnetOffset = CANCoderMagnetOffset;
     config.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 0.5;
     config.MagnetSensor.SensorDirection = CANCoderDirection;
     turnCANcoder.getConfigurator().apply(config);
@@ -67,7 +68,7 @@ public class WheelMoverTalonFX extends WheelMoverBase {
                 .withStatorCurrentLimit(
                     c.kDriveStatorLimit)
                 .withSupplyCurrentLimit(
-                    c.kDriveSupplyLimit.in(Units.Amps)))
+                    c.kDriveSupplyLimit))
         .withFeedback(
             new FeedbackConfigs()
                 .withSensorToMechanismRatio(
@@ -77,7 +78,7 @@ public class WheelMoverTalonFX extends WheelMoverBase {
                 .withKP(c.kDriveP)
                 .withKI(c.kDriveI)
                 .withKD(c.kDriveD)
-                .withKV(c.kDriveV.in(Units.Volts)))
+                .withKV(c.kDriveV))
         .withMotionMagic(
             new MotionMagicConfigs()
                 // Phoenix expects mechanism rotations/sec; we treat the mechanism as the
@@ -103,7 +104,7 @@ public class WheelMoverTalonFX extends WheelMoverBase {
             new FeedbackConfigs()
                 // CTRE expects motor rotations per mechanism rotation (module rotation).
                 // Our project constant is module rotations per motor rotation.
-                .withSensorToMechanismRatio(1.0 / c.kTurnConversionFactor))
+                .withSensorToMechanismRatio(c.kTurnConversionFactor))
         .withSlot0(
             new Slot0Configs()
                 .withKP(c.kTurnP)
@@ -114,11 +115,12 @@ public class WheelMoverTalonFX extends WheelMoverBase {
         .withMotionMagic(
             new MotionMagicConfigs()
                 // Phoenix expects mechanism rotations/sec (module rotations/sec).
-                .withMotionMagicCruiseVelocity(maxModuleRps(c))
-                .withMotionMagicAcceleration(maxModuleRpsPerSec(c))
-                .withMotionMagicJerk(maxModuleRpsPerSec2(c)));
+                .withMotionMagicCruiseVelocity(c.kMaxTurnSpeed)
+                .withMotionMagicAcceleration(c.kMaxTurnAcceleration)
+                .withMotionMagicJerk(c.kMaxTurnJerk));
 
     m_turnMotor.getConfigurator().apply(turnConfig);
+
     m_turnMotor.setPosition(
         turnCANcoder.getAbsolutePosition().getValueAsDouble());
   }
@@ -135,9 +137,15 @@ public class WheelMoverTalonFX extends WheelMoverBase {
 
   @Override
   protected void turnWheel(Angle newRotation) {
-    // CTRE uses rotations for position; convert from radians for a consistent API.
-    double rotations = newRotation.in(Units.Radians) / (2.0 * Math.PI);
-    m_turnMotor.setControl(positionRequest.withPosition(rotations));
+    m_turnMotor.setControl(positionRequest.withPosition(newRotation));
+  }
+
+  @Override
+  public void drive(Angle angle, LinearVelocity speed) {
+    setSpeed(speed);
+    turnWheel(angle);
+
+    logEverything(speed, angle);
   }
 
   @Override
@@ -149,26 +157,30 @@ public class WheelMoverTalonFX extends WheelMoverBase {
 
   @Override
   public Angle getAngle() {
-    // Turn sensor is configured to report module rotations; negate to match project
-    // convention.
-    return Angle.ofRelativeUnits(-m_turnMotor.getPosition().getValueAsDouble(), Units.Rotations);
+    return wrapAngle(m_turnMotor.getPosition().getValue());
   }
 
   @Override
   public LinearVelocity getSpeed() {
     return LinearVelocity.ofRelativeUnits(
-        convertWheelRotationsToMeters(m_driveMotor.getVelocity().getValueAsDouble()),
+        convertWheelRotationsToMeters(-m_driveMotor.getVelocity().getValueAsDouble()),
         Units.MetersPerSecond);
   }
 
   @Override
   public Distance getDistance() {
     return Distance.ofRelativeUnits(
-        convertWheelRotationsToMeters(m_driveMotor.getPosition().getValueAsDouble()),
+        convertWheelRotationsToMeters(-m_driveMotor.getPosition().getValueAsDouble()),
         Units.Meters);
   }
 
   /***************************************************************************************************/
+
+  private Angle wrapAngle(Angle angle) {
+    double radians = angle.in(Units.Radians);
+    double wrappedRadians = Math.atan2(Math.sin(radians), Math.cos(radians));
+    return Units.Radians.of(wrappedRadians);
+  }
 
   /**
    * Converts wheel rotations to distance/velocity in meters
@@ -211,13 +223,21 @@ public class WheelMoverTalonFX extends WheelMoverBase {
 
   private void logEverything(LinearVelocity requestedMps, Angle requestedAngle) {
     String base = "Wheels/" + port + "/";
-    LinearVelocity mpsSpeed = getSpeed();
-    Angle newRotationRad = getAngle();
-    Distance distance = getDistance();
 
-    Logger.recordOutput(base + "requestedMps", mpsSpeed.in(Units.MetersPerSecond));
+    var currentAngle = getAngle();
+    var currentSpeed = getSpeed();
+    var currentDistance = getDistance();
+    var rawAngle = getCurrentAngle();
+
+    Logger.recordOutput(base + "requestedMps", requestedMps.in(Units.MetersPerSecond));
     Logger.recordOutput(base + "requestedAngle", requestedAngle.in(Units.Degrees));
-    Logger.recordOutput(base + "requestedDistance", distance.in(Units.Meters));
+
+    Logger.recordOutput(base + "currentAngle", currentAngle.in(Units.Degrees));
+    Logger.recordOutput(base + "currentSpeed", currentSpeed.in(Units.MetersPerSecond));
+    Logger.recordOutput(base + "currentDistance", currentDistance.in(Units.Meters));
+
+    Logger.recordOutput(base + "rawCurrentAngle", rawAngle);
+
   }
 
   // ***********************************************************************************************
@@ -249,18 +269,4 @@ public class WheelMoverTalonFX extends WheelMoverBase {
     // c.kMaxLinearJerk is in meters/sec^3.
     return c.kMaxLinearJerk / wheelCircumference;
   }
-
-  private static double maxModuleRps(SwerveConstants c) {
-    return c.kMaxTurnSpeed.in(Units.RadiansPerSecond) / (2.0 * Math.PI);
-  }
-
-  private static double maxModuleRpsPerSec(SwerveConstants c) {
-    return c.kMaxTurnAcceleration.in(Units.RadiansPerSecondPerSecond) / (2.0 * Math.PI);
-  }
-
-  private static double maxModuleRpsPerSec2(SwerveConstants c) {
-    // c.kMaxTurnJerk is in radians/sec^3.
-    return c.kMaxTurnJerk / (2.0 * Math.PI);
-  }
-
 }
