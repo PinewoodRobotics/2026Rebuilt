@@ -70,6 +70,7 @@ public class IntakeCommand extends Command {
       timer.start();
     }
 
+    // When trigger is not pressed (including at boot), keep wrist raised
     double elapsed = timer.get();
     /*
      * if (elapsed > 1.0) {
@@ -79,7 +80,7 @@ public class IntakeCommand extends Command {
     if (elapsed > 1.5) {
       return WristRaiseLocation.MIDDLE;
     }
-    return WristRaiseLocation.BOTTOM;
+    return WristRaiseLocation.MIDDLE;
   }
 
   @Override

@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constant.BotConstants;
 import frc.robot.constant.HardwareConstants;
+import frc.robot.constant.HardwareConstants.PigeonConfig;
 import frc4765.proto.sensor.GeneralSensorDataOuterClass.GeneralSensorData;
 import frc4765.proto.sensor.GeneralSensorDataOuterClass.SensorName;
 import frc4765.proto.sensor.Imu.ImuData;
@@ -27,19 +28,20 @@ public class PigeonGyro extends SubsystemBase implements IGyroscopeLike, IDataCl
   private final Pigeon2 pigeon;
   private final double[] positionAdjustmentMeters = new double[3];
   private Rotation2d yawAdjustment = new Rotation2d();
+  private PigeonConfig hardwareConfig;
 
-  public PigeonGyro(int canId) {
-    this.pigeon = new Pigeon2(canId);
+  public PigeonGyro(PigeonConfig config) {
+    this.hardwareConfig = config;
+    this.pigeon = new Pigeon2(config.canId());
     applyMountPose();
     pigeon.reset();
     yawAdjustment = new Rotation2d();
   }
 
-  public static PigeonGyro GetInstance() {
+  public static PigeonGyro GetInstance(PigeonConfig config) {
     if (instance == null) {
-      instance = new PigeonGyro(HardwareConstants.kPigeonCanId);
+      instance = new PigeonGyro(config);
     }
-
     return instance;
   }
 
@@ -148,9 +150,9 @@ public class PigeonGyro extends SubsystemBase implements IGyroscopeLike, IDataCl
 
   private void applyMountPose() {
     var config = new Pigeon2Configuration();
-    config.MountPose.withMountPoseYaw(HardwareConstants.kPigeonMountPoseYawDeg);
-    config.MountPose.withMountPosePitch(HardwareConstants.kPigeonMountPosePitchDeg);
-    config.MountPose.withMountPoseRoll(HardwareConstants.kPigeonMountPoseRollDeg);
+    config.MountPose.withMountPoseYaw(hardwareConfig.mountPoseYawDeg());
+    config.MountPose.withMountPosePitch(hardwareConfig.mountPosePitchDeg());
+    config.MountPose.withMountPoseRoll(hardwareConfig.mountPoseRollDeg());
 
     var status = pigeon.getConfigurator().apply(config);
     if (!status.isOK()) {
@@ -204,8 +206,12 @@ public class PigeonGyro extends SubsystemBase implements IGyroscopeLike, IDataCl
         .setAngularVelocityXYZ(angularVel)
         .build();
 
-    var all = GeneralSensorData.newBuilder().setImu(imuData).setSensorName(SensorName.IMU).setSensorId("1")
-        .setTimestamp(System.currentTimeMillis()).setProcessingTimeMs(0);
+    var all = GeneralSensorData.newBuilder()
+        .setImu(imuData)
+        .setSensorName(SensorName.IMU)
+        .setSensorId(String.valueOf(hardwareConfig.canId()))
+        .setTimestamp(System.currentTimeMillis())
+        .setProcessingTimeMs(0);
 
     return all.build().toByteArray();
   }

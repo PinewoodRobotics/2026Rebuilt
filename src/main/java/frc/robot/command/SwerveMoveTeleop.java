@@ -95,7 +95,7 @@ public class SwerveMoveTeleop extends Command {
   private static final double kMaxPerpendicularScale = 1.0;
   private static final double kMinPerpendicularScale = 0.2;
 
-  private Supplier<Boolean> shouldAdjustVelocity;
+  private Supplier<Boolean> areGpsFeaturesEnabled;
 
   public SwerveMoveTeleop(
       SwerveSubsystem swerveSubsystem,
@@ -118,7 +118,7 @@ public class SwerveMoveTeleop extends Command {
     this.controller = controller;
     this.lanes = lanes;
     this.lanePullPid = new PIDController(0.5, 0, 0);
-    this.shouldAdjustVelocity = shouldAdjustVelocity;
+    this.areGpsFeaturesEnabled = shouldAdjustVelocity;
     addRequirements(m_swerveSubsystem);
   }
 
@@ -146,11 +146,16 @@ public class SwerveMoveTeleop extends Command {
         new Vec2(rawX, rawY),
         rawR);
 
-    if (shouldAdjustVelocity.get()) {
-      velocity = adjustVelocityForLane(velocity);
+    if (areGpsFeaturesEnabled.get()) {
+      velocity = applyGpsFeatures(velocity);
     }
 
-    m_swerveSubsystem.drive(velocity, SwerveSubsystem.DriveType.GYRO_RELATIVE);
+    m_swerveSubsystem.drive(velocity, SwerveSubsystem.DriveType.FIELD_RELATIVE);
+  }
+
+  private ChassisSpeeds applyGpsFeatures(ChassisSpeeds rawVelocityInput) {
+    rawVelocityInput = adjustVelocityForLane(rawVelocityInput);
+    return rawVelocityInput;
   }
 
   private ChassisSpeeds adjustVelocityForLane(ChassisSpeeds rawVelocityInput) {

@@ -9,6 +9,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constant.CommunicationConstants;
 import frc.robot.hardware.PigeonGyro;
+import frc.robot.hardware.UnifiedGyro;
 import frc4765.proto.sensor.GeneralSensorDataOuterClass.GeneralSensorData;
 import frc4765.proto.sensor.Odometry.OdometryData;
 import frc4765.proto.util.Position.Position2d;
@@ -33,8 +34,12 @@ public class OdometrySubsystem extends SubsystemBase implements IDataClass {
     return self;
   }
 
+  public static OdometrySubsystem GetInstance(IGyroscopeLike gyro) {
+    return GetInstance(gyro, SwerveSubsystem.GetInstance());
+  }
+
   public static OdometrySubsystem GetInstance() {
-    return GetInstance(PigeonGyro.GetInstance(), SwerveSubsystem.GetInstance());
+    return GetInstance(UnifiedGyro.GetInstance(), SwerveSubsystem.GetInstance());
   }
 
   public OdometrySubsystem(IGyroscopeLike gyro, SwerveSubsystem swerve) {

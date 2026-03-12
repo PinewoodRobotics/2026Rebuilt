@@ -2,12 +2,17 @@ package frc.robot.command.shooting;
 
 import java.util.function.Supplier;
 
+import org.littletonrobotics.junction.Logger;
+
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constant.ShooterConstants;
 import frc.robot.subsystem.IndexSubsystem;
 import frc.robot.subsystem.ShooterSubsystem;
 import lombok.Getter;
+import pwrup.frc.core.controller.FlightStick;
 
 /**
  * Shooter command with manual speed: sets shooter velocity from a supplier
@@ -31,6 +36,7 @@ public class ContinuousManualShooter extends Command {
 
   @Override
   public void execute() {
+    Logger.recordOutput("ContinuousManualShooter/Time", System.currentTimeMillis());
     AngularVelocity speed = speedSupplier.get();
     shooterSubsystem.setShooterVelocity(speed);
 
@@ -49,5 +55,25 @@ public class ContinuousManualShooter extends Command {
     isShooting = false;
     shooterSubsystem.runMotorBaseSpeed();
     indexSubsystem.stopMotor();
+  }
+
+  public static Supplier<AngularVelocity> GetBaseSpeedSupplier(Supplier<Double> sliderSupplier) {
+    return () -> {
+      double sliderRaw = sliderSupplier.get();
+      double slider = MathUtil.clamp((sliderRaw + 1.0) / 2.0, 0.0, 1.0);
+      double rps = MathUtil.interpolate(
+          ShooterConstants.kShooterMinVelocity.in(Units.RotationsPerSecond),
+          ShooterConstants.kShooterMaxVelocity.in(Units.RotationsPerSecond),
+          slider);
+      return Units.RotationsPerSecond.of(rps);
+    };
+  }
+
+  public static double ReverseDirection(double speed) {
+    if (speed > 0) {
+      return 1 - speed;
+    } else {
+      return -1 + Math.abs(speed);
+    }
   }
 }

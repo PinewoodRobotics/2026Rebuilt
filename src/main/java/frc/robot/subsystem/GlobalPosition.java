@@ -14,6 +14,7 @@ import frc.robot.Robot;
 import frc.robot.constant.CommunicationConstants;
 import frc.robot.util.AimPoint;
 import frc4765.proto.util.Position.RobotPosition;
+import lombok.Getter;
 
 public class GlobalPosition extends SubsystemBase {
   private static volatile long lastUpdateTime;
@@ -21,6 +22,10 @@ public class GlobalPosition extends SubsystemBase {
   private static GlobalPosition self;
   private static Pose2d position = new Pose2d(12.94, 3.52, new Rotation2d(1, 0));
   private static ChassisSpeeds positionVelocity = new ChassisSpeeds(0, 0, 0);
+
+  @Getter
+  private static boolean isValid = false;
+  private static final long kPositionUpdateTimeoutMs = 1000;
 
   public static enum GMFrame {
     kFieldRelative,
@@ -140,5 +145,13 @@ public class GlobalPosition extends SubsystemBase {
               new Pose2d(target, new Rotation2d())
           });
     }
+
+    if (System.currentTimeMillis() - lastUpdateTime > kPositionUpdateTimeoutMs) {
+      isValid = false;
+    } else {
+      isValid = true;
+    }
+
+    Logger.recordOutput("Global/Position/IsValid", isValid);
   }
 }

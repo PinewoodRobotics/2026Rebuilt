@@ -2,3 +2,10 @@
 globs: src/main/java/**
 alwaysApply: false
 ---
+
+Use this rule when writing or refactoring Java robot code under `src/main/java/**`.
+
+## Expected notation
+
+- **Public static methods**: Must start with an uppercase letter.
+  - Example: `public static void Register(...)` (not `public static void register(...)`).
