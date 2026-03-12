@@ -26,7 +26,6 @@ public class PigeonGyro extends SubsystemBase implements IGyroscopeLike, IDataCl
   private static PigeonGyro instance;
 
   private final Pigeon2 pigeon;
-  private final double[] positionAdjustmentMeters = new double[3];
   private Rotation2d yawAdjustment = new Rotation2d();
   private PigeonConfig hardwareConfig;
 
@@ -45,99 +44,24 @@ public class PigeonGyro extends SubsystemBase implements IGyroscopeLike, IDataCl
     return instance;
   }
 
+  @Override
   public ChassisSpeeds getVelocity() {
     return new ChassisSpeeds(0.0, 0.0, pigeon.getAngularVelocityZWorld().getValue().in(Units.RadiansPerSecond));
   }
 
+  @Override
   public ChassisSpeeds getAcceleration() {
     return new ChassisSpeeds(0.0, 0.0, 0.0);
   }
 
   @Override
-  public double[] getYPR() {
-    return new double[] {
-        getYawRotation2d().getDegrees(),
-        pigeon.getPitch().getValue().in(Units.Degrees),
-        pigeon.getRoll().getValue().in(Units.Degrees)
-    };
-  }
-
-  @Override
-  public double[] getLinearAccelerationXYZ() {
-    return new double[] {
-        pigeon.getAccelerationX().getValueAsDouble(),
-        pigeon.getAccelerationY().getValueAsDouble(),
-        pigeon.getAccelerationZ().getValueAsDouble()
-    };
-  }
-
-  @Override
-  public double[] getAngularVelocityXYZ() {
-    return new double[] {
-        pigeon.getAngularVelocityXWorld().getValue().in(Units.RadiansPerSecond),
-        pigeon.getAngularVelocityYWorld().getValue().in(Units.RadiansPerSecond),
-        pigeon.getAngularVelocityZWorld().getValue().in(Units.RadiansPerSecond)
-    };
-  }
-
-  @Override
-  public double[] getQuaternion() {
-    return new double[] {
-        pigeon.getQuatW().getValueAsDouble(),
-        pigeon.getQuatX().getValueAsDouble(),
-        pigeon.getQuatY().getValueAsDouble(),
-        pigeon.getQuatZ().getValueAsDouble()
-    };
-  }
-
-  @Override
-  public double[] getLinearVelocityXYZ() {
-    return new double[] { 0.0, 0.0, 0.0 };
-  }
-
-  @Override
-  public double[] getPoseXYZ() {
-    return new double[] {
-        positionAdjustmentMeters[0],
-        positionAdjustmentMeters[1],
-        positionAdjustmentMeters[2]
-    };
-  }
-
-  @Override
-  public void reset() {
-    pigeon.reset();
-    yawAdjustment = new Rotation2d();
-  }
-
-  @Override
-  public void setAngleAdjustment(double angle) {
-    yawAdjustment = Rotation2d.fromDegrees(angle);
-  }
-
-  @Override
-  public void setPositionAdjustment(double x, double y, double z) {
-    positionAdjustmentMeters[0] = x;
-    positionAdjustmentMeters[1] = y;
-    positionAdjustmentMeters[2] = z;
-  }
-
-  @Override
-  public Rotation2d getRotation2d() {
-    return getYawRotation2d();
-  }
-
-  @Override
   public Rotation3d getRotation() {
-    return new Rotation3d(0.0, 0.0, getRotation2d().getRadians());
+    return new Rotation3d(0.0, 0.0, getYawRotation2d().getRadians());
   }
 
-  public void resetRotation(Rotation2d newRotation) {
-    yawAdjustment = newRotation.minus(getRawYawRotation2d());
-  }
-
+  @Override
   public void resetRotation(Rotation3d newRotation) {
-    resetRotation(newRotation.toRotation2d());
+    yawAdjustment = newRotation.toRotation2d().minus(getRawYawRotation2d());
   }
 
   private Rotation2d getRawYawRotation2d() {
@@ -162,7 +86,7 @@ public class PigeonGyro extends SubsystemBase implements IGyroscopeLike, IDataCl
 
   @Override
   public byte[] getRawConstructedProtoData() {
-    Rotation2d rotation = getRotation2d();
+    Rotation2d rotation = getRotation().toRotation2d();
     ChassisSpeeds velocity = getVelocity();
     ChassisSpeeds acceleration = getAcceleration();
 
@@ -226,8 +150,8 @@ public class PigeonGyro extends SubsystemBase implements IGyroscopeLike, IDataCl
     Logger.recordOutput("PigeonGyro/velocity", getVelocity());
     Logger.recordOutput("PigeonGyro/acceleration", getAcceleration());
     Logger.recordOutput("PigeonGyro/Rotation/rotation", getRotation());
-    Logger.recordOutput("PigeonGyro/Rotation/rotation2d", getRotation2d());
-    Logger.recordOutput("PigeonGyro/Rotation/cos", getRotation2d().getCos());
-    Logger.recordOutput("PigeonGyro/Rotation/sin", getRotation2d().getSin());
+    Logger.recordOutput("PigeonGyro/Rotation/rotation2d", getRotation().toRotation2d());
+    Logger.recordOutput("PigeonGyro/Rotation/cos", getRotation().toRotation2d().getCos());
+    Logger.recordOutput("PigeonGyro/Rotation/sin", getRotation().toRotation2d().getSin());
   }
 }
