@@ -46,7 +46,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   private final SwerveDriveKinematics kinematics;
 
-  private boolean isGpsAssist = true;
+  private boolean isGpsAssist = false;
 
   public boolean getIsGpsAssist() {
     return isGpsAssist;
@@ -216,9 +216,22 @@ public class SwerveSubsystem extends SubsystemBase {
     swerve.driveNonRelative(actualSpeeds);
   }
 
+  /**
+   * because the custom library for swerve has an orientation of +y => forward, +x
+   * => right (i think) this fixes the angles being fucked up
+   * 
+   * @return
+   */
+  private Rotation2d getSwerveRotation() {
+    var rotation = m_gyro.getRotation();
+    double sin = rotation.toRotation2d().getSin();
+    double cos = -rotation.toRotation2d().getCos();
+    return new Rotation2d(cos, sin);
+  }
+
   public void driveFieldRelative(ChassisSpeeds speeds) {
     var actualSpeeds = toSwerveOrientation(speeds);
-    swerve.driveWithGyro(actualSpeeds, new Rotation2d(getSwerveGyroAngle()));
+    swerve.driveWithGyro(actualSpeeds, getSwerveRotation());
   }
 
   public static ChassisSpeeds fromPercentToVelocity(Vec2 percentXY, double rotationPercent) {
@@ -271,7 +284,7 @@ public class SwerveSubsystem extends SubsystemBase {
   }
 
   public double getSwerveGyroAngle() {
-    return Math.toRadians(LocalMath.wrapTo180(getGyroYawDegrees() + gyroOffset));
+    return getGyroYawDegrees();
   }
 
   public void setShouldWork(boolean value) {
@@ -295,6 +308,7 @@ public class SwerveSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     Logger.recordOutput("SwerveSubsystem/swerve/states", getSwerveModuleStates());
+    Logger.recordOutput("SwerveSubsystem/swerve/velocity", getKinematics().toChassisSpeeds(getSwerveModuleStates()));
     Logger.recordOutput("SwerveSubsystem/AdjustingVelocity", isGpsAssist);
   }
 }

@@ -17,6 +17,7 @@ import frc.robot.command.shooting.ContinuousShooter;
 import frc.robot.command.testing.IndexCommand;
 import frc.robot.constant.IndexConstants;
 import frc.robot.constant.PathPlannerConstants;
+import frc.robot.hardware.PigeonGyro;
 import frc.robot.hardware.UnifiedGyro;
 import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.IndexSubsystem;
@@ -172,6 +173,12 @@ public class RobotContainer {
 
   public void onAnyModeStart() {
     PublicationSubsystem.ClearAll();
+    var globalPosition = GlobalPosition.Get();
+    if (globalPosition != null) {
+      UnifiedGyro.GetInstance().resetRotation(globalPosition.getRotation());
+      OdometrySubsystem.GetInstance().setOdometryPosition(globalPosition);
+    }
+
     UnifiedGyro.Register();
     PublicationSubsystem.addDataClass(OdometrySubsystem.GetInstance());
 

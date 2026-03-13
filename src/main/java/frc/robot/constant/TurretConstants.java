@@ -17,7 +17,7 @@ public class TurretConstants {
   public static final double kTurretMotorRotationsPerRotation = 16.0;
   public static final MotorType kTurretMotorType = MotorType.kBrushless;
 
-  public static final double kTurretP = 3; // 3;
+  public static final double kTurretP = 10; // 3;
   public static final double kTurretI = 0.0;
   public static final double kTurretD = 0.0; // 1;
   public static final double kTurretIZ = 0.0;

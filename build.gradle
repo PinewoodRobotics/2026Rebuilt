@@ -26,7 +26,7 @@ repositories {
 
 def ROBOT_MAIN_CLASS = "frc.robot.Main"
 
-def EXPECTED_NUM_OF_PIS = 2;
+def EXPECTED_NUM_OF_PIS = 3;
 def dynamicLibDir = layout.projectDirectory.dir("lib/build")
 
 // Define deploy target and artifacts

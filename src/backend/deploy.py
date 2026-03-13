@@ -23,7 +23,7 @@ def pi_name_to_process_types(pi_names: list[str]) -> dict[str, list[ProcessType]
     return (
         ProcessPlan[ProcessType]()
         .add(ProcessType.POS_EXTRAPOLATOR)
-        .pin(ProcessType.APRIL_SERVER, "nathan-hale")
+        .pin(ProcessType.APRIL_SERVER, "tynan")
         .pin(ProcessType.APRIL_SERVER, "agatha-king")
         .assign(pi_names)
     )
