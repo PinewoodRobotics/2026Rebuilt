@@ -5,13 +5,13 @@
     "data": {
       "commands": [
         {
-          "type": "deadline",
+          "type": "parallel",
           "data": {
             "commands": [
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Climber Right Left"
+                  "pathName": "Ball Shooter Left"
                 }
               },
               {
@@ -28,17 +28,11 @@
               }
             ]
           }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "ClimberL1Command"
-          }
         }
       ]
     }
   },
-  "resetOdom": true,
-  "folder": "Climber",
+  "resetOdom": false,
+  "folder": "Going Out",
   "choreoAuto": false
 }

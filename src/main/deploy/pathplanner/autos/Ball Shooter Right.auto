@@ -5,9 +5,28 @@
     "data": {
       "commands": [
         {
-          "type": "path",
+          "type": "parallel",
           "data": {
-            "pathName": "Ball Shooter Right"
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Ball Shooter Right"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ContinuousAimCommand"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ContinuousShooterCommand"
+                }
+              }
+            ]
           }
         }
       ]
