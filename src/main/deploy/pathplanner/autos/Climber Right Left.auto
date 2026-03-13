@@ -5,9 +5,34 @@
     "data": {
       "commands": [
         {
-          "type": "path",
+          "type": "deadline",
           "data": {
-            "pathName": "Climber Right Left"
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Climber Right Left"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ContinuousAimCommand"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ContinuousShooterCommand"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ClimberL1Command"
           }
         }
       ]

@@ -128,12 +128,23 @@ public class RobotContainer {
     NamedCommands.registerCommand("ContinuousAimCommand", new ContinuousAimCommand(() -> AimPoint.getTarget()));
   }
 
+  private void setClimberCommands() {
+    // TODO: Implement climber commands
+    // NamedCommands.registerCommand("ClimberL1Command", new
+    // ClimberCommand(climberSubsystem, () ->
+    // m_rightFlightStick.trigger().getAsBoolean()));
+  }
+
   private void setIntakeCommands() {
     IntakeSubsystem intakeSubsystem = IntakeSubsystem.GetInstance();
 
     intakeSubsystem
         .setDefaultCommand(new IntakeCommand(intakeSubsystem, () -> m_rightFlightStick.trigger().getAsBoolean(),
             () -> m_rightFlightStick.B17().getAsBoolean()));
+
+    NamedCommands.registerCommand("IntakeCommand",
+        new IntakeCommand(intakeSubsystem, () -> true,
+            () -> false));
   }
 
   private void setShooterCommands() {
