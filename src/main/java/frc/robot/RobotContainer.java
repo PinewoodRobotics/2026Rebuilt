@@ -140,7 +140,7 @@ public class RobotContainer {
   private void setIntakeCommands() {
     IntakeSubsystem intakeSubsystem = IntakeSubsystem.GetInstance();
     IntakeCommand intakeCommand = new IntakeCommand(intakeSubsystem,
-        () -> m_operatorPanel.metalSwitchDown().getAsBoolean(),
+        () -> m_operatorPanel.metalSwitchDown().getAsBoolean() || m_rightFlightStick.trigger().getAsBoolean(),
         () -> m_rightFlightStick.B17().getAsBoolean());
 
     intakeSubsystem
