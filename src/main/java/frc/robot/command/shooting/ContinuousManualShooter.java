@@ -12,7 +12,6 @@ import frc.robot.constant.ShooterConstants;
 import frc.robot.subsystem.IndexSubsystem;
 import frc.robot.subsystem.ShooterSubsystem;
 import lombok.Getter;
-import pwrup.frc.core.controller.FlightStick;
 
 /**
  * Shooter command with manual speed: sets shooter velocity from a supplier
@@ -40,7 +39,7 @@ public class ContinuousManualShooter extends Command {
     AngularVelocity speed = speedSupplier.get();
     shooterSubsystem.setShooterVelocity(speed);
 
-    if (shooterSubsystem.timeLeftToReachVelocity() > ShooterConstants.kShooterOffByMs) {
+    if (!shooterSubsystem.isShooterSpunUp()) {
       isShooting = false;
       indexSubsystem.stopMotor();
       return;
@@ -67,13 +66,5 @@ public class ContinuousManualShooter extends Command {
           slider);
       return Units.RotationsPerSecond.of(rps);
     };
-  }
-
-  public static double ReverseDirection(double speed) {
-    if (speed > 0) {
-      return 1 - speed;
-    } else {
-      return -1 + Math.abs(speed);
-    }
   }
 }

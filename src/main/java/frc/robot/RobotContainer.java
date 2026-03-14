@@ -79,11 +79,11 @@ public class RobotContainer {
     m_rightFlightStick
         .B5()
         .onTrue(swerveSubsystem.runOnce(() -> {
-          swerveSubsystem.resetGyro(0);
+          swerveSubsystem.resetDriverRelative();
         }));
 
     // Reset gyro rotation everywhere (including backend with button)
-    m_operatorPanel.blackButton().whileFalse(Commands.run(() -> {
+    m_operatorPanel.blackButton().whileTrue(Commands.run(() -> {
       var position = GlobalPosition.Get();
       if (position != null) {
         UnifiedGyro.GetInstance().resetRotation(position.getRotation());
@@ -101,7 +101,7 @@ public class RobotContainer {
         () -> AimPoint.getTarget());
 
     var manualAimCommand = new ManualAimCommand(
-        () -> ContinuousManualShooter.ReverseDirection(m_operatorPanel.getWheel()));
+        () -> ManualAimCommand.ReverseDirection(m_operatorPanel.getWheel()));
 
     TurretSubsystem.GetInstance().setDefaultCommand(Commands.either(
         continuousAimCommand,

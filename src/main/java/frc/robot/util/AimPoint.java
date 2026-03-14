@@ -19,6 +19,7 @@ public final class AimPoint {
     LEFT_CENTER,
     RIGHT_CENTER,
     FRONT_OF_HUB,
+    BACK_OF_HUB
   }
 
   private static final double FIELD_LENGTH_METERS = BotConstants.kFieldLayout.getFieldLength();
@@ -36,6 +37,11 @@ public final class AimPoint {
           atFieldPercent(0.05, 0.25)),
       new Zone(
           ZoneName.RIGHT_CENTER,
+          atFieldPercent(0.25, 0.50),
+          atFieldPercent(0.50, 1.00),
+          atFieldPercent(0.05, 0.75)),
+      new Zone(
+          ZoneName.BACK_OF_HUB,
           atFieldPercent(0.25, 0.50),
           atFieldPercent(0.50, 1.00),
           atFieldPercent(0.05, 0.75)));

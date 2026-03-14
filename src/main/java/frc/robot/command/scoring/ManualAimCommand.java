@@ -1,12 +1,15 @@
 package frc.robot.command.scoring;
 
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
 import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.constant.ShooterConstants;
 import frc.robot.constant.TurretConstants;
 import frc.robot.subsystem.TurretSubsystem;
 
@@ -59,5 +62,13 @@ public class ManualAimCommand extends Command {
   @Override
   public boolean isFinished() {
     return false;
+  }
+
+  public static double ReverseDirection(double speed) {
+    if (speed > 0) {
+      return 1 - speed;
+    } else {
+      return -1 + Math.abs(speed);
+    }
   }
 }

@@ -51,12 +51,14 @@ def get_modules() -> list[_Module]:
             extra_run_args=[],
             equivalent_run_definition=ProcessType.APRIL_SERVER.get_name(),
         ),
-        ModuleTypes.PythonModule(
-            local_root_folder_path="python/fan_color",
-            local_main_file_path="main.py",
-            extra_run_args=[],
-            equivalent_run_definition=ProcessType.FAN_COLOR.get_name(),
-        ),
+    ]
+
+
+if __name__ == "__main__":
+    DeploymentOptions.with_automatic_discovery(get_modules(), pi_name_to_process_types)
+
+
+"""
         ModuleTypes.CPPLibraryModule(
             name="cuda-tags-lib",
             project_root_folder_path="cpp/CudaTags",
@@ -103,8 +105,11 @@ def get_modules() -> list[_Module]:
                 ],
             ),
         ),
-    ]
 
-
-if __name__ == "__main__":
-    DeploymentOptions.with_automatic_discovery(get_modules(), pi_name_to_process_types)
+        ModuleTypes.PythonModule(
+            local_root_folder_path="python/fan_color",
+            local_main_file_path="main.py",
+            extra_run_args=[],
+            equivalent_run_definition=ProcessType.FAN_COLOR.get_name(),
+        ),
+        """

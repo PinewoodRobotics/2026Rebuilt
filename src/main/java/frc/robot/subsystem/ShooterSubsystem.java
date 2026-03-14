@@ -11,7 +11,6 @@ import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
@@ -19,8 +18,6 @@ import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constant.ShooterConstants;
-import lombok.Data;
-import lombok.Getter;
 import lombok.Setter;
 
 public class ShooterSubsystem extends SubsystemBase {
@@ -104,15 +101,14 @@ public class ShooterSubsystem extends SubsystemBase {
    * Set the shooter velocity in RPM.
    * 
    * @param velocity The velocity to set the shooter to.
-   * @return the time in ms it will take to reach the velocity
    **/
-  public int setShooterVelocity(AngularVelocity velocity) {
+  public void setShooterVelocity(AngularVelocity velocity) {
     lastShooterVelocitySetpoint = velocity;
     double targetRpm = velocity.in(Units.RPM);
 
     if (Math.abs(targetRpm) <= kStopVelocityThresholdRpm) {
       stopShooter();
-      return 0;
+      return;
     }
 
     double feedForward = ShooterConstants.kFF * targetRpm;
@@ -120,8 +116,6 @@ public class ShooterSubsystem extends SubsystemBase {
         ClosedLoopSlot.kSlot0, feedForward);
     followerClosedLoopController.setSetpoint(targetRpm, ControlType.kVelocity,
         ClosedLoopSlot.kSlot0, feedForward);
-
-    return timeLeftToReachVelocity();
   }
 
   public void stopShooter() {
@@ -131,51 +125,40 @@ public class ShooterSubsystem extends SubsystemBase {
 
   /**
    * Re-issues the most recently commanded shooter velocity setpoint (if any).
-   *
-   * @return the time in ms it will take to reach the last setpoint (0 if none)
    */
-  public int setShooterVelocity() {
+  public void setShooterVelocity() {
     if (lastShooterVelocitySetpoint == null) {
-      return 0;
+      return;
     }
 
-    return setShooterVelocity(lastShooterVelocitySetpoint);
+    setShooterVelocity(lastShooterVelocitySetpoint);
   }
 
   public void runMotorBaseSpeed() {
     setShooterVelocity(ShooterConstants.kShooterBaseSpeed);
   }
 
-  /**
-   * Estimates the time (in milliseconds) to reach the provided shooter velocity.
-   * Returns 0 if target velocity is already achieved or if acceleration is
-   * non-positive.
-   */
-  public int timeLeftToReachVelocity(AngularVelocity velocity) {
+  public boolean isShooterSpunUp(AngularVelocity velocity) {
     double targetVelocityRpm = velocity.in(Units.RPM);
-    double accelerationRpmPerSecond = ShooterConstants.kShooterMaxAcceleration.in(Units.RotationsPerSecondPerSecond)
-        * 60.0;
-
-    double leaderVelocityDelta = Math.abs(targetVelocityRpm - leaderEncoder.getVelocity());
-    double followerVelocityDelta = Math.abs(targetVelocityRpm - followerEncoder.getVelocity());
-    double velocityDelta = Math.max(leaderVelocityDelta, followerVelocityDelta);
-    if (accelerationRpmPerSecond <= 0)
-      return 0;
-
-    double seconds = velocityDelta / accelerationRpmPerSecond;
-    return (int) Math.ceil(seconds * 1000.0);
-  }
-
-  /**
-   * Estimates the time (in milliseconds) to reach the most recently commanded
-   * shooter velocity setpoint. Returns 0 if no setpoint has been commanded yet.
-   */
-  public int timeLeftToReachVelocity() {
-    if (lastShooterVelocitySetpoint == null) {
-      return 0;
+    if (Math.abs(targetVelocityRpm) <= kStopVelocityThresholdRpm) {
+      return Math.abs(leaderEncoder.getVelocity()) <= kStopVelocityThresholdRpm
+          && Math.abs(followerEncoder.getVelocity()) <= kStopVelocityThresholdRpm;
     }
 
-    return timeLeftToReachVelocity(lastShooterVelocitySetpoint);
+    double velocityToleranceRpm = ShooterConstants.kShooterVelocityTolerance.in(Units.RPM);
+    double leaderVelocityError = Math.abs(targetVelocityRpm - leaderEncoder.getVelocity());
+    double followerVelocityError = Math.abs(targetVelocityRpm - followerEncoder.getVelocity());
+
+    return leaderVelocityError <= velocityToleranceRpm
+        && followerVelocityError <= velocityToleranceRpm;
+  }
+
+  public boolean isShooterSpunUp() {
+    if (lastShooterVelocitySetpoint == null) {
+      return false;
+    }
+
+    return isShooterSpunUp(lastShooterVelocitySetpoint);
   }
 
   /**
@@ -189,15 +172,18 @@ public class ShooterSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
+    double currentLeaderVelocityRpm = leaderEncoder.getVelocity();
+    double currentFollowerVelocityRpm = followerEncoder.getVelocity();
+
     Logger.recordOutput("Shooter/VelocityRPM", getCurrentShooterVelocity().in(Units.RPM));
-    Logger.recordOutput("Shooter/LeaderVelocityRPM", leaderEncoder.getVelocity());
-    Logger.recordOutput("Shooter/FollowerVelocityRPM", followerEncoder.getVelocity());
+    Logger.recordOutput("Shooter/LeaderVelocityRPM", currentLeaderVelocityRpm);
+    Logger.recordOutput("Shooter/FollowerVelocityRPM", currentFollowerVelocityRpm);
     Logger.recordOutput("Shooter/RequestedVelocityRPM",
         lastShooterVelocitySetpoint == null ? 0.0 : lastShooterVelocitySetpoint.in(Units.RPM));
+    Logger.recordOutput("Shooter/IsSpunUp", isShooterSpunUp());
     Logger.recordOutput("Shooter/LeaderAppliedOutput", leaderMotor.getAppliedOutput());
     Logger.recordOutput("Shooter/FollowerAppliedOutput", followerMotor.getAppliedOutput());
     Logger.recordOutput("Shooter/LeaderPositionRotations", Units.Rotations.of(leaderEncoder.getPosition()));
     Logger.recordOutput("Shooter/FollowerPositionRotations", Units.Rotations.of(followerEncoder.getPosition()));
-    Logger.recordOutput("Shooter/TimeLeftToReachVelocity", timeLeftToReachVelocity());
   }
 }

@@ -41,7 +41,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   private final SwerveDrive swerve;
   private final IGyroscopeLike m_gyro;
-  private double gyroOffset = 0;
+  private Rotation2d swerveRotationOffset;
   private boolean shouldWork = true;
 
   private final SwerveDriveKinematics kinematics;
@@ -70,6 +70,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   public SwerveSubsystem(IGyroscopeLike gyro) {
     this.m_gyro = gyro;
+    this.swerveRotationOffset = new Rotation2d();
     final var c = SwerveConstants.INSTANCE;
     this.isGpsAssist = true;
 
@@ -173,23 +174,7 @@ public class SwerveSubsystem extends SubsystemBase {
   public enum DriveType {
     FIELD_RELATIVE,
     RAW,
-  }
-
-  /**
-   * Applies the given robot-relative chassis speeds via gyro-relative driving
-   * so the resulting motion is the same vector as if driven raw (robot-relative).
-   * Converts robot-relative -> field-relative, then driveWithGyro rotates back
-   * to robot, reproducing the original command.
-   */
-  public ChassisSpeeds fromRawToGyroRelative(ChassisSpeeds speeds) {
-    Rotation2d gyro = new Rotation2d(getSwerveGyroAngle());
-    ChassisSpeeds fieldRelative = ChassisSpeeds.fromRobotRelativeSpeeds(
-        speeds.vxMetersPerSecond,
-        speeds.vyMetersPerSecond,
-        speeds.omegaRadiansPerSecond,
-        gyro);
-    var actualSpeeds = toSwerveOrientation(fieldRelative);
-    return actualSpeeds;
+    DRIVER_RELATIVE,
   }
 
   public void drive(ChassisSpeeds speeds, DriveType driveType) {
@@ -204,6 +189,9 @@ public class SwerveSubsystem extends SubsystemBase {
         break;
       case RAW:
         driveRaw(speeds);
+        break;
+      case DRIVER_RELATIVE:
+        driveDriverRelative(speeds);
         break;
       default:
         driveRaw(speeds);
@@ -224,14 +212,21 @@ public class SwerveSubsystem extends SubsystemBase {
    */
   private Rotation2d getSwerveRotation() {
     var rotation = m_gyro.getRotation();
-    double sin = rotation.toRotation2d().getSin();
-    double cos = -rotation.toRotation2d().getCos();
-    return new Rotation2d(cos, sin);
+    return toSwerveOrientation(rotation.toRotation2d());
+  }
+
+  private Rotation2d getSwerveRotationWithOffset() {
+    return swerveRotationOffset.minus(getSwerveRotation());
   }
 
   public void driveFieldRelative(ChassisSpeeds speeds) {
     var actualSpeeds = toSwerveOrientation(speeds);
     swerve.driveWithGyro(actualSpeeds, getSwerveRotation());
+  }
+
+  public void driveDriverRelative(ChassisSpeeds speeds) {
+    var actualSpeeds = toSwerveOrientation(speeds);
+    swerve.driveWithGyro(actualSpeeds, getSwerveRotationWithOffset());
   }
 
   public static ChassisSpeeds fromPercentToVelocity(Vec2 percentXY, double rotationPercent) {
@@ -271,20 +266,12 @@ public class SwerveSubsystem extends SubsystemBase {
     };
   }
 
-  public void resetGyro() {
-    resetGyro(0);
+  public void resetDriverRelative() {
+    swerveRotationOffset = getSwerveRotation();
   }
 
-  private double getGyroYawDegrees() {
-    return -m_gyro.getRotation().toRotation2d().getDegrees();
-  }
-
-  public void resetGyro(double offset) {
-    gyroOffset = -getGyroYawDegrees() + offset;
-  }
-
-  public double getSwerveGyroAngle() {
-    return getGyroYawDegrees();
+  public void resetDriverRelative(Rotation2d newCur) {
+    swerveRotationOffset = toSwerveOrientation(newCur);
   }
 
   public void setShouldWork(boolean value) {
@@ -303,6 +290,10 @@ public class SwerveSubsystem extends SubsystemBase {
         -target.vxMetersPerSecond,
         target.vyMetersPerSecond,
         target.omegaRadiansPerSecond);
+  }
+
+  private static Rotation2d toSwerveOrientation(Rotation2d target) {
+    return new Rotation2d(-target.getCos(), target.getSin());
   }
 
   @Override
