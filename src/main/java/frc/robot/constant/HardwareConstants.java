@@ -6,7 +6,6 @@ public class HardwareConstants {
 
   public static final PigeonConfig[] kPigeonConfigs = {
       new PigeonConfig(40, 0.0, 0.0, 0.0),
-      new PigeonConfig(41, 0.0, 0.0, 0.0),
   };
 
   public enum RobotMainGyro {
@@ -15,5 +14,5 @@ public class HardwareConstants {
     Two,
   }
 
-  public static final RobotMainGyro kRobotMainGyro = RobotMainGyro.Two;
+  public static final RobotMainGyro kRobotMainGyro = RobotMainGyro.One;
 }

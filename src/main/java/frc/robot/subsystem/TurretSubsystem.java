@@ -61,8 +61,10 @@ public class TurretSubsystem extends SubsystemBase {
 
     SparkFlexConfig config = new SparkFlexConfig();
 
-    config.idleMode(IdleMode.kBrake);
+    config.idleMode(IdleMode.kCoast);
     config.inverted(TurretConstants.kMotorInverted);
+    config.openLoopRampRate(0.0);
+    config.closedLoopRampRate(0.0);
 
     config
         .smartCurrentLimit(TurretConstants.kTurretCurrentLimit);
@@ -71,6 +73,7 @@ public class TurretSubsystem extends SubsystemBase {
         .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
         .pid(TurretConstants.kTurretP, TurretConstants.kTurretI, TurretConstants.kTurretD)
         .iZone(TurretConstants.kTurretIZ)
+        .outputRange(-1.0, 1.0)
         .positionWrappingEnabled(true)
         .positionWrappingMinInput(0)
         .positionWrappingMaxInput(1);
@@ -89,11 +92,9 @@ public class TurretSubsystem extends SubsystemBase {
    * Simple position PID (no MAXMotion).
    */
   public void setTurretPosition(Angle position, Voltage feedForward) {
-    double wrappedSetpointRot = position.in(Units.Rotations);
-    lastAimTarget = Units.Rotations.of(wrappedSetpointRot);
-
+    lastAimTarget = position;
     closedLoopController.setSetpoint(
-        wrappedSetpointRot,
+        lastAimTarget.in(Units.Rotations),
         ControlType.kPosition,
         ClosedLoopSlot.kSlot0,
         feedForward.in(Units.Volts),
@@ -143,7 +144,10 @@ public class TurretSubsystem extends SubsystemBase {
     Logger.recordOutput("Turret/AbsolutePositionRawRot", absoluteEncoder.getPosition());
     Logger.recordOutput("Turret/Velocity", m_turretMotor.getEncoder().getVelocity());
     Logger.recordOutput("Turret/DesiredOutputRot", lastAimTarget != null ? lastAimTarget.in(Units.Rotations) : 0);
+    Logger.recordOutput("Turret/DesiredWrappedOutputRot",
+        lastAimTarget != null ? wrapToUnitRotations(lastAimTarget.in(Units.Rotations)) : 0);
     Logger.recordOutput("Turret/AppliedOutput", m_turretMotor.getAppliedOutput());
+    Logger.recordOutput("Turret/AppliedOutputWant", m_turretMotor.getOutputCurrent());
     Logger.recordOutput("Turret/BusVoltage", m_turretMotor.getBusVoltage());
     Logger.recordOutput("Turret/TimeTillGoal", getAimTimeLeftMs());
   }

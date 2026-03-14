@@ -24,6 +24,7 @@ from backend.deployment.system_types import (
 SERVICE = _pi_api.SERVICE
 DISCOVERY_TIMEOUT = _pi_api.DISCOVERY_TIMEOUT
 BACKEND_DEPLOYMENT_PATH = "/opt/blitz/B.L.I.T.Z/backend"
+DEFAULT_SSH_USER = "ubuntu"
 GITIGNORE_PATH = ".gitignore"
 VENV_PATH = ".venv/bin/python"
 LOCAL_BINARIES_PATH = "build/release/"
@@ -103,7 +104,7 @@ def _deploy_backend_to_pi(
         "StrictHostKeyChecking=no",
         "-p",
         str(pi.ssh_port),
-        f"ubuntu@{pi.address}",
+        f"{DEFAULT_SSH_USER}@{pi.address}",
         f"mkdir -p {remote_target_dir}",
     ]
 
@@ -113,7 +114,7 @@ def _deploy_backend_to_pi(
             f"Failed to create remote directory {remote_target_dir} on {pi.address}: {mkdir_proc.returncode}"
         )
 
-    target = f"ubuntu@{pi.address}:{remote_target_dir}"
+    target = f"{DEFAULT_SSH_USER}@{pi.address}:{remote_target_dir}"
 
     rsync_cmd = [
         "sshpass",
@@ -155,7 +156,7 @@ def _deploy_binaries(pi: _RaspberryPi, local_binaries_path: str):
         "ssh",
         "-p",
         str(pi.ssh_port),
-        f"ubuntu@{pi.address}",
+        f"{DEFAULT_SSH_USER}@{pi.address}",
         f"rm -rf {remote_full_path}",
     ]
 
@@ -173,7 +174,7 @@ def _deploy_binaries(pi: _RaspberryPi, local_binaries_path: str):
         "ssh",
         "-p",
         str(pi.ssh_port),
-        f"ubuntu@{pi.address}",
+        f"{DEFAULT_SSH_USER}@{pi.address}",
         f"mkdir -p {remote_full_path}",
     ]
 
@@ -195,7 +196,7 @@ def _deploy_binaries(pi: _RaspberryPi, local_binaries_path: str):
         "-e",
         f"ssh -p {getattr(pi, 'port', 22)} -o StrictHostKeyChecking=no",
         local_binaries_path,
-        f"ubuntu@{pi.address}:{remote_full_path}",
+        f"{DEFAULT_SSH_USER}@{pi.address}:{remote_full_path}",
     ]
 
     rsync_proc = subprocess.run(rsync_cmd)
@@ -256,7 +257,7 @@ def _deploy_on_pi(
         "StrictHostKeyChecking=no",
         "-p",
         str(pi.ssh_port),
-        f"ubuntu@{pi.address}",
+        f"{DEFAULT_SSH_USER}@{pi.address}",
         f"echo {pi.password} | sudo -S systemctl restart startup.service",
     ]
 

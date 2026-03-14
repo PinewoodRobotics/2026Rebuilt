@@ -41,12 +41,12 @@ public class SwerveSubsystem extends SubsystemBase {
 
   private final SwerveDrive swerve;
   private final IGyroscopeLike m_gyro;
-  private double gyroOffset = 0;
+  private Rotation2d swerveRotationOffset;
   private boolean shouldWork = true;
 
   private final SwerveDriveKinematics kinematics;
 
-  private boolean isGpsAssist = true;
+  private boolean isGpsAssist = false;
 
   public boolean getIsGpsAssist() {
     return isGpsAssist;
@@ -70,6 +70,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   public SwerveSubsystem(IGyroscopeLike gyro) {
     this.m_gyro = gyro;
+    this.swerveRotationOffset = new Rotation2d();
     final var c = SwerveConstants.INSTANCE;
     this.isGpsAssist = true;
 
@@ -173,23 +174,7 @@ public class SwerveSubsystem extends SubsystemBase {
   public enum DriveType {
     FIELD_RELATIVE,
     RAW,
-  }
-
-  /**
-   * Applies the given robot-relative chassis speeds via gyro-relative driving
-   * so the resulting motion is the same vector as if driven raw (robot-relative).
-   * Converts robot-relative -> field-relative, then driveWithGyro rotates back
-   * to robot, reproducing the original command.
-   */
-  public ChassisSpeeds fromRawToGyroRelative(ChassisSpeeds speeds) {
-    Rotation2d gyro = new Rotation2d(getSwerveGyroAngle());
-    ChassisSpeeds fieldRelative = ChassisSpeeds.fromRobotRelativeSpeeds(
-        speeds.vxMetersPerSecond,
-        speeds.vyMetersPerSecond,
-        speeds.omegaRadiansPerSecond,
-        gyro);
-    var actualSpeeds = toSwerveOrientation(fieldRelative);
-    return actualSpeeds;
+    DRIVER_RELATIVE,
   }
 
   public void drive(ChassisSpeeds speeds, DriveType driveType) {
@@ -205,6 +190,9 @@ public class SwerveSubsystem extends SubsystemBase {
       case RAW:
         driveRaw(speeds);
         break;
+      case DRIVER_RELATIVE:
+        driveDriverRelative(speeds);
+        break;
       default:
         driveRaw(speeds);
         break;
@@ -216,9 +204,29 @@ public class SwerveSubsystem extends SubsystemBase {
     swerve.driveNonRelative(actualSpeeds);
   }
 
+  /**
+   * because the custom library for swerve has an orientation of +y => forward, +x
+   * => right (i think) this fixes the angles being fucked up
+   * 
+   * @return
+   */
+  private Rotation2d getSwerveRotation() {
+    var rotation = m_gyro.getRotation();
+    return toSwerveOrientation(rotation.toRotation2d());
+  }
+
+  private Rotation2d getSwerveRotationWithOffset() {
+    return swerveRotationOffset.minus(getSwerveRotation());
+  }
+
   public void driveFieldRelative(ChassisSpeeds speeds) {
     var actualSpeeds = toSwerveOrientation(speeds);
-    swerve.driveWithGyro(actualSpeeds, new Rotation2d(getSwerveGyroAngle()));
+    swerve.driveWithGyro(actualSpeeds, getSwerveRotation());
+  }
+
+  public void driveDriverRelative(ChassisSpeeds speeds) {
+    var actualSpeeds = toSwerveOrientation(speeds);
+    swerve.driveWithGyro(actualSpeeds, getSwerveRotationWithOffset());
   }
 
   public static ChassisSpeeds fromPercentToVelocity(Vec2 percentXY, double rotationPercent) {
@@ -258,20 +266,12 @@ public class SwerveSubsystem extends SubsystemBase {
     };
   }
 
-  public void resetGyro() {
-    resetGyro(0);
+  public void resetDriverRelative() {
+    swerveRotationOffset = getSwerveRotation();
   }
 
-  private double getGyroYawDegrees() {
-    return -m_gyro.getRotation2d().getDegrees();
-  }
-
-  public void resetGyro(double offset) {
-    gyroOffset = -getGyroYawDegrees() + offset;
-  }
-
-  public double getSwerveGyroAngle() {
-    return Math.toRadians(LocalMath.wrapTo180(getGyroYawDegrees() + gyroOffset));
+  public void resetDriverRelative(Rotation2d newCur) {
+    swerveRotationOffset = toSwerveOrientation(newCur);
   }
 
   public void setShouldWork(boolean value) {
@@ -292,9 +292,14 @@ public class SwerveSubsystem extends SubsystemBase {
         target.omegaRadiansPerSecond);
   }
 
+  private static Rotation2d toSwerveOrientation(Rotation2d target) {
+    return new Rotation2d(-target.getCos(), target.getSin());
+  }
+
   @Override
   public void periodic() {
     Logger.recordOutput("SwerveSubsystem/swerve/states", getSwerveModuleStates());
+    Logger.recordOutput("SwerveSubsystem/swerve/velocity", getKinematics().toChassisSpeeds(getSwerveModuleStates()));
     Logger.recordOutput("SwerveSubsystem/AdjustingVelocity", isGpsAssist);
   }
 }

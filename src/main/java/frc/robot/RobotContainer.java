@@ -17,6 +17,7 @@ import frc.robot.command.shooting.ContinuousShooter;
 import frc.robot.command.testing.IndexCommand;
 import frc.robot.constant.IndexConstants;
 import frc.robot.constant.PathPlannerConstants;
+import frc.robot.hardware.PigeonGyro;
 import frc.robot.hardware.UnifiedGyro;
 import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.IndexSubsystem;
@@ -93,11 +94,11 @@ public class RobotContainer {
     m_rightFlightStick
         .B5()
         .onTrue(swerveSubsystem.runOnce(() -> {
-          swerveSubsystem.resetGyro(0);
+          swerveSubsystem.resetDriverRelative();
         }));
 
     // Reset gyro rotation everywhere (including backend with button)
-    m_operatorPanel.blackButton().whileFalse(Commands.run(() -> {
+    m_operatorPanel.blackButton().whileTrue(Commands.run(() -> {
       var position = GlobalPosition.Get();
       if (position != null) {
         UnifiedGyro.GetInstance().resetRotation(position.getRotation());
@@ -115,7 +116,7 @@ public class RobotContainer {
         () -> AimPoint.getTarget());
 
     var manualAimCommand = new ManualAimCommand(
-        () -> ContinuousManualShooter.ReverseDirection(m_operatorPanel.getWheel()));
+        () -> ManualAimCommand.ReverseDirection(m_operatorPanel.getWheel()));
 
     TurretSubsystem.GetInstance().setDefaultCommand(Commands.either(
         continuousAimCommand,
@@ -187,6 +188,12 @@ public class RobotContainer {
 
   public void onAnyModeStart() {
     PublicationSubsystem.ClearAll();
+    var globalPosition = GlobalPosition.Get();
+    if (globalPosition != null) {
+      UnifiedGyro.GetInstance().resetRotation(globalPosition.getRotation());
+      OdometrySubsystem.GetInstance().setOdometryPosition(globalPosition);
+    }
+
     UnifiedGyro.Register();
     PublicationSubsystem.addDataClass(OdometrySubsystem.GetInstance());
 

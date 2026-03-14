@@ -187,15 +187,6 @@ class ExtendedKalmanFilterStrategy(ExtendedKalmanFilter, GenericFilterStrategy):
             )
             return
 
-        if (
-            self.get_standard_deviations_away(
-                data.get_input(), [FilterStateType.POS_X, FilterStateType.POS_Y]
-            )
-            > self.kStandardDeviationsAwayThreshold
-        ):
-            warning(f"Position is too far away from expected position, skipping update")
-            return
-
         self.prediction_step()
 
         R_sensor = self.R_sensors[data.sensor_type][data.sensor_id]

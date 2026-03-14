@@ -197,7 +197,7 @@ public class WheelMoverTalonFX extends WheelMoverBase {
 
   @Override
   public Rotation2d getRotation2d() {
-    return new Rotation2d(getAngle().in(Units.Radians));
+    return new Rotation2d(-getAngle().in(Units.Radians));
   }
 
   @Override

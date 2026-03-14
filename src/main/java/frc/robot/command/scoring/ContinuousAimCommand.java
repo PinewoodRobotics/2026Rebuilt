@@ -10,7 +10,6 @@ import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
@@ -39,24 +38,17 @@ public class ContinuousAimCommand extends Command {
   public void execute() {
     Pose2d selfPose = GlobalPosition.Get();
     Translation2d targetGlobal = targetGlobalPoseSupplier.get();
+    ChassisSpeeds robotFieldSpeeds = GlobalPosition.Velocity(GMFrame.kFieldRelative);
 
     Pose2d targetInRobotFrame = new Pose2d(targetGlobal, new Rotation2d()).relativeTo(selfPose);
     double distanceToTarget = targetInRobotFrame.getTranslation().getNorm();
     double flyTime = ShooterConstants.DistanceFromTargetToTime(distanceToTarget);
-
-    ChassisSpeeds robotFieldSpeeds = GlobalPosition.Velocity(GMFrame.kFieldRelative);
-    double robotTheta = selfPose.getRotation().getRadians();
-    double robotVXRobot = robotFieldSpeeds.vxMetersPerSecond * Math.cos(-robotTheta)
-        - robotFieldSpeeds.vyMetersPerSecond * Math.sin(-robotTheta);
-    double robotVYRobot = robotFieldSpeeds.vxMetersPerSecond * Math.sin(-robotTheta)
-        + robotFieldSpeeds.vyMetersPerSecond * Math.cos(-robotTheta);
-
-    Translation2d leadCompensation = new Translation2d(-robotVXRobot * flyTime, -robotVYRobot * flyTime);
-    Translation2d compensatedTargetInRobot = targetInRobotFrame.getTranslation().plus(leadCompensation);
+    Translation2d compensatedTargetInRobot = GetCompensatedSpeed(selfPose, targetGlobal, robotFieldSpeeds);
+    Translation2d leadCompensation = compensatedTargetInRobot.minus(targetInRobotFrame.getTranslation());
 
     double turretAngle = Math.atan2(compensatedTargetInRobot.getY(), compensatedTargetInRobot.getX());
 
-    double yawRateRadPerSec = GlobalPosition.Velocity(GMFrame.kFieldRelative).omegaRadiansPerSecond;
+    double yawRateRadPerSec = robotFieldSpeeds.omegaRadiansPerSecond;
     double ff = -yawRateRadPerSec * TurretConstants.kFFCommand;
 
     turretSubsystem.setTurretPosition(Units.Radians.of(turretAngle), Units.Volts.of(ff));
@@ -71,6 +63,22 @@ public class ContinuousAimCommand extends Command {
     Logger.recordOutput("Turret/YawRateRadPerSec", yawRateRadPerSec);
     Logger.recordOutput("Turret/Angle", turretAngle);
     Logger.recordOutput("Turret/FF", ff);
+  }
+
+  public static Translation2d GetCompensatedSpeed(Pose2d selfPose, Translation2d targetGlobal,
+      ChassisSpeeds robotFieldSpeeds) {
+    Pose2d targetInRobotFrame = new Pose2d(targetGlobal, new Rotation2d()).relativeTo(selfPose);
+    double distanceToTarget = targetInRobotFrame.getTranslation().getNorm();
+    double flyTime = ShooterConstants.DistanceFromTargetToTime(distanceToTarget);
+
+    double robotTheta = selfPose.getRotation().getRadians();
+    double robotVXRobot = robotFieldSpeeds.vxMetersPerSecond * Math.cos(-robotTheta)
+        - robotFieldSpeeds.vyMetersPerSecond * Math.sin(-robotTheta);
+    double robotVYRobot = robotFieldSpeeds.vxMetersPerSecond * Math.sin(-robotTheta)
+        + robotFieldSpeeds.vyMetersPerSecond * Math.cos(-robotTheta);
+
+    Translation2d leadCompensation = new Translation2d(-robotVXRobot * flyTime, -robotVYRobot * flyTime);
+    return targetInRobotFrame.getTranslation().plus(leadCompensation);
   }
 
   // No longer needed in this form – lead compensation is now done inline.
