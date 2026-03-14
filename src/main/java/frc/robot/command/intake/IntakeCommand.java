@@ -2,6 +2,7 @@ package frc.robot.command.intake;
 
 import java.util.function.Supplier;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.constant.IndexConstants;
 import frc.robot.constant.IntakeConstants;
 import frc.robot.constant.IntakeConstants.WristRaiseLocation;
 import frc.robot.subsystem.IndexSubsystem;
@@ -52,12 +53,7 @@ public class IntakeCommand extends Command {
       m_intakeSubsystem
           .runIntakeMotor(
               isExtake ? IntakeConstants.extakeMotorSpeed : IntakeConstants.intakeMotorSpeed);
-
-      if (isExtake) {
-        m_indexSubsystem.reverseRunMotor();
-      } else {
-        m_indexSubsystem.runMotor();
-      }
+      m_indexSubsystem.runMotor(isExtake ? -IndexConstants.kIndexMotorSpeed : IndexConstants.kIndexMotorSpeed);
     } else {
       m_intakeSubsystem
           .setWristPosition(alternateRaiseLocation);
