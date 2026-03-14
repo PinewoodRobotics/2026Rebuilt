@@ -293,8 +293,8 @@ public class SwerveSubsystem extends SubsystemBase {
 
   private static ChassisSpeeds toSwerveOrientation(ChassisSpeeds target) {
     return new ChassisSpeeds(
-        target.vxMetersPerSecond,
-        -target.vyMetersPerSecond,
+        -target.vxMetersPerSecond,
+        target.vyMetersPerSecond,
         target.omegaRadiansPerSecond);
   }
 

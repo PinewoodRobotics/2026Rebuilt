@@ -16,7 +16,6 @@ public class IntakeCommand extends Command {
   private final Supplier<Boolean> joystickSupplier;
   private final Supplier<Boolean> extakeOverrideSupplier;
   private WristRaiseLocation alternateRaiseLocation = WristRaiseLocation.MIDDLE;
-  private boolean wasIndexExtaking = false;
 
   public void setAlternateRaiseLocation(WristRaiseLocation location) {
     alternateRaiseLocation = location;
@@ -41,7 +40,6 @@ public class IntakeCommand extends Command {
 
   @Override
   public void initialize() {
-    wasIndexExtaking = false;
   }
 
   @Override
@@ -58,6 +56,7 @@ public class IntakeCommand extends Command {
       m_intakeSubsystem
           .setWristPosition(alternateRaiseLocation);
       m_intakeSubsystem.stopIntakeMotor();
+      m_indexSubsystem.stopMotor();
     }
   }
 
