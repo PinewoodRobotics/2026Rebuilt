@@ -103,7 +103,10 @@ public class ShooterSubsystem extends SubsystemBase {
    * @param velocity The velocity to set the shooter to.
    **/
   public void setShooterVelocity(AngularVelocity velocity) {
-    lastShooterVelocitySetpoint = velocity;
+    if (velocity.in(Units.RotationsPerSecond) > ShooterConstants.kShooterMaxVelocity.in(Units.RotationsPerSecond)) {
+      lastShooterVelocitySetpoint = ShooterConstants.kShooterMaxVelocity;
+    }
+
     double targetRpm = velocity.in(Units.RPM);
 
     if (Math.abs(targetRpm) <= kStopVelocityThresholdRpm) {

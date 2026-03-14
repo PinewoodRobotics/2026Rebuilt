@@ -34,7 +34,7 @@ public final class AimPoint {
           ZoneName.LEFT_CENTER,
           atFieldPercent(0.25, 0.00),
           atFieldPercent(0.50, 0.45),
-          atFieldPercent(0.05, 0.25)),
+          atFieldPercent(0.20, 0.25)),
       new Zone(
           ZoneName.MIDDLE_CENTER,
           atFieldPercent(0.25, 0.45),
@@ -44,7 +44,7 @@ public final class AimPoint {
           ZoneName.RIGHT_CENTER,
           atFieldPercent(0.25, 0.55),
           atFieldPercent(0.50, 1.00),
-          atFieldPercent(0.05, 0.75)));
+          atFieldPercent(0.20, 0.75)));
 
   private AimPoint() {
   }

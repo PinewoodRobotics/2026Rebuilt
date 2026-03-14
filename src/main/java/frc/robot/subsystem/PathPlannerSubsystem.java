@@ -58,13 +58,17 @@ public final class PathPlannerSubsystem extends SubsystemBase {
   private void configureAutoBuilder() {
     AutoBuilder.configure(
         () -> GlobalPosition.Get(),
-        OdometrySubsystem.GetInstance()::setOdometryPosition,
+        (PathPlannerSubsystem::resetOdom),
         () -> GlobalPosition.Velocity(GMFrame.kRobotRelative),
-        (speeds, feedforwards) -> SwerveSubsystem.GetInstance().drive(speeds, SwerveSubsystem.DriveType.RAW),
+        (speeds, feedforwards) -> SwerveSubsystem.GetInstance().drivePathPlannerRaw(speeds),
         PathPlannerConstants.defaultPathfindingController,
         robotConfig,
         PathPlannerSubsystem::shouldFlipForAlliance,
         SwerveSubsystem.GetInstance());
+  }
+
+  private static void resetOdom(Pose2d e) {
+    // intentionally do nothing here!
   }
 
   public Command getAutoCommand() {

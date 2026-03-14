@@ -46,7 +46,7 @@ public class IntakeCommand extends Command {
   @Override
   public void execute() {
     boolean joystickValue = joystickSupplier.get();
-    boolean isExtake = joystickValue && extakeOverrideSupplier.get();
+    boolean isExtake = extakeOverrideSupplier.get();
     if (joystickValue) {
       m_intakeSubsystem.setWristPosition(WristRaiseLocation.BOTTOM);
       m_intakeSubsystem
@@ -55,30 +55,18 @@ public class IntakeCommand extends Command {
 
       if (isExtake) {
         m_indexSubsystem.reverseRunMotor();
-        wasIndexExtaking = true;
-      } else if (wasIndexExtaking) {
-        m_indexSubsystem.stopMotor();
-        wasIndexExtaking = false;
+      } else {
+        m_indexSubsystem.runMotor();
       }
-
     } else {
       m_intakeSubsystem
           .setWristPosition(alternateRaiseLocation);
       m_intakeSubsystem.stopIntakeMotor();
-
-      if (wasIndexExtaking) {
-        m_indexSubsystem.stopMotor();
-        wasIndexExtaking = false;
-      }
     }
   }
 
   @Override
   public void end(boolean interrupted) {
-    if (wasIndexExtaking) {
-      m_indexSubsystem.stopMotor();
-      wasIndexExtaking = false;
-    }
   }
 
   @Override

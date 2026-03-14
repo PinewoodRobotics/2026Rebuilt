@@ -5,7 +5,9 @@ import {
 import { MatrixUtil, VectorUtil } from "../../util/math";
 
 export const kalman_filter: KalmanFilterConfig = {
-  initial_state_vector: VectorUtil.fromArray([2.0, 5.0, 0.0, 0.0, 0.0, 0.0]), // [x, y, vx, vy, angle, angular_velocity_rad_s]
+  initial_state_vector: VectorUtil.fromArray([
+    14.437, 4.781, 0.0, 0.0, 0.0, 0.0,
+  ]), // [x, y, vx, vy, angle, angular_velocity_rad_s]
   uncertainty_matrix: MatrixUtil.buildMatrixFromDiagonal([
     5.0, 5.0, 10.0, 10.0, 10.0, 1.0,
   ]),

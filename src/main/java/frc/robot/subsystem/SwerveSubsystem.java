@@ -204,6 +204,12 @@ public class SwerveSubsystem extends SubsystemBase {
     swerve.driveNonRelative(actualSpeeds);
   }
 
+  public void drivePathPlannerRaw(ChassisSpeeds speeds) {
+    var newSpeeds = new ChassisSpeeds(speeds.vxMetersPerSecond, -speeds.vyMetersPerSecond,
+        speeds.omegaRadiansPerSecond);
+    swerve.driveNonRelative(newSpeeds);
+  }
+
   /**
    * because the custom library for swerve has an orientation of +y => forward, +x
    * => right (i think) this fixes the angles being fucked up
@@ -287,8 +293,8 @@ public class SwerveSubsystem extends SubsystemBase {
 
   private static ChassisSpeeds toSwerveOrientation(ChassisSpeeds target) {
     return new ChassisSpeeds(
-        -target.vxMetersPerSecond,
-        target.vyMetersPerSecond,
+        target.vxMetersPerSecond,
+        -target.vyMetersPerSecond,
         target.omegaRadiansPerSecond);
   }
 
