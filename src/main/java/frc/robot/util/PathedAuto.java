@@ -19,8 +19,8 @@ import edu.wpi.first.wpilibj.Filesystem;
 public class PathedAuto extends PathPlannerAuto {
   private final List<PathPlannerPath> paths = new ArrayList<>();
 
-  public PathedAuto(String name, boolean shouldFlip) {
-    super(name, shouldFlip);
+  public PathedAuto(String name) {
+    super(name);
 
     File autoFile = getAutoFile(name);
 
