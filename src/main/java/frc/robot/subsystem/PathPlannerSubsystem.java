@@ -114,7 +114,7 @@ public final class PathPlannerSubsystem extends SubsystemBase {
   }
 
   private static boolean shouldFlipForAlliance() {
-    return BotConstants.alliance != Alliance.Red;
+    return DriverStation.getAlliance().orElse(Alliance.Blue) != Alliance.Red;
   }
 
   @Override

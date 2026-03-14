@@ -10,7 +10,8 @@ public class BotConstants {
   public static final AprilTagFieldLayout kFieldLayout = AprilTagFieldLayout
       .loadField(AprilTagFields.k2026RebuiltWelded);
 
-  public static final Alliance alliance = Alliance.Red; // DriverStation.getAlliance().orElse(Alliance.Blue);
+  // public static final Alliance alliance = Alliance.Red; //
+  // DriverStation.getAlliance().orElse(Alliance.Blue);
 
   public static enum RobotVariant {
     ABOT,
