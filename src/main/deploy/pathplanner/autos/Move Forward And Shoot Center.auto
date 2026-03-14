@@ -5,15 +5,15 @@
     "data": {
       "commands": [
         {
+          "type": "path",
+          "data": {
+            "pathName": "Move Forward Center"
+          }
+        },
+        {
           "type": "parallel",
           "data": {
             "commands": [
-              {
-                "type": "named",
-                "data": {
-                  "name": "IntakeCommand"
-                }
-              },
               {
                 "type": "named",
                 "data": {
@@ -25,6 +25,12 @@
                 "data": {
                   "name": "ContinuousShooterCommand"
                 }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "IntakeMiddleCommand"
+                }
               }
             ]
           }
@@ -33,6 +39,6 @@
     }
   },
   "resetOdom": false,
-  "folder": null,
+  "folder": "Move Forward",
   "choreoAuto": false
 }

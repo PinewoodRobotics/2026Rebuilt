@@ -4,11 +4,13 @@
   "holonomicMode": true,
   "pathFolders": [
     "Climber",
+    "MoveForward",
     "Other"
   ],
   "autoFolders": [
     "Climber",
-    "Going Out"
+    "Going Out",
+    "Move Forward"
   ],
   "defaultMaxVel": 1.0,
   "defaultMaxAccel": 2.0,

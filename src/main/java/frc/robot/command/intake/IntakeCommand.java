@@ -19,11 +19,19 @@ public class IntakeCommand extends Command {
   }
 
   public IntakeCommand(IntakeSubsystem baseSubsystem, Supplier<Boolean> joystickSupplier,
-      Supplier<Boolean> extakeOverrideSupplier) {
+      Supplier<Boolean> extakeOverrideSupplier, WristRaiseLocation raiseLocation) {
     m_intakeSubsystem = baseSubsystem;
     this.joystickSupplier = joystickSupplier;
     this.extakeOverrideSupplier = extakeOverrideSupplier;
+
+    alternateRaiseLocation = raiseLocation;
+
     addRequirements(m_intakeSubsystem);
+  }
+
+  public IntakeCommand(IntakeSubsystem baseSubsystem, Supplier<Boolean> joystickSupplier,
+      Supplier<Boolean> extakeOverrideSupplier) {
+    this(baseSubsystem, joystickSupplier, extakeOverrideSupplier, WristRaiseLocation.MIDDLE);
   }
 
   @Override

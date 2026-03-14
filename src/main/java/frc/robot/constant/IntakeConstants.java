@@ -24,7 +24,7 @@ public class IntakeConstants {
 
   public static enum WristRaiseLocation {
     BOTTOM(Rotation2d.fromRotations(0)),
-    MIDDLE(Rotation2d.fromRotations(0.16)),
+    MIDDLE(Rotation2d.fromRotations(0.14)),
     TOP(Rotation2d.fromRotations(0.338));
 
     public final Rotation2d position;
