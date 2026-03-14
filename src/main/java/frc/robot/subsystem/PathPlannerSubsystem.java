@@ -1,39 +1,22 @@
 package frc.robot.subsystem;
 
-import java.util.EnumSet;
-
-import org.littletonrobotics.junction.Logger;
-
-import java.util.List;
-
 import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.PathfindingCommand;
 import com.pathplanner.lib.config.RobotConfig;
-import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.pathfinding.LocalADStar;
 import com.pathplanner.lib.pathfinding.Pathfinding;
-import com.pathplanner.lib.util.PathPlannerLogging;
-
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.networktables.NetworkTableEvent;
-import edu.wpi.first.networktables.StringSubscriber;
-import edu.wpi.first.networktables.StringTopic;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Robot;
-import frc.robot.command.shooting.ContinuousShooter;
-import frc.robot.constant.BotConstants;
-import frc.robot.constant.CommunicationConstants;
 import frc.robot.constant.PathPlannerConstants;
 import frc.robot.constant.PathPlannerConstants.SelectedAuto;
 import frc.robot.subsystem.GlobalPosition.GMFrame;
-import frc.robot.util.PathedAuto;
+import org.littletonrobotics.junction.Logger;
 
 public final class PathPlannerSubsystem extends SubsystemBase {
   private final RobotConfig robotConfig;
@@ -60,7 +43,7 @@ public final class PathPlannerSubsystem extends SubsystemBase {
     this.robotConfig = loadRobotConfig();
     configureAutoBuilder();
 
-    this.selectedAuto = new SelectedAuto(shouldFlipForAlliance());
+    this.selectedAuto = new SelectedAuto(PathPlannerSubsystem::shouldFlipForAlliance);
     this.allAutos = AutoBuilder.getAllAutoNames().toArray(new String[0]);
   }
 

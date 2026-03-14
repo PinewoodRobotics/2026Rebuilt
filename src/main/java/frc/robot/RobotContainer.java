@@ -16,6 +16,7 @@ import frc.robot.command.shooting.ContinuousManualShooter;
 import frc.robot.command.shooting.ContinuousShooter;
 import frc.robot.command.testing.IndexCommand;
 import frc.robot.constant.IndexConstants;
+import frc.robot.constant.IntakeConstants.WristRaiseLocation;
 import frc.robot.constant.PathPlannerConstants;
 import frc.robot.hardware.PigeonGyro;
 import frc.robot.hardware.UnifiedGyro;
@@ -138,10 +139,19 @@ public class RobotContainer {
 
   private void setIntakeCommands() {
     IntakeSubsystem intakeSubsystem = IntakeSubsystem.GetInstance();
+    IntakeCommand intakeCommand = new IntakeCommand(intakeSubsystem,
+        () -> m_operatorPanel.metalSwitchDown().getAsBoolean(),
+        () -> m_rightFlightStick.B17().getAsBoolean());
 
     intakeSubsystem
-        .setDefaultCommand(new IntakeCommand(intakeSubsystem, () -> m_rightFlightStick.trigger().getAsBoolean(),
-            () -> m_rightFlightStick.B17().getAsBoolean()));
+        .setDefaultCommand(intakeCommand);
+
+    m_operatorPanel.toggleWheelMiddle().onTrue(new InstantCommand(() -> {
+      intakeCommand.setAlternateRaiseLocation(WristRaiseLocation.TOP);
+    }));
+    m_operatorPanel.toggleWheelMidDown().onTrue(new InstantCommand(() -> {
+      intakeCommand.setAlternateRaiseLocation(WristRaiseLocation.MIDDLE);
+    }));
 
     NamedCommands.registerCommand("IntakeCommand",
         new IntakeCommand(intakeSubsystem, () -> true,
@@ -181,31 +191,5 @@ public class RobotContainer {
 
     UnifiedGyro.Register();
     PublicationSubsystem.addDataClass(OdometrySubsystem.GetInstance());
-
-    /*
-     * var globalPosition = GlobalPosition.Get();
-     * if (globalPosition != null) {
-     * PigeonGyro.GetInstance().resetRotation(globalPosition.getRotation());
-     * OdometrySubsystem.GetInstance().setOdometryPosition(globalPosition);
-     * }
-     * 
-     * PublicationSubsystem.addDataClasses(
-     * PigeonGyro.GetInstance(), OdometrySubsystem.GetInstance());
-     */
-
-    /*
-     * TurretSubsystem.GetInstance().reset();
-     * var position = GlobalPosition.Get();
-     * if (position != null) {
-     * PigeonGyro.GetInstance().setYawDegrees(position.getRotation().getDegrees());
-     * OdometrySubsystem.GetInstance().setOdometryPosition(position);
-     * }
-     * 
-     * if (BotConstants.currentMode == BotConstants.Mode.REAL) {
-     * PublicationSubsystem.addDataClasses(
-     * OdometrySubsystem.GetInstance(),
-     * PigeonGyro.GetInstance());
-     * }
-     */
   }
 }

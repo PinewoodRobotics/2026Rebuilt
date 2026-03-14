@@ -1,27 +1,19 @@
 package frc.robot.constant;
 
-import java.util.EnumSet;
 import java.util.Optional;
-
-import com.pathplanner.lib.config.PIDConstants;
-import com.pathplanner.lib.controllers.PPHolonomicDriveController;
-import com.pathplanner.lib.path.PathConstraints;
+import java.util.function.BooleanSupplier;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.networktables.NetworkTableEvent;
-import edu.wpi.first.networktables.StringPublisher;
-import edu.wpi.first.networktables.StringSubscriber;
-import edu.wpi.first.networktables.StringTopic;
 import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.Robot;
+import com.pathplanner.lib.config.PIDConstants;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.pathplanner.lib.path.PathConstraints;
 import frc.robot.command.SwerveMoveTeleop.AxisConstraint;
 import frc.robot.command.SwerveMoveTeleop.Lane;
 import frc.robot.util.PathedAuto;
 import frc.robot.util.SharedStringTopic;
-import lombok.Getter;
 
 public class PathPlannerConstants {
   /**
@@ -35,19 +27,20 @@ public class PathPlannerConstants {
     private String name;
     private Optional<PathedAuto> currentAuto;
 
-    private final boolean shouldFlip;
+    private final BooleanSupplier shouldFlip;
     private final SharedStringTopic kAutoSelect;
 
-    public SelectedAuto(boolean shouldFlip) {
+    public SelectedAuto(BooleanSupplier shouldFlip) {
       this(shouldFlip, kAutoSelectTopic);
     }
 
     /**
      * Creates a SelectedAuto that listens for auto selection changes.
      *
-     * @param shouldFlip whether to flip the auto for the opposite alliance
+     * @param shouldFlip whether path preview data should be flipped for the current
+     *                   alliance
      */
-    public SelectedAuto(boolean shouldFlip, String topicBase) {
+    public SelectedAuto(BooleanSupplier shouldFlip, String topicBase) {
       this.kAutoSelect = new SharedStringTopic(topicBase);
       this.shouldFlip = shouldFlip;
       this.name = kNoneSelection;
@@ -72,7 +65,7 @@ public class PathPlannerConstants {
       }
 
       name = selected;
-      currentAuto = Optional.of(new PathedAuto(name, shouldFlip));
+      currentAuto = Optional.of(new PathedAuto(name));
       kAutoSelect.setState(name);
     }
 
@@ -87,7 +80,16 @@ public class PathPlannerConstants {
         return new Pose2d[0];
       }
 
-      return currentAuto.get().getPaths().get(index).getPathPoses().toArray(new Pose2d[0]);
+      if (index < 0 || index >= currentAuto.get().getPaths().size()) {
+        return new Pose2d[0];
+      }
+
+      var path = currentAuto.get().getPaths().get(index);
+      if (shouldFlip.getAsBoolean()) {
+        path = path.flipPath();
+      }
+
+      return path.getPathPoses().toArray(new Pose2d[0]);
     }
 
     public Pose2d[] getAllPathPoses() {
