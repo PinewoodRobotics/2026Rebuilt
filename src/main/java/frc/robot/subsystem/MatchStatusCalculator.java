@@ -80,6 +80,22 @@ public class MatchStatusCalculator {
     }
   }
 
+  public enum AimMode {
+    SHOOTER_DISABLED(0),
+    GPS_AUTO(1),
+    MANUAL_AIMING(2);
+
+    private final long ntValue;
+
+    AimMode(long ntValue) {
+      this.ntValue = ntValue;
+    }
+
+    public long ntValue() {
+      return ntValue;
+    }
+  }
+
   public record Inputs(
       long robotTimeUs,
       long wallClockMs,
@@ -88,6 +104,8 @@ public class MatchStatusCalculator {
       boolean enabled,
       boolean autonomousEnabled,
       boolean teleopEnabled,
+      boolean shooterArmed,
+      boolean shooterGpsAssistEnabled,
       Optional<Alliance> alliance,
       String gameSpecificMessage,
       Pose2d pose,
@@ -124,6 +142,7 @@ public class MatchStatusCalculator {
       double autoAlignDistanceM,
       boolean autoAlignReady,
       boolean driverOverride,
+      AimMode aimMode,
       String cameraTopic) {
   }
 
@@ -170,6 +189,7 @@ public class MatchStatusCalculator {
 
     PoseSnapshot poseSnapshot = resolvePose(inputs);
     boolean driverOverride = false;
+    AimMode aimMode = resolveAimMode(inputs.shooterArmed(), inputs.shooterGpsAssistEnabled());
 
     State state = new State(
         seq++,
@@ -197,6 +217,7 @@ public class MatchStatusCalculator {
         0.0,
         false,
         driverOverride,
+        aimMode,
         CommunicationConstants.kMatchStatusCameraTopic);
 
     if (phase == MatchPhase.POST_MATCH && !inputs.enabled()) {
@@ -388,6 +409,13 @@ public class MatchStatusCalculator {
       return HeaderColor.HEADER_GREEN;
     }
     return HeaderColor.HEADER_HIDDEN;
+  }
+
+  private AimMode resolveAimMode(boolean shooterArmed, boolean shooterGpsAssistEnabled) {
+    if (!shooterArmed) {
+      return AimMode.SHOOTER_DISABLED;
+    }
+    return shooterGpsAssistEnabled ? AimMode.GPS_AUTO : AimMode.MANUAL_AIMING;
   }
 
   private boolean isShiftIndicatorVisible(MatchPhase phase) {

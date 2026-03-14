@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.command.shooting.ContinuousShooter;
 import frc.robot.Robot;
+import frc.robot.RobotContainer;
 
 public class MatchStatusSubsystem extends SubsystemBase {
   private static final String kDashboardRoot = "matchhud";
@@ -49,6 +50,7 @@ public class MatchStatusSubsystem extends SubsystemBase {
   private final DoublePublisher autoAlignDistanceMPublisher;
   private final BooleanPublisher autoAlignReadyPublisher;
   private final BooleanPublisher driverOverridePublisher;
+  private final IntegerPublisher aimModePublisher;
   private final StringPublisher cameraTopicPublisher;
 
   public static MatchStatusSubsystem GetInstance() {
@@ -90,6 +92,7 @@ public class MatchStatusSubsystem extends SubsystemBase {
     autoAlignDistanceMPublisher = stateTable.getDoubleTopic("auto_align_distance_m").publish();
     autoAlignReadyPublisher = stateTable.getBooleanTopic("auto_align_ready").publish();
     driverOverridePublisher = stateTable.getBooleanTopic("driver_override").publish();
+    aimModePublisher = stateTable.getIntegerTopic("aim_mode").publish();
     cameraTopicPublisher = stateTable.getStringTopic("camera_topic").publish();
   }
 
@@ -103,6 +106,8 @@ public class MatchStatusSubsystem extends SubsystemBase {
         DriverStation.isEnabled(),
         DriverStation.isAutonomousEnabled(),
         DriverStation.isTeleopEnabled(),
+        RobotContainer.isShooterArmedForHud(),
+        ShooterSubsystem.getIsGpsAssistEnabled(),
         DriverStation.getAlliance(),
         DriverStation.getGameSpecificMessage(),
         GlobalPosition.Get(),
@@ -135,6 +140,7 @@ public class MatchStatusSubsystem extends SubsystemBase {
     autoAlignDistanceMPublisher.set(state.autoAlignDistanceM());
     autoAlignReadyPublisher.set(state.autoAlignReady());
     driverOverridePublisher.set(state.driverOverride());
+    aimModePublisher.set(state.aimMode().ntValue());
     cameraTopicPublisher.set(state.cameraTopic());
 
     Logger.recordOutput("MatchStatus/seq", (double) state.seq());
@@ -163,6 +169,7 @@ public class MatchStatusSubsystem extends SubsystemBase {
     Logger.recordOutput("MatchStatus/autoAlignDistanceM", state.autoAlignDistanceM());
     Logger.recordOutput("MatchStatus/autoAlignReady", state.autoAlignReady());
     Logger.recordOutput("MatchStatus/driverOverride", state.driverOverride());
+    Logger.recordOutput("MatchStatus/aimMode", (int) state.aimMode().ntValue());
     Logger.recordOutput("MatchStatus/cameraTopic", state.cameraTopic());
   }
 }

@@ -15,6 +15,7 @@ import frc.robot.command.scoring.ManualAimCommand;
 import frc.robot.command.shooting.ContinuousManualShooter;
 import frc.robot.command.shooting.ContinuousShooter;
 import frc.robot.command.testing.IndexCommand;
+import java.util.function.BooleanSupplier;
 import frc.robot.constant.IndexConstants;
 import frc.robot.constant.IntakeConstants.WristRaiseLocation;
 import frc.robot.constant.PathPlannerConstants;
@@ -37,6 +38,8 @@ import pwrup.frc.core.controller.OperatorPanel;
 import pwrup.frc.core.online.PublicationSubsystem;
 
 public class RobotContainer {
+  private static BooleanSupplier shooterArmedSupplierForHud = () -> false;
+
   final OperatorPanel m_operatorPanel = new OperatorPanel(1);
   final FlightStick m_leftFlightStick = new FlightStick(2);
   final FlightStick m_rightFlightStick = new FlightStick(3);
@@ -51,6 +54,7 @@ public class RobotContainer {
   private boolean isManualScoringMode = false;
 
   public RobotContainer() {
+    shooterArmedSupplierForHud = () -> m_operatorPanel.metalSwitchDown().getAsBoolean();
     PublicationSubsystem.GetInstance(Robot.getCommunicationClient());
 
     GlobalPosition.GetInstance();
@@ -194,6 +198,10 @@ public class RobotContainer {
 
   public Command getAutonomousCommand() {
     return PathPlannerSubsystem.GetInstance().getAndInitAutoCommand(true);
+  }
+
+  public static boolean isShooterArmedForHud() {
+    return shooterArmedSupplierForHud.getAsBoolean();
   }
 
   public void onAnyModeStart() {
