@@ -1,5 +1,6 @@
 package frc.robot.command.shooting;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import org.littletonrobotics.junction.Logger;
@@ -22,6 +23,7 @@ import lombok.Getter;
 public class ContinuousShooter extends Command {
   private final Supplier<Translation2d> targetGlobalPoseSupplier;
   private final Supplier<Translation2d> selfGlobalPoseSupplier;
+  private final BooleanSupplier indexExtakeOverrideSupplier;
   private final ShooterSubsystem shooterSubsystem;
   private final TurretSubsystem turretSubsystem;
   private final IndexSubsystem indexSubsystem;
@@ -30,9 +32,11 @@ public class ContinuousShooter extends Command {
   private static boolean isShooting = false;
 
   public ContinuousShooter(Supplier<Translation2d> targetGlobalPoseSupplier,
-      Supplier<Translation2d> selfGlobalPoseSupplier) {
+      Supplier<Translation2d> selfGlobalPoseSupplier,
+      BooleanSupplier indexExtakeOverrideSupplier) {
     this.targetGlobalPoseSupplier = targetGlobalPoseSupplier;
     this.selfGlobalPoseSupplier = selfGlobalPoseSupplier;
+    this.indexExtakeOverrideSupplier = indexExtakeOverrideSupplier;
     this.shooterSubsystem = ShooterSubsystem.GetInstance();
     this.turretSubsystem = TurretSubsystem.GetInstance();
     this.indexSubsystem = IndexSubsystem.GetInstance();
@@ -40,10 +44,19 @@ public class ContinuousShooter extends Command {
     addRequirements(this.shooterSubsystem, this.indexSubsystem);
   }
 
-  public ContinuousShooter(Supplier<Translation2d> targetGlobalPoseSupplier) {
+  public ContinuousShooter(Supplier<Translation2d> targetGlobalPoseSupplier,
+      Supplier<Translation2d> selfGlobalPoseSupplier) {
+    this(targetGlobalPoseSupplier, selfGlobalPoseSupplier, () -> false);
+  }
+
+  public ContinuousShooter(Supplier<Translation2d> targetGlobalPoseSupplier, BooleanSupplier indexExtakeOverrideSupplier) {
     this(targetGlobalPoseSupplier, () -> {
       return GlobalPosition.Get().getTranslation();
-    });
+    }, indexExtakeOverrideSupplier);
+  }
+
+  public ContinuousShooter(Supplier<Translation2d> targetGlobalPoseSupplier) {
+    this(targetGlobalPoseSupplier, () -> false);
   }
 
   public ContinuousShooter() {
@@ -72,6 +85,12 @@ public class ContinuousShooter extends Command {
     Logger.recordOutput("ContinuousShooter/CompensatedTargetRelative", compensatedTargetRelative);
     Logger.recordOutput("ContinuousShooter/RawDistanceToTarget", rawDistance);
     Logger.recordOutput("ContinuousShooter/CompensatedDistanceToTarget", compensatedDistance);
+
+    if (indexExtakeOverrideSupplier.getAsBoolean()) {
+      isShooting = false;
+      indexSubsystem.reverseRunMotor();
+      return;
+    }
 
     if (turretSubsystem.getAimTimeLeftMs() > TurretConstants.kTurretOffByMs
         || !shooterSubsystem.isShooterSpunUp()) {

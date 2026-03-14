@@ -182,9 +182,11 @@ public class RobotContainer {
   }
 
   private void setShooterCommands() {
-    var continuousShooter = new ContinuousShooter(() -> AimPoint.getTarget());
+    BooleanSupplier indexExtakeOverrideSupplier = () -> m_rightFlightStick.B17().getAsBoolean();
+    var continuousShooter = new ContinuousShooter(() -> AimPoint.getTarget(), indexExtakeOverrideSupplier);
     var continuousManualShooter = new ContinuousManualShooter(
-        ContinuousManualShooter.GetBaseSpeedSupplier(m_rightFlightStick::getRightSlider));
+        ContinuousManualShooter.GetBaseSpeedSupplier(m_rightFlightStick::getRightSlider),
+        indexExtakeOverrideSupplier);
 
     // Enable shooter with metal switch down. While up, run motor base speed.
     // When enabled, run indexer only when shooter up to speed.

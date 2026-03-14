@@ -1,5 +1,6 @@
 package frc.robot.command.shooting;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import org.littletonrobotics.junction.Logger;
@@ -22,12 +23,18 @@ public class ContinuousManualShooter extends Command {
   private final ShooterSubsystem shooterSubsystem;
   private final IndexSubsystem indexSubsystem;
   private final Supplier<AngularVelocity> speedSupplier;
+  private final BooleanSupplier indexExtakeOverrideSupplier;
 
   @Getter
   private static boolean isShooting = false;
 
   public ContinuousManualShooter(Supplier<AngularVelocity> speedSupplier) {
+    this(speedSupplier, () -> false);
+  }
+
+  public ContinuousManualShooter(Supplier<AngularVelocity> speedSupplier, BooleanSupplier indexExtakeOverrideSupplier) {
     this.speedSupplier = speedSupplier;
+    this.indexExtakeOverrideSupplier = indexExtakeOverrideSupplier;
     this.shooterSubsystem = ShooterSubsystem.GetInstance();
     this.indexSubsystem = IndexSubsystem.GetInstance();
     addRequirements(this.shooterSubsystem, this.indexSubsystem);
@@ -38,6 +45,12 @@ public class ContinuousManualShooter extends Command {
     Logger.recordOutput("ContinuousManualShooter/Time", System.currentTimeMillis());
     AngularVelocity speed = speedSupplier.get();
     shooterSubsystem.setShooterVelocity(speed);
+
+    if (indexExtakeOverrideSupplier.getAsBoolean()) {
+      isShooting = false;
+      indexSubsystem.reverseRunMotor();
+      return;
+    }
 
     if (!shooterSubsystem.isShooterSpunUp()) {
       isShooting = false;
