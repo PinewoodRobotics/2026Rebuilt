@@ -49,7 +49,8 @@ public class ContinuousShooter extends Command {
     this(targetGlobalPoseSupplier, selfGlobalPoseSupplier, () -> false);
   }
 
-  public ContinuousShooter(Supplier<Translation2d> targetGlobalPoseSupplier, BooleanSupplier indexExtakeOverrideSupplier) {
+  public ContinuousShooter(Supplier<Translation2d> targetGlobalPoseSupplier,
+      BooleanSupplier indexExtakeOverrideSupplier) {
     this(targetGlobalPoseSupplier, () -> {
       return GlobalPosition.Get().getTranslation();
     }, indexExtakeOverrideSupplier);
@@ -95,6 +96,7 @@ public class ContinuousShooter extends Command {
     if (turretSubsystem.getAimTimeLeftMs() > TurretConstants.kTurretOffByMs
         || !shooterSubsystem.isShooterSpunUp()) {
       isShooting = false;
+      indexSubsystem.stopMotor();
       return;
     }
 

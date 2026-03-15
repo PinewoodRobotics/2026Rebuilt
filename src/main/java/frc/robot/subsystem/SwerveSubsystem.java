@@ -43,6 +43,7 @@ public class SwerveSubsystem extends SubsystemBase {
   private final IGyroscopeLike m_gyro;
   private Rotation2d swerveRotationOffset;
   private boolean shouldWork = true;
+  public double add = 0; // tmp for inversion clusterfuck
 
   private final SwerveDriveKinematics kinematics;
 
@@ -218,7 +219,7 @@ public class SwerveSubsystem extends SubsystemBase {
    */
   private Rotation2d getSwerveRotation() {
     var rotation = m_gyro.getRotation();
-    return toSwerveOrientation(rotation.toRotation2d());
+    return toSwerveOrientation(rotation.toRotation2d()).plus(new Rotation2d(add));
   }
 
   private Rotation2d getSwerveRotationWithOffset() {

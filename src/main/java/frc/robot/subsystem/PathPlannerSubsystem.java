@@ -38,7 +38,7 @@ public final class PathPlannerSubsystem extends SubsystemBase {
 
   public PathPlannerSubsystem() {
     Pathfinding.setPathfinder(new LocalADStar());
-    CommandScheduler.getInstance().schedule(PathfindingCommand.warmupCommand());
+    // CommandScheduler.getInstance().schedule(PathfindingCommand.warmupCommand());
 
     this.robotConfig = loadRobotConfig();
     configureAutoBuilder();

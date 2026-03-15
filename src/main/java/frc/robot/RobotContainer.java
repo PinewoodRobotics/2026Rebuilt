@@ -174,7 +174,7 @@ public class RobotContainer {
 
     NamedCommands.registerCommand("IntakeCommand",
         new IntakeCommand(intakeSubsystem, () -> true,
-            () -> false));
+            () -> false, WristRaiseLocation.BOTTOM));
 
     NamedCommands.registerCommand("IntakeMiddleCommand",
         new IntakeCommand(intakeSubsystem, () -> false,

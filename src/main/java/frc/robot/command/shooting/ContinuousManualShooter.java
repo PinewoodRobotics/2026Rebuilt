@@ -54,8 +54,6 @@ public class ContinuousManualShooter extends Command {
 
     if (!shooterSubsystem.isShooterSpunUp()) {
       isShooting = false;
-      indexSubsystem.stopMotor();
-      return;
     }
 
     isShooting = true;

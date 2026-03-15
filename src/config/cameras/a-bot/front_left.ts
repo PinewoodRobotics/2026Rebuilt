@@ -8,7 +8,7 @@ import { CameraConstants } from "../camera_constants";
 const front_left: CameraParameters = {
   pi_to_run_on: "tynan",
   name: "front_left",
-  camera_path: "/dev/usb_cam3",
+  camera_path: "/dev/usb_cam4",
   flags: 0,
   width: 800,
   height: 600,

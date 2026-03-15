@@ -15,6 +15,8 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constant.ControllerConstants;
 import frc.robot.subsystem.GlobalPosition;
@@ -95,6 +97,8 @@ public class SwerveMoveTeleop extends Command {
   private static final double kMaxPerpendicularScale = 1.0;
   private static final double kMinPerpendicularScale = 0.2;
 
+  private Alliance alliance;
+
   private Supplier<Boolean> areGpsFeaturesEnabled;
 
   public SwerveMoveTeleop(
@@ -123,7 +127,13 @@ public class SwerveMoveTeleop extends Command {
   }
 
   @Override
+  public void initialize() {
+    alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+  }
+
+  @Override
   public void execute() {
+    double multi = (alliance == Alliance.Red ? 1 : -1);
     double rawR = LocalMath.deadband(
         controller.leftFlightStick.getRawAxis(
             FlightStick.AxisEnum.JOYSTICKROTATION.value),
@@ -132,13 +142,13 @@ public class SwerveMoveTeleop extends Command {
 
     double rawX = LocalMath.deadband(
         controller.rightFlightStick.getRawAxis(
-            FlightStick.AxisEnum.JOYSTICKY.value),
+            FlightStick.AxisEnum.JOYSTICKY.value) * multi,
         ControllerConstants.kXSpeedDeadband,
         ControllerConstants.kXSpeedMinValue);
 
     double rawY = LocalMath.deadband(
         controller.rightFlightStick.getRawAxis(
-            FlightStick.AxisEnum.JOYSTICKX.value),
+            FlightStick.AxisEnum.JOYSTICKX.value) * multi,
         ControllerConstants.kYSpeedDeadband,
         ControllerConstants.kYSpeedMinValue);
 

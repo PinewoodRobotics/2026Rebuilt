@@ -44,6 +44,10 @@ public class IntakeCommand extends Command {
 
   @Override
   public void execute() {
+    if (alternateRaiseLocation == null) {
+      alternateRaiseLocation = WristRaiseLocation.BOTTOM;
+    }
+
     boolean joystickValue = joystickSupplier.get();
     boolean isExtake = extakeOverrideSupplier.get();
     if (joystickValue) {
@@ -51,12 +55,12 @@ public class IntakeCommand extends Command {
       m_intakeSubsystem
           .runIntakeMotor(
               isExtake ? IntakeConstants.extakeMotorSpeed : IntakeConstants.intakeMotorSpeed);
-      m_indexSubsystem.runMotor(isExtake ? -IndexConstants.kIndexMotorSpeed : IndexConstants.kIndexMotorSpeed);
+      // m_indexSubsystem.runMotor(isExtake ? -IndexConstants.kIndexMotorSpeed :
+      // IndexConstants.kIndexMotorSpeed);
     } else {
       m_intakeSubsystem
           .setWristPosition(alternateRaiseLocation);
       m_intakeSubsystem.stopIntakeMotor();
-      m_indexSubsystem.stopMotor();
     }
   }
 

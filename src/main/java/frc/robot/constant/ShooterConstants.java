@@ -26,7 +26,7 @@ public class ShooterConstants {
   public static final MotorType kShooterMotorTypeFollower = MotorType.kBrushless;
   public static final AngularVelocity kShooterMinVelocity = Units.RotationsPerSecond.of(25);
   public static final AngularVelocity kShooterMaxVelocity = Units.RotationsPerSecond.of(50.0);
-  public static final AngularVelocity kShooterVelocityTolerance = Units.RotationsPerSecond.of(0.6);
+  public static final AngularVelocity kShooterVelocityTolerance = Units.RotationsPerSecond.of(1);
 
   public static final AngularVelocity kShooterBaseSpeed = Units.RotationsPerSecond.of(25.0);
 
@@ -38,7 +38,7 @@ public class ShooterConstants {
   public static final double kRPMVsDistanceSlope = 112;
   public static final double kRPMVsDistanceIntercept = 1594;
 
-  public static final double kOutMult = 1.025;
+  public static final double kOutMult = 1.035;
 
   public static double DistanceFromTargetToTime(double distance) {
     return kTimeVsDistanceSlope * distance + kTimeVsDistanceIntercept;
