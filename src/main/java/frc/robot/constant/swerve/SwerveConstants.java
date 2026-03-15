@@ -23,9 +23,9 @@ import frc.robot.constant.BotConstants.RobotVariant;
  */
 public final class SwerveConstants {
   public static final AngularVelocity kRobotMaxTurnSpeed = Units.RadiansPerSecond.of(Math.PI); // 180 deg/s
-  public static final LinearVelocity kRobotMaxSpeed = Units.MetersPerSecond.of(2.5);
+  public static final LinearVelocity kRobotMaxSpeed = Units.MetersPerSecond.of(3.5);
   public static final AngularAcceleration kRobotMaxTurnAcceleration = Units.RadiansPerSecondPerSecond.of(Math.PI);
-  public static final LinearAcceleration kRobotMaxLinearAcceleration = Units.MetersPerSecondPerSecond.of(3.0);
+  public static final LinearAcceleration kRobotMaxLinearAcceleration = Units.MetersPerSecondPerSecond.of(4.0);
 
   //////////////////////////////////////
 

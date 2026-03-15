@@ -4,33 +4,30 @@ import org.littletonrobotics.junction.Logger;
 
 import com.pathplanner.lib.auto.NamedCommands;
 
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import frc.robot.command.SwerveMoveTeleop;
+import frc.robot.command.climber.ManualClimberControlCommand;
 import frc.robot.command.intake.IntakeCommand;
 import frc.robot.command.scoring.ContinuousAimCommand;
 import frc.robot.command.scoring.ManualAimCommand;
 import frc.robot.command.shooting.ContinuousManualShooter;
 import frc.robot.command.shooting.ContinuousShooter;
-import frc.robot.command.testing.IndexCommand;
 import java.util.function.BooleanSupplier;
-import frc.robot.constant.IndexConstants;
 import frc.robot.constant.IntakeConstants.WristRaiseLocation;
 import frc.robot.constant.PathPlannerConstants;
-import frc.robot.hardware.PigeonGyro;
 import frc.robot.hardware.UnifiedGyro;
 import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.IndexSubsystem;
 import frc.robot.subsystem.IntakeSubsystem;
-import frc.robot.subsystem.LightsSubsystem;
 import frc.robot.subsystem.MatchStatusSubsystem;
 import frc.robot.subsystem.OdometrySubsystem;
 import frc.robot.subsystem.PathPlannerSubsystem;
 import frc.robot.subsystem.ShooterSubsystem;
 import frc.robot.subsystem.SwerveSubsystem;
 import frc.robot.subsystem.TurretSubsystem;
+import frc.robot.subsystem.ClimberSubsystem;
 import frc.robot.util.AimPoint;
 import pwrup.frc.core.controller.FlightModule;
 import pwrup.frc.core.controller.FlightStick;
@@ -46,12 +43,6 @@ public class RobotContainer {
   final FlightModule m_flightModule = new FlightModule(
       m_leftFlightStick,
       m_rightFlightStick);
-
-  /**
-   * When true, turret uses manual aim and shooter uses manual speed (slider).
-   * Toggled by green button.
-   */
-  private boolean isManualScoringMode = false;
 
   public RobotContainer() {
     shooterArmedSupplierForHud = () -> m_operatorPanel.metalSwitchDown().getAsBoolean();
@@ -79,6 +70,7 @@ public class RobotContainer {
     setTurretCommands();
     setShooterCommands();
     setIntakeCommands();
+    setClimberCommands();
   }
 
   private void setSwerveCommands() {
@@ -150,10 +142,11 @@ public class RobotContainer {
   }
 
   private void setClimberCommands() {
-    // TODO: Implement climber commands
-    // NamedCommands.registerCommand("ClimberL1Command", new
-    // ClimberCommand(climberSubsystem, () ->
-    // m_rightFlightStick.trigger().getAsBoolean()));
+    ClimberSubsystem climberSubsystem = ClimberSubsystem.GetInstance();
+    climberSubsystem.setDefaultCommand(new ManualClimberControlCommand(
+        climberSubsystem,
+        m_leftFlightStick::getLeftSlider,
+        m_leftFlightStick::getRightSlider));
   }
 
   private void setIntakeCommands() {

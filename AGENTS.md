@@ -18,19 +18,22 @@
 - Config generation from TypeScript: `npm run config -- --dir src/config`
 - Regenerate Thrift TS bindings: `npm run generate-thrift`
 - Generate backend code artifacts: `make generate` (Python protobuf + Python thrift + Java proto task)
+- Python protobuf generation only: `make generate-proto-python`
+- Python thrift generation only: `make thrift-to-py`
+- Java protobuf generation via Makefile: `make proto-to-java` (runs `./gradlew generateProto`)
 - Java protobuf generation via Gradle: `./gradlew generate` (depends on `generateProto`)
 
 ## Command notes
 
 - `make build` and `make deploy` enforce Java 17 via `/usr/libexec/java_home -v 17`.
 - `make deploy` defaults `TEAM_NUMBER=4765` unless overridden.
-- `./gradlew deployBackend` expects deployment on `EXPECTED_NUM_OF_PIS` (currently `2`) and fails if mismatch.
+- `./gradlew deployBackend` expects deployment on `EXPECTED_NUM_OF_PIS` (currently `3`) and fails if mismatch.
 - Dynamic vendor dependency builds are intentionally forced every Gradle compile/build cycle (`buildDynamicDeps.outputs.upToDateWhen { false }`).
 
 ## TODO
 
-- Confirm whether automation should keep `TEAM_NUMBER=4765` and `EXPECTED_NUM_OF_PIS=2` as defaults or document per-robot override policy.
-- README references `applyBackend` and `make prep-project`; verify whether docs should be updated to `deployBackend`/`make initialize`.
+- Confirm whether automation should keep `TEAM_NUMBER=4765` and `EXPECTED_NUM_OF_PIS=3` as defaults or document per-robot override policy.
+- README still references `applyBackend` and `make prep-project`; update docs to `deployBackend`/`make initialize`.
 
 ## Agent docs
 

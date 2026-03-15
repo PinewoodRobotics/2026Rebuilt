@@ -24,6 +24,7 @@ flowchart TB
   subgraph OP["Operator Panel (USB 1)"]
     OP_BLACK["Black button hold"] --> RESET_GLOBAL["Continuously align unified gyro to global pose"]
     OP_GREEN["Green button press"] --> GPS_AIM["Toggle turret + shooter GPS assist"]
+    OP_RED["Red button press"] --> CLIMB_TEST["Run next climber test in sequence"]
     OP_WHEEL["Wheel axis"] --> MANUAL_AIM["Manual turret aim when GPS assist is off"]
     OP_TOGGLE_MID["Toggle wheel middle"] --> INTAKE_TOP["Set intake idle wrist position to TOP"]
     OP_TOGGLE_MIDDOWN["Toggle wheel mid-down"] --> INTAKE_MID["Set intake idle wrist position to MIDDLE"]
@@ -59,6 +60,7 @@ flowchart TB
 | Right flight stick slider | Analog | Sets manual shooter velocity when shooter GPS assist is off |
 | Operator panel wheel | Analog | Manual turret target when turret GPS assist is off |
 | Operator panel green button | Press | Toggles turret GPS assist and shooter GPS assist; cancels current turret/shooter command so defaults restart in the new mode |
+| Operator panel red button | Press | Runs the next climber test in sequence: `Climber Only Test`, then `Wrist Test`, then `System Test`, then repeats |
 | Operator panel black button | Hold | Repeatedly resets unified gyro rotation to the current global pose heading |
 | Operator panel toggle wheel middle | Press | Sets the intake idle wrist position to `TOP` |
 | Operator panel toggle wheel mid-down | Press | Sets the intake idle wrist position to `MIDDLE` |
@@ -109,5 +111,5 @@ flowchart TB
 | --- | --- |
 | Shared switch | The operator panel metal switch affects both shooter and intake behavior |
 | Intake idle state | Intake defaults to `MIDDLE` when not active until changed by a toggle wheel binding |
-| Climber | No climber bindings are currently implemented in `RobotContainer` |
+| Climber | Operator panel red button cycles through the climber test commands one press at a time; presses while a climber test is already running are ignored |
 | Autonomous named commands | `ContinuousAimCommand`, `IntakeCommand`, and `ContinuousShooterCommand` are also registered for PathPlanner autos, but they are not direct driver controls |
