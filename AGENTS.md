@@ -29,13 +29,14 @@
 - `make build` and `make deploy` enforce Java 17 via `/usr/libexec/java_home -v 17`.
 - `make deploy` defaults `TEAM_NUMBER=4765` unless overridden.
 - `./gradlew deployBackend` expects deployment on `EXPECTED_NUM_OF_PIS` (currently `3`) and fails if mismatch.
+- `make generate` assumes `.venv` already exists because `generate-proto-python` runs `.venv/bin/fix-protobuf-imports`; use `make initialize` first on a fresh clone.
 - `npm run config` can omit `--dir` and auto-detect `config/` or `src/config/`; `json`, `json-binary`, and `file` switches are supported.
 - Dynamic vendor dependency builds are intentionally forced every Gradle compile/build cycle (`buildDynamicDeps.outputs.upToDateWhen { false }`).
 
 ## TODO
 
 - Confirm whether automation should keep `TEAM_NUMBER=4765` and `EXPECTED_NUM_OF_PIS=3` as defaults or document per-robot override policy.
-- README still references `applyBackend` and `make prep-project`; update docs to `deployBackend`/`make initialize`.
+- `README.md` and `docs/HowToInitialize.md` still reference older/manual backend setup (`applyBackend`, `make prep-project`, raw `pip install -r requirements.txt`); update docs to `deployBackend`/`make initialize` and mention `make generate`'s `.venv` dependency.
 
 ## Agent docs
 
