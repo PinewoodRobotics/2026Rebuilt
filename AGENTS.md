@@ -6,6 +6,7 @@
 - Full robot build: `./gradlew build`
   - Also runs dynamic vendor dependency build (`scripts/clone_and_build_repos.py --config-file-path config.ini`) and protobuf generation.
 - Java build wrapper: `make build`
+- Java test flow: `./gradlew test`
 - Java simulation: `./gradlew simulateJava`
 - Robot deploy: `./gradlew deploy -PteamNumber=<TEAM_NUMBER>`
 - Robot deploy wrapper: `make deploy` (uses `TEAM_NUMBER`, default `4765`)
@@ -28,6 +29,7 @@
 - `make build` and `make deploy` enforce Java 17 via `/usr/libexec/java_home -v 17`.
 - `make deploy` defaults `TEAM_NUMBER=4765` unless overridden.
 - `./gradlew deployBackend` expects deployment on `EXPECTED_NUM_OF_PIS` (currently `3`) and fails if mismatch.
+- `npm run config` can omit `--dir` and auto-detect `config/` or `src/config/`; `json`, `json-binary`, and `file` switches are supported.
 - Dynamic vendor dependency builds are intentionally forced every Gradle compile/build cycle (`buildDynamicDeps.outputs.upToDateWhen { false }`).
 
 ## TODO
