@@ -11,7 +11,6 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearAcceleration;
 import edu.wpi.first.units.measure.LinearVelocity;
-import edu.wpi.first.units.measure.Voltage;
 
 /**
  * BBot (Spark) swerve constants.
@@ -20,19 +19,19 @@ import edu.wpi.first.units.measure.Voltage;
  */
 public final class SwerveConstantsSpark {
   public static final Translation2d rearLeftTranslation = new Translation2d(
-      0.38,
+      -0.38,
       0.38);
 
   public static final Translation2d rearRightTranslation = new Translation2d(
-      0.38,
+      -0.38,
       -0.38);
 
   public static final Translation2d frontRightTranslation = new Translation2d(
-      -0.38,
+      0.38,
       -0.38);
 
   public static final Translation2d frontLeftTranslation = new Translation2d(
-      -0.38,
+      0.38,
       0.38);
 
   public static final LinearVelocity kMaxSpeed = Units.MetersPerSecond.of(2);

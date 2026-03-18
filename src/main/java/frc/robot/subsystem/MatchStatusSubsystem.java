@@ -1,5 +1,7 @@
 package frc.robot.subsystem;
 
+import java.util.Optional;
+
 import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.networktables.BooleanPublisher;
@@ -12,6 +14,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.command.shooting.ContinuousShooter;
+import frc.robot.constant.BotConstants;
 import frc.robot.Robot;
 import frc.robot.RobotContainer;
 
@@ -108,7 +111,7 @@ public class MatchStatusSubsystem extends SubsystemBase {
         DriverStation.isTeleopEnabled(),
         RobotContainer.isShooterArmedForHud(),
         ShooterSubsystem.getIsGpsAssistEnabled(),
-        DriverStation.getAlliance(),
+        Optional.of(BotConstants.alliance),
         DriverStation.getGameSpecificMessage(),
         GlobalPosition.Get(),
         GlobalPosition.getLastUpdateTimeMs()));

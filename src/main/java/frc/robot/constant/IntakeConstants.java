@@ -4,9 +4,9 @@ import edu.wpi.first.math.geometry.Rotation2d;
 
 public class IntakeConstants {
   public static final int intakeIntakerMotorID = 33;
-  public static final boolean intakeIntakerInverted = false;
-  public static final double intakeMotorSpeed = 0.7;
-  public static final double extakeMotorSpeed = -0.7;
+  public static final boolean intakeIntakerInverted = true;
+  public static final double intakeMotorSpeed = 0.3;
+  public static final double extakeMotorSpeed = -0.3;
 
   public static final int intakeWristMotorID = 34;
   public static final boolean intakeWristInverted = false;
@@ -20,7 +20,7 @@ public class IntakeConstants {
 
   public final static int intakeWristCurrentLimit = 20;
   public final static double intakeWristGearingRatio = 1.0 / 80.0;
-  public final static Rotation2d intakeWristOffset = Rotation2d.fromRotations(0.678); // when the wrist is fully down
+  public final static Rotation2d intakeWristOffset = Rotation2d.fromRotations(0.697); // when the wrist is fully down
 
   public static enum WristRaiseLocation {
     BOTTOM(Rotation2d.fromRotations(0)),

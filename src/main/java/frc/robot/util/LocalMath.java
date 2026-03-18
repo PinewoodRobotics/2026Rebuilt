@@ -25,6 +25,10 @@ import frc4765.proto.pathfind.Pathfind.PathfindResult;
  */
 public class LocalMath {
 
+  public static double clamp(double value, double min, double max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
   public static List<Translation2d> fromPathfindResultToTranslation2dList(PathfindResult pathfindResult) {
     return pathfindResult.getPathList().stream()
         .map(vector -> new Translation2d(vector.getX(), vector.getY()))

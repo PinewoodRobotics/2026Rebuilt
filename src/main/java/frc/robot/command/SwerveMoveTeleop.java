@@ -128,27 +128,23 @@ public class SwerveMoveTeleop extends Command {
 
   @Override
   public void initialize() {
-    alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
   }
 
   @Override
   public void execute() {
     double multi = (alliance == Alliance.Red ? 1 : -1);
     double rawR = LocalMath.deadband(
-        controller.leftFlightStick.getRawAxis(
-            FlightStick.AxisEnum.JOYSTICKROTATION.value),
+        controller.leftFlightStick.getJoystickRotation(),
         ControllerConstants.kRotDeadband,
         ControllerConstants.kRotMinValue);
 
     double rawX = LocalMath.deadband(
-        controller.rightFlightStick.getRawAxis(
-            FlightStick.AxisEnum.JOYSTICKY.value) * multi,
+        controller.rightFlightStick.getJoystickY() * multi,
         ControllerConstants.kXSpeedDeadband,
         ControllerConstants.kXSpeedMinValue);
 
     double rawY = LocalMath.deadband(
-        controller.rightFlightStick.getRawAxis(
-            FlightStick.AxisEnum.JOYSTICKX.value) * multi,
+        controller.rightFlightStick.getJoystickX() * multi,
         ControllerConstants.kYSpeedDeadband,
         ControllerConstants.kYSpeedMinValue);
 

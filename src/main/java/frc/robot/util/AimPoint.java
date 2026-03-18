@@ -50,10 +50,10 @@ public final class AimPoint {
   }
 
   public static ZoneName getZone(Pose2d pose) {
-    return getZone(pose, DriverStation.getAlliance());
+    return getZone(pose, BotConstants.alliance);
   }
 
-  public static ZoneName getZone(Pose2d pose, Optional<Alliance> alliance) {
+  public static ZoneName getZone(Pose2d pose, Alliance alliance) {
     Pose2d bluePose = toBluePerspective(pose, alliance);
 
     for (Zone zone : ZONES) {
@@ -76,22 +76,22 @@ public final class AimPoint {
   }
 
   public static Translation2d getTarget(Pose2d pose) {
-    return getTarget(pose, DriverStation.getAlliance());
+    return getTarget(pose, BotConstants.alliance);
   }
 
   public static Translation2d getTarget() {
     return getTarget(GlobalPosition.Get());
   }
 
-  public static Translation2d getTarget(Pose2d pose, Optional<Alliance> alliance) {
+  public static Translation2d getTarget(Pose2d pose, Alliance alliance) {
     return getTarget(getZone(pose, alliance), alliance);
   }
 
   public static Translation2d getTarget(ZoneName zoneName) {
-    return getTarget(zoneName, DriverStation.getAlliance());
+    return getTarget(zoneName, BotConstants.alliance);
   }
 
-  public static Translation2d getTarget(ZoneName zoneName, Optional<Alliance> alliance) {
+  public static Translation2d getTarget(ZoneName zoneName, Alliance alliance) {
     return fromBluePerspective(getBlueTarget(zoneName), alliance);
   }
 
@@ -109,7 +109,7 @@ public final class AimPoint {
   }
 
   public static void logZoneForAdvantageScope(ZoneName zoneName, String keyPrefix) {
-    Optional<Alliance> alliance = DriverStation.getAlliance();
+    Alliance alliance = BotConstants.alliance;
     Zone zone = getBlueZone(zoneName);
     Translation2d min = zone.minCorner();
     Translation2d max = zone.maxCorner();
@@ -137,8 +137,8 @@ public final class AimPoint {
     return new Translation2d(FIELD_LENGTH_METERS * xPercent, FIELD_WIDTH_METERS * yPercent);
   }
 
-  private static Pose2d toBluePerspective(Pose2d fieldPose, Optional<Alliance> alliance) {
-    if (!isRed(alliance)) {
+  private static Pose2d toBluePerspective(Pose2d fieldPose, Alliance alliance) {
+    if (alliance == Alliance.Red) {
       return fieldPose;
     }
     return new Pose2d(
@@ -147,15 +147,11 @@ public final class AimPoint {
         fieldPose.getRotation());
   }
 
-  private static Translation2d fromBluePerspective(Translation2d bluePoint, Optional<Alliance> alliance) {
-    if (!isRed(alliance)) {
+  private static Translation2d fromBluePerspective(Translation2d bluePoint, Alliance alliance) {
+    if (alliance == Alliance.Red) {
       return bluePoint;
     }
     return new Translation2d(flipX(bluePoint.getX()), bluePoint.getY());
-  }
-
-  private static boolean isRed(Optional<Alliance> alliance) {
-    return alliance.isPresent() && alliance.get() == Alliance.Red;
   }
 
   private static double flipX(double xMeters) {

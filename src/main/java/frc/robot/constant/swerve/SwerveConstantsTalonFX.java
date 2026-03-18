@@ -3,8 +3,6 @@ package frc.robot.constant.swerve;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.AngularAcceleration;
@@ -16,19 +14,19 @@ import edu.wpi.first.units.measure.LinearVelocity;
 
 public class SwerveConstantsTalonFX {
   public static final Translation2d rearLeftTranslation = new Translation2d(
-      0.3429,
+      -0.3429,
       0.3429);
 
   public static final Translation2d rearRightTranslation = new Translation2d(
-      0.3429,
+      -0.3429,
       -0.3429);
 
   public static final Translation2d frontRightTranslation = new Translation2d(
-      -0.3429,
+      0.3429,
       -0.3429);
 
   public static final Translation2d frontLeftTranslation = new Translation2d(
-      -0.3429,
+      0.3429,
       0.3429);
 
   public static final LinearVelocity kMaxSpeed = Units.MetersPerSecond.of(0);
@@ -58,10 +56,10 @@ public class SwerveConstantsTalonFX {
   public static final int kRearRightTurningMotorPort = 10;
 
   // whether the turning enoders are flipped
-  public static final InvertedValue kFrontLeftTurningMotorReversed = InvertedValue.Clockwise_Positive;
-  public static final InvertedValue kFrontRightTurningMotorReversed = InvertedValue.Clockwise_Positive;
-  public static final InvertedValue kRearLeftTurningMotorReversed = InvertedValue.Clockwise_Positive;
-  public static final InvertedValue kRearRightTurningMotorReversed = InvertedValue.Clockwise_Positive;
+  public static final InvertedValue kFrontLeftTurningMotorReversed = InvertedValue.CounterClockwise_Positive;
+  public static final InvertedValue kFrontRightTurningMotorReversed = InvertedValue.CounterClockwise_Positive;
+  public static final InvertedValue kRearLeftTurningMotorReversed = InvertedValue.CounterClockwise_Positive;
+  public static final InvertedValue kRearRightTurningMotorReversed = InvertedValue.CounterClockwise_Positive;
 
   // the CANCoder turning encoder ports - updated 2/12/24
   public static final int kFrontLeftCANcoderPort = 2;
@@ -81,10 +79,10 @@ public class SwerveConstantsTalonFX {
   // opening the Phoenix Tuner app, and taking snapshots of
   // the rotational values of the CANCoders while in they are in the forward state
   // units: rotations
-  public static final double kFrontLeftCANcoderMagnetOffset = -0.316;
-  public static final double kFrontRightCANcoderMagnetOffset = -0.208;
-  public static final double kRearLeftCANcoderMagnetOffset = 0.177;
-  public static final double kRearRightCANcoderMagnetOffset = 0.441;
+  public static final double kFrontLeftCANcoderMagnetOffset = 0.178;
+  public static final double kFrontRightCANcoderMagnetOffset = 0.29;
+  public static final double kRearLeftCANcoderMagnetOffset = -0.317;
+  public static final double kRearRightCANcoderMagnetOffset = -0.062;
 
   // stats used by SwerveSubsystem for math
   public static final Distance kWheelDiameter = Units.Meters.of(0.089);

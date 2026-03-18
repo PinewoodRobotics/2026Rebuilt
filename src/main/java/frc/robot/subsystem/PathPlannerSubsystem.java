@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.constant.BotConstants;
 import frc.robot.constant.PathPlannerConstants;
 import frc.robot.constant.PathPlannerConstants.SelectedAuto;
 import frc.robot.subsystem.GlobalPosition.GMFrame;
@@ -60,7 +61,7 @@ public final class PathPlannerSubsystem extends SubsystemBase {
         () -> GlobalPosition.Get(),
         (PathPlannerSubsystem::resetOdom),
         () -> GlobalPosition.Velocity(GMFrame.kRobotRelative),
-        (speeds, feedforwards) -> SwerveSubsystem.GetInstance().drivePathPlannerRaw(speeds),
+        (speeds, feedforwards) -> SwerveSubsystem.GetInstance().drive(speeds, SwerveSubsystem.DriveType.RAW),
         PathPlannerConstants.defaultPathfindingController,
         robotConfig,
         PathPlannerSubsystem::shouldFlipForAlliance,
@@ -101,7 +102,7 @@ public final class PathPlannerSubsystem extends SubsystemBase {
   }
 
   private static boolean shouldFlipForAlliance() {
-    return DriverStation.getAlliance().orElse(Alliance.Blue) != Alliance.Red;
+    return BotConstants.alliance != Alliance.Red;
   }
 
   @Override

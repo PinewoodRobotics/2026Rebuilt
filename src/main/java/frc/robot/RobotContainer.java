@@ -15,6 +15,8 @@ import frc.robot.command.scoring.ManualAimCommand;
 import frc.robot.command.shooting.ContinuousManualShooter;
 import frc.robot.command.shooting.ContinuousShooter;
 import java.util.function.BooleanSupplier;
+
+import frc.robot.constant.BotConstants;
 import frc.robot.constant.IntakeConstants.WristRaiseLocation;
 import frc.robot.constant.PathPlannerConstants;
 import frc.robot.hardware.UnifiedGyro;
@@ -71,6 +73,8 @@ public class RobotContainer {
     setShooterCommands();
     setIntakeCommands();
     setClimberCommands();
+
+    BotConstants.SetAlliance();
   }
 
   private void setSwerveCommands() {
@@ -79,12 +83,12 @@ public class RobotContainer {
     swerveSubsystem
         .setDefaultCommand(
             new SwerveMoveTeleop(swerveSubsystem, m_flightModule, PathPlannerConstants.kLanes,
-                swerveSubsystem::getIsGpsAssist));
+                swerveSubsystem::isGpsAssist));
 
     // Toggle gps-based driving assist features
     m_leftFlightStick.B5().onTrue(new InstantCommand(() -> {
-      swerveSubsystem.setGpsAssist(!swerveSubsystem.getIsGpsAssist());
-      Logger.recordOutput("SwerveSubsystem/GPSAssistFeaturesEnabled", swerveSubsystem.getIsGpsAssist());
+      swerveSubsystem.setGpsAssist(!swerveSubsystem.isGpsAssist());
+      Logger.recordOutput("SwerveSubsystem/GPSAssistFeaturesEnabled", swerveSubsystem.isGpsAssist());
     }));
 
     // Reset gyro rotation of the swerve dynamically

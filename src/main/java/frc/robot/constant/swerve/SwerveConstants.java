@@ -11,7 +11,6 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearAcceleration;
 import edu.wpi.first.units.measure.LinearVelocity;
-import edu.wpi.first.units.measure.Voltage;
 import frc.robot.constant.BotConstants;
 import frc.robot.constant.BotConstants.RobotVariant;
 
