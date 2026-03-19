@@ -150,6 +150,7 @@ public class RobotContainer {
     climberSubsystem.setDefaultCommand(new ManualClimberControlCommand(
         climberSubsystem,
         m_leftFlightStick::getLeftSlider,
+        m_rightFlightStick::getLeftSlider,
         m_leftFlightStick::getRightSlider));
   }
 
@@ -217,5 +218,6 @@ public class RobotContainer {
 
     UnifiedGyro.Register();
     PublicationSubsystem.addDataClass(OdometrySubsystem.GetInstance());
+    BotConstants.SetAlliance();
   }
 }

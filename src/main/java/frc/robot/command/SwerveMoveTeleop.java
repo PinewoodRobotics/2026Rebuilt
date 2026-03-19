@@ -18,6 +18,7 @@ import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.constant.BotConstants;
 import frc.robot.constant.ControllerConstants;
 import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.SwerveSubsystem;
@@ -97,8 +98,6 @@ public class SwerveMoveTeleop extends Command {
   private static final double kMaxPerpendicularScale = 1.0;
   private static final double kMinPerpendicularScale = 0.2;
 
-  private Alliance alliance;
-
   private Supplier<Boolean> areGpsFeaturesEnabled;
 
   public SwerveMoveTeleop(
@@ -132,19 +131,19 @@ public class SwerveMoveTeleop extends Command {
 
   @Override
   public void execute() {
-    double multi = (alliance == Alliance.Red ? 1 : -1);
+    double multi = (BotConstants.alliance == Alliance.Red ? -1 : 1);
     double rawR = LocalMath.deadband(
         controller.leftFlightStick.getJoystickRotation(),
         ControllerConstants.kRotDeadband,
         ControllerConstants.kRotMinValue);
 
     double rawX = LocalMath.deadband(
-        controller.rightFlightStick.getJoystickY() * multi,
+        controller.rightFlightStick.getJoystickX() * multi,
         ControllerConstants.kXSpeedDeadband,
         ControllerConstants.kXSpeedMinValue);
 
     double rawY = LocalMath.deadband(
-        controller.rightFlightStick.getJoystickX() * multi,
+        controller.rightFlightStick.getJoystickY() * multi,
         ControllerConstants.kYSpeedDeadband,
         ControllerConstants.kYSpeedMinValue);
 

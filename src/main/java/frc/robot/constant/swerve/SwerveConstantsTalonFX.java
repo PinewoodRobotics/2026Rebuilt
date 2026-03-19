@@ -44,10 +44,10 @@ public class SwerveConstantsTalonFX {
   public static final int kRearRightDriveMotorPort = 11;
 
   // whether the driving encoders are flipped
-  public static final InvertedValue kFrontLeftDriveMotorReversed = InvertedValue.Clockwise_Positive;
-  public static final InvertedValue kRearLeftDriveMotorReversed = InvertedValue.Clockwise_Positive;
-  public static final InvertedValue kFrontRightDriveMotorReversed = InvertedValue.Clockwise_Positive;
-  public static final InvertedValue kRearRightDriveMotorReversed = InvertedValue.CounterClockwise_Positive;
+  public static final InvertedValue kFrontLeftDriveMotorReversed = InvertedValue.CounterClockwise_Positive;
+  public static final InvertedValue kRearLeftDriveMotorReversed = InvertedValue.CounterClockwise_Positive;
+  public static final InvertedValue kFrontRightDriveMotorReversed = InvertedValue.CounterClockwise_Positive;
+  public static final InvertedValue kRearRightDriveMotorReversed = InvertedValue.Clockwise_Positive;
 
   // the turning motor ports
   public static final int kFrontLeftTurningMotorPort = 6;
@@ -55,7 +55,8 @@ public class SwerveConstantsTalonFX {
   public static final int kRearLeftTurningMotorPort = 8;
   public static final int kRearRightTurningMotorPort = 10;
 
-  // whether the turning enoders are flipped
+  // Whether the turning motors are flipped. These are module-local hardware
+  // settings and should not change when the robot/world coordinate frame changes.
   public static final InvertedValue kFrontLeftTurningMotorReversed = InvertedValue.CounterClockwise_Positive;
   public static final InvertedValue kFrontRightTurningMotorReversed = InvertedValue.CounterClockwise_Positive;
   public static final InvertedValue kRearLeftTurningMotorReversed = InvertedValue.CounterClockwise_Positive;
@@ -69,20 +70,21 @@ public class SwerveConstantsTalonFX {
 
   // whether the turning CANCoders are flipped
 
-  public static final SensorDirectionValue kFrontLeftCANcoderDirection = SensorDirectionValue.Clockwise_Positive;
-  public static final SensorDirectionValue kFrontRightCANcoderDirection = SensorDirectionValue.Clockwise_Positive;
-  public static final SensorDirectionValue kRearLeftCANcoderDirection = SensorDirectionValue.Clockwise_Positive;
-  public static final SensorDirectionValue kRearRightCANcoderDirection = SensorDirectionValue.Clockwise_Positive;
+  public static final SensorDirectionValue kFrontLeftCANcoderDirection = SensorDirectionValue.CounterClockwise_Positive;
+  public static final SensorDirectionValue kFrontRightCANcoderDirection = SensorDirectionValue.CounterClockwise_Positive;
+  public static final SensorDirectionValue kRearLeftCANcoderDirection = SensorDirectionValue.CounterClockwise_Positive;
+  public static final SensorDirectionValue kRearRightCANcoderDirection = SensorDirectionValue.CounterClockwise_Positive;
 
-  // magnetic offset for the CANCoders
+  // Magnetic offsets for the CANCoders.
+  // These are calibrated physical zeros for the modules, not field-frame values.
   // you can find these by connecting to the RoboRIO by USB on the drive station,
   // opening the Phoenix Tuner app, and taking snapshots of
   // the rotational values of the CANCoders while in they are in the forward state
   // units: rotations
-  public static final double kFrontLeftCANcoderMagnetOffset = 0.178;
-  public static final double kFrontRightCANcoderMagnetOffset = 0.29;
-  public static final double kRearLeftCANcoderMagnetOffset = -0.317;
-  public static final double kRearRightCANcoderMagnetOffset = -0.062;
+  public static final double kFrontLeftCANcoderMagnetOffset = -0.184;
+  public static final double kFrontRightCANcoderMagnetOffset = -0.285;
+  public static final double kRearLeftCANcoderMagnetOffset = 0.317;
+  public static final double kRearRightCANcoderMagnetOffset = 0.062;
 
   // stats used by SwerveSubsystem for math
   public static final Distance kWheelDiameter = Units.Meters.of(0.089);

@@ -104,7 +104,7 @@ public class ClimberSubsystem extends SubsystemBase {
 
   public void setHeightVoltagePercent(double heightVoltagePercent) {
     m_isHeightVoltageControl = true;
-    m_heightVoltagePercent = MathUtil.clamp(heightVoltagePercent, 0.0, 1.0);
+    m_heightVoltagePercent = MathUtil.clamp(heightVoltagePercent, -1.0, 1.0);
   }
 
   public Distance getAverageHeight() {

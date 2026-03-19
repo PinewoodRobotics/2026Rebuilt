@@ -47,7 +47,7 @@ public class ClimberConstants {
   public static final double kMaxSetpointRamp = Units.Feet.of(0.15).in(Units.Meters);
 
   public static final MotorType kMotorType = MotorType.kBrushless;
-  public static final int kLiftCurrentLimit = 30;
+  public static final int kLiftCurrentLimit = 100;
 
   public static final double kWristGearRatio = 1.0 / 15.0;
   public static final boolean kLeftMotorInverted = true;

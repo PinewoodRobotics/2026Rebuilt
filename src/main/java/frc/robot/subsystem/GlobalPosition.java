@@ -11,6 +11,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robot;
+import frc.robot.constant.BotConstants;
 import frc.robot.constant.CommunicationConstants;
 import frc.robot.util.AimPoint;
 import frc4765.proto.util.Position.RobotPosition;
@@ -153,5 +154,6 @@ public class GlobalPosition extends SubsystemBase {
     }
 
     Logger.recordOutput("Global/Position/IsValid", isValid);
+    Logger.recordOutput("Global/alliance", BotConstants.alliance);
   }
 }

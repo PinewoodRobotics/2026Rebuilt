@@ -163,14 +163,14 @@ public class WheelMoverTalonFX extends WheelMoverBase {
   @Override
   public LinearVelocity getSpeed() {
     return LinearVelocity.ofRelativeUnits(
-        convertWheelRotationsToMeters(-m_driveMotor.getVelocity().getValueAsDouble()),
+        convertWheelRotationsToMeters(m_driveMotor.getVelocity().getValueAsDouble()),
         Units.MetersPerSecond);
   }
 
   @Override
   public Distance getDistance() {
     return Distance.ofRelativeUnits(
-        convertWheelRotationsToMeters(-m_driveMotor.getPosition().getValueAsDouble()),
+        convertWheelRotationsToMeters(m_driveMotor.getPosition().getValueAsDouble()),
         Units.Meters);
   }
 
@@ -188,7 +188,7 @@ public class WheelMoverTalonFX extends WheelMoverBase {
    * wheel rotations
    */
   private double convertWheelRotationsToMeters(double wheelRotations) {
-    return -wheelRotations * (Math.PI * SwerveConstants.INSTANCE.kWheelDiameter.in(Units.Meters));
+    return wheelRotations * (Math.PI * SwerveConstants.INSTANCE.kWheelDiameter.in(Units.Meters));
   }
 
   public double getCANCoderAngle() {
@@ -197,7 +197,7 @@ public class WheelMoverTalonFX extends WheelMoverBase {
 
   @Override
   public Rotation2d getRotation2d() {
-    return new Rotation2d(-getAngle().in(Units.Radians));
+    return new Rotation2d(getAngle().in(Units.Radians));
   }
 
   @Override

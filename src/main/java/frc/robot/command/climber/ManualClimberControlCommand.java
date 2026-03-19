@@ -8,22 +8,27 @@ import frc.robot.subsystem.ClimberSubsystem;
 
 public class ManualClimberControlCommand extends Command {
   private final ClimberSubsystem m_climberSubsystem;
-  private final DoubleSupplier m_heightPercentSupplier;
+  private final DoubleSupplier m_heightUpPercentSupplier;
+  private final DoubleSupplier m_heightDownPercentSupplier;
   private final DoubleSupplier m_wristVoltagePercentSupplier;
 
   public ManualClimberControlCommand(
       ClimberSubsystem climberSubsystem,
-      DoubleSupplier heightPercentSupplier,
+      DoubleSupplier heightUpPercentSupplier,
+      DoubleSupplier heightDownPercentSupplier,
       DoubleSupplier wristVoltagePercentSupplier) {
     m_climberSubsystem = climberSubsystem;
-    m_heightPercentSupplier = heightPercentSupplier;
+    m_heightUpPercentSupplier = heightUpPercentSupplier;
+    m_heightDownPercentSupplier = heightDownPercentSupplier;
     m_wristVoltagePercentSupplier = wristVoltagePercentSupplier;
     addRequirements(climberSubsystem);
   }
 
   @Override
   public void execute() {
-    m_climberSubsystem.setHeightVoltagePercent(normalizePercentInput(m_heightPercentSupplier.getAsDouble()));
+    double upwardPercent = normalizePercentInput(m_heightUpPercentSupplier.getAsDouble());
+    double downwardPercent = normalizePercentInput(m_heightDownPercentSupplier.getAsDouble());
+    m_climberSubsystem.setHeightVoltagePercent(MathUtil.clamp(upwardPercent - downwardPercent, -1.0, 1.0));
     m_climberSubsystem.setWristVoltagePercent(normalizePercentInput(m_wristVoltagePercentSupplier.getAsDouble()));
   }
 
