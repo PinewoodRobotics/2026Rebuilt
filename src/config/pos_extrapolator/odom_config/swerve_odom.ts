@@ -1,10 +1,3 @@
-import {
-  OdomConfig,
-  OdometryPositionSource,
-} from "generated/thrift/gen-nodejs/pos_extrapolator_types";
-import { MatrixUtil, VectorUtil } from "../../util/math";
+import { OdomConfig } from "generated/thrift/gen-nodejs/pos_extrapolator_types";
 
-export const swerve_odom_config: OdomConfig = {
-  position_source: OdometryPositionSource.ABS_CHANGE,
-  use_rotation: false,
-};
+export const swerve_odom_config: OdomConfig = {};

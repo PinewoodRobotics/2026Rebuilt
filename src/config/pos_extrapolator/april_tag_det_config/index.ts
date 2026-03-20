@@ -1,7 +1,6 @@
 import {
   AprilTagConfig,
   TagNoiseAdjustMode,
-  TagUseImuRotation,
 } from "generated/thrift/gen-nodejs/pos_extrapolator_types";
 import { MatrixUtil, VectorUtil } from "../../util/math";
 import { rebuilt_welded_field } from "../tag_config/rebuilt_welded";
@@ -26,7 +25,6 @@ const april_tag_pos_config: AprilTagConfig = {
       rotation: MatrixUtil.buildRotationMatrixFromYaw(225),
     },
   },
-  tag_use_imu_rotation: TagUseImuRotation.WHILE_NO_OTHER_ROTATION_DATA,
   noise_change_modes: [
     // TagNoiseAdjustMode.ADD_WEIGHT_PER_M_DISTANCE_TAG,
     TagNoiseAdjustMode.ADD_WEIGHT_PER_TAG_CONFIDENCE,

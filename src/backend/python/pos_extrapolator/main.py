@@ -10,11 +10,7 @@ from backend.python.common.debug.logger import (
     info,
 )
 from backend.python.common.util.extension import subscribe_to_multiple_topics
-from backend.python.pos_extrapolator.data_prep import DataPreparerManager
-from backend.python.pos_extrapolator.filters.extended_kalman_filter import (
-    ExtendedKalmanFilterStrategy,
-)
-from backend.python.pos_extrapolator.position_extrapolator import PositionExtrapolator
+from backend.python.pos_extrapolator.position_solver_2d import PositionSolver2d
 from backend.python.pos_extrapolator.util.init_stuff import main_init_phase
 
 
@@ -24,19 +20,17 @@ async def main():
     info(f"Starting Position Extrapolator...")
     await autobahn_server.begin()
 
-    position_extrapolator = PositionExtrapolator(
-        config.pos_extrapolator,
-        ExtendedKalmanFilterStrategy(config.pos_extrapolator.kalman_filter_config),
-        DataPreparerManager(),
-    )
+    position_solver = PositionSolver2d(config.pos_extrapolator)
 
     async def process_data(message: bytes):
         data = GeneralSensorData.FromString(message)
         one_of_name = data.WhichOneof("data")
 
         try:
-            position_extrapolator.insert_sensor_data(
-                data.__getattribute__(one_of_name), data.sensor_id
+            position_solver.insert_sensor_data(
+                data.__getattribute__(one_of_name),
+                data.sensor_id,
+                data.timestamp,
             )
         except Exception as e:
             error(
@@ -52,7 +46,7 @@ async def main():
     info(f"Subscribed to topics: {subscribe_topics}. Starting position extrapolation.")
 
     while True:
-        proto_position = position_extrapolator.get_robot_position()
+        proto_position = position_solver.get_robot_position()
 
         await autobahn_server.publish(
             config.pos_extrapolator.message_config.post_robot_position_output_topic,

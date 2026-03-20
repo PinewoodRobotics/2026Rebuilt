@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import math
 from typing import Callable, Literal, cast
+
 import numpy as np
 from numpy.typing import NDArray
 import pycolmap
@@ -9,9 +10,6 @@ QuatXYWZ = np.ndarray[tuple[Literal[4]], np.dtype[np.float64]]
 
 
 def _make_ransac_options_fast() -> pycolmap.RANSACOptions:
-    # With AprilTag corners, we generally do not expect outliers within a single tag.
-    # The default COLMAP settings are *very* expensive (min_num_trials=1000, max_num_trials=100000).
-    # Tuning these down is critical for real-time use.
     return pycolmap.RANSACOptions(
         max_error=4.0,
         confidence=0.9999,
@@ -24,10 +22,8 @@ def _make_ransac_options_fast() -> pycolmap.RANSACOptions:
 
 
 def _make_refinement_options_fast() -> pycolmap.AbsolutePoseRefinementOptions:
-    # Keep refinement cheap; default is 100 iterations.
     return pycolmap.AbsolutePoseRefinementOptions(
         max_num_iterations=1000,
-        # Larger tolerance terminates earlier; 1.0 is COLMAP default.
         gradient_tolerance=1.0,
         loss_function_scale=1.0,
         refine_focal_length=False,
@@ -36,8 +32,6 @@ def _make_refinement_options_fast() -> pycolmap.AbsolutePoseRefinementOptions:
     )
 
 
-# Cache COLMAP camera objects across calls, namespaced by the current `pycolmap`
-# module object (tests monkeypatch it).
 _CAMERA_CACHE_BY_PYCOLMAP: dict[
     int, dict[bytes, tuple[pycolmap.Camera, pycolmap.Rigid3d]]
 ] = {}
@@ -49,7 +43,6 @@ class CornersAndWorld:
     T_word_tag_loc: NDArray[np.float64]
     camera_position_in_robot: NDArray[np.float64]
     tag_size: float
-
     camera_matrix: NDArray[np.float64]
     dist_coeff: NDArray[np.float64]
     camera_width: int
@@ -70,23 +63,18 @@ def make_colmap_camera_from_opencv(
     cx, cy = float(cast(np.float64, K33[0, 2])), float(cast(np.float64, K33[1, 2]))
 
     dist_flat = np.asarray(dist, dtype=np.float64).reshape(-1)
-
-    # Use COLMAP's OPENCV model (fx, fy, cx, cy, k1, k2, p1, p2)
-    # Parameter ordering for OPENCV is fx, fy, cx, cy, k1, k2, p1, p2.
-    # [oai_citation:2‡GitHub](https://github.com/colmap/colmap/blob/main/src/colmap/sensor/models.h)
     k1 = float(cast(np.float64, dist_flat[0])) if dist_flat.size > 0 else 0.0
     k2 = float(cast(np.float64, dist_flat[1])) if dist_flat.size > 1 else 0.0
     p1 = float(cast(np.float64, dist_flat[2])) if dist_flat.size > 2 else 0.0
     p2 = float(cast(np.float64, dist_flat[3])) if dist_flat.size > 3 else 0.0
     params = [fx, fy, cx, cy, k1, k2, p1, p2]
 
-    cam = pycolmap.Camera(
+    return pycolmap.Camera(
         model="OPENCV",
         width=width,
         height=height,
         params=params,
     )
-    return cam
 
 
 def rigid3d_from_R_t(
@@ -101,11 +89,6 @@ def rigid3d_from_R_t(
 
 
 def _quat_xyzw_from_R(R: NDArray[np.float64]) -> QuatXYWZ:
-    """
-    Convert a 3x3 rotation matrix to a quaternion in (x, y, z, w) order.
-
-    This matches pycolmap's type stubs for `Rotation3d(xyzw=...)`.
-    """
     R33 = cast(
         np.ndarray[tuple[Literal[3], Literal[3]], np.dtype[np.float64]],
         np.asarray(R, dtype=np.float64).reshape((3, 3)),
@@ -182,19 +165,15 @@ def _transform_points(
 def componentize_transformation_matrix(
     T: NDArray[np.float64],
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
-    R = T[:3, :3]
-    t = T[:3, 3]
-    return R, t
+    return T[:3, :3], T[:3, 3]
 
 
 def solve_pnp_mulicam(tags: list[CornersAndWorld]) -> dict[str, object]:
-    # Deduplicate cameras by their intrinsics+extrinsics so camera indices stay stable.
     cam_key_to_idx: dict[bytes, int] = {}
     cameras: list[pycolmap.Camera] = []
     cams_from_rig: list[pycolmap.Rigid3d] = []
     camera_cache = _CAMERA_CACHE_BY_PYCOLMAP.setdefault(id(pycolmap), {})
 
-    # Pre-allocate for speed: 4 corners per tag.
     num_pts = 4 * len(tags)
     points2D_np = cast(
         np.ndarray[tuple[int, Literal[2]], np.dtype[np.float64]],
@@ -229,9 +208,7 @@ def solve_pnp_mulicam(tags: list[CornersAndWorld]) -> dict[str, object]:
                     tag.camera_matrix,
                     tag.dist_coeff,
                 )
-                Rcr, tcr = componentize_transformation_matrix(
-                    tag.camera_position_in_robot
-                )
+                Rcr, tcr = componentize_transformation_matrix(tag.camera_position_in_robot)
                 cam_from_rig = rigid3d_from_R_t(Rcr, tcr)
                 cached = (cam, cam_from_rig)
                 camera_cache[key] = cached
@@ -260,8 +237,6 @@ def solve_pnp_mulicam(tags: list[CornersAndWorld]) -> dict[str, object]:
         Callable[..., dict[str, object] | None],
         pycolmap.estimate_and_refine_generalized_absolute_pose,
     )
-    # Tests monkeypatch `pycolmap` with minimal fake option classes, so we fall back to
-    # constructing the simplest compatible options when needed.
     try:
         estimation_options = _make_ransac_options_fast()
     except TypeError:
@@ -282,8 +257,6 @@ def solve_pnp_mulicam(tags: list[CornersAndWorld]) -> dict[str, object]:
         refinement_options=refinement_options,
         return_covariance=False,
     )
-
     if result is None:
         raise RuntimeError("Pose estimation failed")
-
     return result

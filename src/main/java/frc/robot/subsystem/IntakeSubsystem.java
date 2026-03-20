@@ -24,8 +24,8 @@ import frc.robot.constant.IntakeConstants.WristRaiseLocation;
 public class IntakeSubsystem extends SubsystemBase {
   private static IntakeSubsystem instance;
 
-  private final SparkMax m_intakeIntakerMotor;
-  private final SparkMax m_intakeWristMotor;
+  private final SparkFlex m_intakeIntakerMotor;
+  private final SparkFlex m_intakeWristMotor;
 
   private Rotation2d m_wristSetpoint = IntakeConstants.WristRaiseLocation.BOTTOM.position;
 
@@ -38,8 +38,8 @@ public class IntakeSubsystem extends SubsystemBase {
   }
 
   private IntakeSubsystem(int intakeMotorID, int wristMotorID) {
-    m_intakeIntakerMotor = new SparkMax(intakeMotorID, MotorType.kBrushless);
-    m_intakeWristMotor = new SparkMax(wristMotorID, MotorType.kBrushless);
+    m_intakeIntakerMotor = new SparkFlex(intakeMotorID, MotorType.kBrushless);
+    m_intakeWristMotor = new SparkFlex(wristMotorID, MotorType.kBrushless);
     configureIntaker();
     configureWrist();
   }
@@ -57,6 +57,7 @@ public class IntakeSubsystem extends SubsystemBase {
     wristConfig.smartCurrentLimit(IntakeConstants.intakeWristCurrentLimit);
     wristConfig.inverted(IntakeConstants.intakeWristInverted);
     wristConfig.closedLoop.feedbackSensor(FeedbackSensor.kAbsoluteEncoder);
+    wristConfig.absoluteEncoder.inverted(IntakeConstants.intakeWristEncoderInverted);
     wristConfig.idleMode(IdleMode.kBrake);
     wristConfig.closedLoop.pid(
         IntakeConstants.intakeWristP,

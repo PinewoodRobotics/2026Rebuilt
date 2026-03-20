@@ -1,5 +1,7 @@
 package frc.robot.subsystem;
 
+import java.util.Arrays;
+
 import org.littletonrobotics.junction.Logger;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -14,6 +16,7 @@ import frc.robot.Robot;
 import frc.robot.constant.BotConstants;
 import frc.robot.constant.CommunicationConstants;
 import frc.robot.util.AimPoint;
+import frc.robot.util.PositionUncertaintyVisualizer;
 import frc4765.proto.util.Position.RobotPosition;
 import lombok.Getter;
 
@@ -23,6 +26,8 @@ public class GlobalPosition extends SubsystemBase {
   private static GlobalPosition self;
   private static Pose2d position = new Pose2d(12.94, 3.52, new Rotation2d(1, 0));
   private static ChassisSpeeds positionVelocity = new ChassisSpeeds(0, 0, 0);
+  private static double[] positionCovariance = new double[0];
+  private static double[][] positionCovarianceMatrix = new double[0][0];
 
   @Getter
   private static boolean isValid = false;
@@ -66,6 +71,8 @@ public class GlobalPosition extends SubsystemBase {
 
       positionVelocity = new ChassisSpeeds(velocity.getX(), velocity.getY(),
           rotationSpeed);
+      positionCovariance = toDoubleArray(position.getPList());
+      positionCovarianceMatrix = PositionUncertaintyVisualizer.covarianceMatrix(positionCovariance);
 
       long now = System.currentTimeMillis();
       positionUpdateHz = 1000.0 / ((double) (now - lastUpdateTime));
@@ -82,6 +89,18 @@ public class GlobalPosition extends SubsystemBase {
 
   public static long getLastUpdateTimeMs() {
     return lastUpdateTime;
+  }
+
+  public static double[] getPositionCovariance() {
+    return Arrays.copyOf(positionCovariance, positionCovariance.length);
+  }
+
+  public static double[][] getPositionCovarianceMatrix() {
+    double[][] copy = new double[positionCovarianceMatrix.length][];
+    for (int i = 0; i < positionCovarianceMatrix.length; i++) {
+      copy[i] = Arrays.copyOf(positionCovarianceMatrix[i], positionCovarianceMatrix[i].length);
+    }
+    return copy;
   }
 
   public static Translation2d Velocity2d(GMFrame velocityType) {
@@ -126,6 +145,13 @@ public class GlobalPosition extends SubsystemBase {
   public void periodic() {
     Logger.recordOutput("Global/pose", position);
     Logger.recordOutput("Global/velocity", positionVelocity);
+    Logger.recordOutput("Global/positionCovariance", positionCovariance);
+    Logger.recordOutput("Global/positionCovarianceMatrix", positionCovarianceMatrix);
+    Logger.recordOutput("Global/positionCovarianceDiagonal",
+        PositionUncertaintyVisualizer.covarianceDiagonal(positionCovariance));
+    Logger.recordOutput("Global/positionStdDev", PositionUncertaintyVisualizer.covarianceStdDev(positionCovariance));
+    Logger.recordOutput("Global/positionCovarianceEllipse",
+        PositionUncertaintyVisualizer.covarianceEllipse(position, positionCovariance));
     if (positionUpdateHz < 100) {
       Logger.recordOutput("Global/positionUpdateHz", positionUpdateHz);
     }
@@ -155,5 +181,13 @@ public class GlobalPosition extends SubsystemBase {
 
     Logger.recordOutput("Global/Position/IsValid", isValid);
     Logger.recordOutput("Global/alliance", BotConstants.alliance);
+  }
+
+  private static double[] toDoubleArray(java.util.List<Float> values) {
+    double[] result = new double[values.size()];
+    for (int i = 0; i < values.size(); i++) {
+      result[i] = values.get(i);
+    }
+    return result;
   }
 }

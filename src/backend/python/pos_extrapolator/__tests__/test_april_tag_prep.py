@@ -1,240 +1,103 @@
 import numpy as np
-from numpy.typing import NDArray
 import pytest
 
-from backend.generated.thrift.config.pos_extrapolator.ttypes import (
-    AprilTagConfig,
-    TagNoiseAdjustConfig,
-    TagNoiseAdjustMode,
-    TagUseImuRotation,
-)
+from backend.generated.thrift.config.pos_extrapolator.ttypes import TagNoiseAdjustMode
 from backend.python.common.util.math import from_theta_to_3x3_mat
-from backend.generated.proto.python.sensor.apriltags_pb2 import (
-    AprilTagData,
-    ProcessedTag,
-    WorldTags,
+from backend.python.pos_extrapolator.__tests__.helpers import (
+    make_processed_tag,
+    make_solver,
 )
-from backend.generated.thrift.config.common.ttypes import GenericMatrix, GenericVector, Point3
-from backend.python.pos_extrapolator.data_prep import DataPreparer, ExtrapolationContext
-from backend.python.pos_extrapolator.position_extrapolator import PositionExtrapolator
-from backend.python.pos_extrapolator.preparers.AprilTagPreparer import (
-    AprilTagDataPreparer,
-    AprilTagDataPreparerConfig,
-    AprilTagPreparerConfig,
+from backend.python.pos_extrapolator.position_solver_2d import PositionSolver2d
+from backend.python.pos_extrapolator.processors.apriltag_processor import (
+    april_tag_noise_adjustment,
+    build_apriltag_measurements,
 )
 
 
-class _FakeFilter:
-    def __init__(self, angle_rad: float = 0.0):
-        self._angle_rad = angle_rad
-
-    def angle(self) -> NDArray[np.float64]:
-        return np.array([np.cos(self._angle_rad), np.sin(self._angle_rad)])
+def _robot_to_camera_translation(vector: np.ndarray) -> np.ndarray:
+    return PositionSolver2d.CAMERA_OUTPUT_TO_ROBOT_ROTATION.T @ vector
 
 
-def from_np_to_point3(
-    pose: NDArray[np.float64], rotation: NDArray[np.float64]
-) -> Point3:
-    return Point3(
-        position=GenericVector(values=[pose[0], pose[1], pose[2]], size=3),
-        rotation=GenericMatrix(
-            values=[
-                [rotation[0, 0], rotation[0, 1], rotation[0, 2]],
-                [rotation[1, 0], rotation[1, 1], rotation[1, 2]],
-                [rotation[2, 0], rotation[2, 1], rotation[2, 2]],
-            ],
-            rows=3,
-            cols=3,
-        ),
-    )
-
-
-def from_robot_coords_to_camera_coords(
-    vector: NDArray[np.float64],
-) -> NDArray[np.float64]:
-    return PositionExtrapolator.CAMERA_OUTPUT_TO_ROBOT_ROTATION.T @ vector
-
-
-def from_robot_rotation_to_camera_rotation(
-    rotation: NDArray[np.float64],
-) -> NDArray[np.float64]:
+def _robot_to_camera_rotation(rotation: np.ndarray) -> np.ndarray:
     return (
-        PositionExtrapolator.CAMERA_OUTPUT_TO_ROBOT_ROTATION.T
+        PositionSolver2d.CAMERA_OUTPUT_TO_ROBOT_ROTATION.T
         @ rotation
-        @ PositionExtrapolator.CAMERA_OUTPUT_TO_ROBOT_ROTATION
+        @ PositionSolver2d.CAMERA_OUTPUT_TO_ROBOT_ROTATION
     )
 
 
-def construct_tag_world(use_imu_rotation: bool = False) -> AprilTagPreparerConfig:
-    tags_in_world: dict[int, Point3] = {}
-    cameras_in_robot: dict[str, Point3] = {}
+def test_apriltag_measurement_converts_into_world_pose_using_predicted_heading():
+    solver = make_solver(insert_predicted_global_rotation=False)
+    tag_R = _robot_to_camera_rotation(from_theta_to_3x3_mat(0))
+    tag_t = _robot_to_camera_translation(np.array([1.0, 0.0, 0.0]))
+    data = make_processed_tag(tag_id=0, pose_R=tag_R, pose_t=tag_t)
 
-    tags_in_world[0] = from_np_to_point3(
-        pose=np.array([0, 0, 0]),
-        rotation=from_theta_to_3x3_mat(0),
-    )
+    output = build_apriltag_measurements(solver, data, "cam0")
 
-    tags_in_world[1] = from_np_to_point3(
-        pose=np.array([1, 0, 0]),
-        rotation=from_theta_to_3x3_mat(90),
-    )
-
-    tags_in_world[2] = from_np_to_point3(
-        pose=np.array([0, 1, 0]),
-        rotation=from_theta_to_3x3_mat(180),
-    )
-
-    tags_in_world[3] = from_np_to_point3(
-        pose=np.array([1, 1, 0]),
-        rotation=from_theta_to_3x3_mat(270),
-    )
-
-    tags_in_world[4] = from_np_to_point3(
-        pose=np.array([0, 1, 0]),
-        rotation=from_theta_to_3x3_mat(360),
-    )
-
-    cameras_in_robot["camera_1"] = from_np_to_point3(
-        pose=np.array([0, 0, 0]),
-        rotation=from_theta_to_3x3_mat(0),
-    )
-
-    tag_use_imu_rotation = (
-        TagUseImuRotation.ALWAYS if use_imu_rotation else TagUseImuRotation.NEVER
-    )
-    april_tag_config = AprilTagConfig(
-        tag_position_config=tags_in_world,
-        camera_position_config=cameras_in_robot,
-        tag_use_imu_rotation=tag_use_imu_rotation,
-        noise_change_modes=[],
-        tag_noise_adjust_config=TagNoiseAdjustConfig(
-            weight_per_m_from_distance_from_tag=0.0,
-            weight_per_degree_from_angle_error_tag=0.0,
-            weight_per_confidence_tag=0.0,
-        ),
-    )
-
-    return AprilTagPreparerConfig(
-        tags_in_world=tags_in_world,
-        cameras_in_robot=cameras_in_robot,
-        use_imu_rotation=tag_use_imu_rotation,
-        april_tag_config=april_tag_config,
-    )
-
-
-def make_april_tag_preparer(
-    use_imu_rotation: bool = False,
-) -> DataPreparer[AprilTagData, AprilTagDataPreparerConfig]:
-    return AprilTagDataPreparer(  # pyright: ignore[reportReturnType]
-        AprilTagDataPreparerConfig(construct_tag_world(use_imu_rotation))
-    )  # type: ignore
-
-
-def make_noise_adjusted_preparer(
-    mode: TagNoiseAdjustMode, config: TagNoiseAdjustConfig
-) -> DataPreparer[AprilTagData, AprilTagDataPreparerConfig]:
-    base_config = construct_tag_world()
-    base_config.april_tag_config.noise_change_modes = [mode]
-    base_config.april_tag_config.tag_noise_adjust_config = config
-    return AprilTagDataPreparer(  # pyright: ignore[reportReturnType]
-        AprilTagDataPreparerConfig(base_config)
-    )  # type: ignore
-
-
-def test_april_tag_prep_one():
-    preparer = make_april_tag_preparer()
-
-    tag_one_R = from_robot_rotation_to_camera_rotation(from_theta_to_3x3_mat(0))
-    tag_one_t = from_robot_coords_to_camera_coords(np.array([1, 0, 0]))
-
-    tag_vision_one = AprilTagData(
-        world_tags=WorldTags(
-            tags=[
-                ProcessedTag(
-                    id=0,
-                    pose_R=tag_one_R.flatten().tolist(),
-                    pose_t=tag_one_t.tolist(),
-                )
-            ]
-        )
-    )
-
-    output = preparer.prepare_input(
-        tag_vision_one,
-        "camera_1",
-        ExtrapolationContext(filter=_FakeFilter(), has_gotten_rotation=False),
-    )
-    assert output is not None
     assert len(output) == 1
-    vals = output[0].get_input()
-    assert vals.shape == (3,)
-    assert np.all(np.isfinite(vals))
-    assert float(vals[0]) == pytest.approx(-1.0, abs=1e-6)
-    assert float(vals[1]) == pytest.approx(0.0, abs=1e-6)
+    measurement = output[0]
+    assert measurement.values.shape == (2,)
+    assert measurement.state_indices == [solver.kPosXIdx, solver.kPosYIdx]
+    assert float(measurement.values[0]) == pytest.approx(-1.0, abs=1e-6)
+    assert float(measurement.values[1]) == pytest.approx(0.0, abs=1e-6)
 
 
-def test_april_tag_prep_two():
-    preparer = make_april_tag_preparer(use_imu_rotation=True)
+def test_apriltag_measurement_uses_unconstrained_theta_when_enabled():
+    solver = make_solver(insert_predicted_global_rotation=True)
+    solver.x[solver.kThetaIdx] = np.deg2rad(30.0)
+    noisy_rotation = _robot_to_camera_rotation(from_theta_to_3x3_mat(10))
+    tag_t = _robot_to_camera_translation(np.array([1.0, 0.0, 0.0]))
+    data = make_processed_tag(tag_id=0, pose_R=noisy_rotation, pose_t=tag_t)
 
-    tag_one_R = from_robot_rotation_to_camera_rotation(
-        from_theta_to_3x3_mat(10)
-    )  # noisy
-    tag_one_t = from_robot_coords_to_camera_coords(np.array([1, 0, 0]))
+    output = build_apriltag_measurements(solver, data, "cam0")
 
-    tag_vision_one = AprilTagData(
-        world_tags=WorldTags(
-            tags=[
-                ProcessedTag(
-                    id=0,
-                    pose_R=tag_one_R.flatten().tolist(),
-                    pose_t=tag_one_t.tolist(),
-                )
-            ]
-        )
-    )
-
-    output = preparer.prepare_input(
-        tag_vision_one,
-        "camera_1",
-        ExtrapolationContext(filter=_FakeFilter(), has_gotten_rotation=False),
-    )
-    assert output is not None
     assert len(output) == 1
+    measurement = output[0]
+    assert measurement.values.shape == (3,)
+    assert measurement.state_indices == [
+        solver.kPosXIdx,
+        solver.kPosYIdx,
+        solver.kThetaIdx,
+    ]
+    assert float(measurement.values[2]) != pytest.approx(float(solver.x[solver.kThetaIdx]))
 
 
-def test_weight_add_config_distance_mode():
-    preparer = make_noise_adjusted_preparer(
-        TagNoiseAdjustMode.ADD_WEIGHT_PER_M_DISTANCE_TAG,
-        TagNoiseAdjustConfig(
-            weight_per_m_from_distance_from_tag=2.0,
-            weight_per_degree_from_angle_error_tag=0.0,
-            weight_per_confidence_tag=0.0,
-        ),
-    )
-    assert preparer.april_tag_config.noise_change_modes == [
+def test_apriltag_distance_noise_adjustment_applies_additive_weight():
+    solver = make_solver()
+    solver.general_config.april_tag_config.noise_change_modes = [
         TagNoiseAdjustMode.ADD_WEIGHT_PER_M_DISTANCE_TAG
     ]
-    assert preparer.april_tag_config.tag_noise_adjust_config is not None
-    assert (
-        preparer.april_tag_config.tag_noise_adjust_config.weight_per_m_from_distance_from_tag
-        == pytest.approx(2.0)
+    solver.general_config.april_tag_config.tag_noise_adjust_config.weight_per_m_from_distance_from_tag = (
+        2.0
     )
+    measurement = np.array([3.0, 4.0, 0.0])
+    tag_R = _robot_to_camera_rotation(from_theta_to_3x3_mat(0))
+    tag_t = _robot_to_camera_translation(np.array([1.0, 0.0, 0.0]))
+    data = make_processed_tag(tag_id=0, pose_R=tag_R, pose_t=tag_t)
+
+    add, mult = april_tag_noise_adjustment(solver, measurement, data.world_tags.tags[0])
+
+    assert add == pytest.approx(10.0)
+    assert mult == pytest.approx(1.0)
 
 
-def test_weight_add_config_confidence_mode():
-    preparer = make_noise_adjusted_preparer(
-        TagNoiseAdjustMode.ADD_WEIGHT_PER_TAG_CONFIDENCE,
-        TagNoiseAdjustConfig(
-            weight_per_m_from_distance_from_tag=0.0,
-            weight_per_degree_from_angle_error_tag=0.0,
-            weight_per_confidence_tag=4.0,
-        ),
-    )
-    assert preparer.april_tag_config.noise_change_modes == [
+def test_apriltag_confidence_noise_adjustment_applies_additive_weight():
+    solver = make_solver()
+    solver.general_config.april_tag_config.noise_change_modes = [
         TagNoiseAdjustMode.ADD_WEIGHT_PER_TAG_CONFIDENCE
     ]
-    assert preparer.april_tag_config.tag_noise_adjust_config is not None
-    assert (
-        preparer.april_tag_config.tag_noise_adjust_config.weight_per_confidence_tag
-        == pytest.approx(4.0)
+    solver.general_config.april_tag_config.tag_noise_adjust_config.weight_per_confidence_tag = (
+        4.0
     )
+    tag_R = _robot_to_camera_rotation(from_theta_to_3x3_mat(0))
+    tag_t = _robot_to_camera_translation(np.array([1.0, 0.0, 0.0]))
+    data = make_processed_tag(tag_id=0, pose_R=tag_R, pose_t=tag_t, confidence=0.25)
+
+    add, mult = april_tag_noise_adjustment(
+        solver,
+        np.array([0.0, 0.0, 0.0]),
+        data.world_tags.tags[0],
+    )
+
+    assert add == pytest.approx(1.0)
+    assert mult == pytest.approx(1.0)

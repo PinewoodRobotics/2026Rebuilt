@@ -1,15 +1,11 @@
 import {
   DataSources,
   PosExtrapolator,
-  TagUseImuRotation,
 } from "generated/thrift/gen-nodejs/pos_extrapolator_types";
-import { MatrixUtil, VectorUtil } from "../util/math";
 import { nav_x_config } from "./imu_config/navx";
 import { kalman_filter } from "./kalman_filter_config";
 import { message_config } from "./message_config";
 import { swerve_odom_config } from "./odom_config/swerve_odom";
-import { comp_lab } from "./tag_config/comp_lab";
-import { reefscape_field } from "./tag_config/reefscape";
 import april_tag_det_config from "./april_tag_det_config";
 
 export const pose_extrapolator: PosExtrapolator = {

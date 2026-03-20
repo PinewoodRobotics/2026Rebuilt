@@ -20,7 +20,8 @@ public class IntakeConstants {
 
   public final static int intakeWristCurrentLimit = 20;
   public final static double intakeWristGearingRatio = 1.0 / 80.0;
-  public final static Rotation2d intakeWristOffset = Rotation2d.fromRotations(0.697); // when the wrist is fully down
+  public final static Rotation2d intakeWristOffset = Rotation2d.fromRotations(0.277); // when the wrist is fully down
+  public final static boolean intakeWristEncoderInverted = true;
 
   public static enum WristRaiseLocation {
     BOTTOM(Rotation2d.fromRotations(0)),

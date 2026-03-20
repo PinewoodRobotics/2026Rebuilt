@@ -1,148 +1,124 @@
-import warnings
-
 import numpy as np
 import pytest
 
-from backend.generated.thrift.config.common.ttypes import GenericMatrix, GenericVector
-from backend.generated.thrift.config.kalman_filter.ttypes import (
-    KalmanFilterConfig,
-    KalmanFilterSensorConfig,
-    KalmanFilterSensorType,
+from backend.python.common.util.math import from_theta_to_3x3_mat
+from backend.python.pos_extrapolator.__tests__.helpers import (
+    BASE_RECEIVED_AT_S,
+    BASE_TIMESTAMP_MS,
+    insert_sensor,
+    make_imu,
+    make_odom,
+    make_processed_tag,
+    make_solver,
 )
-from backend.python.pos_extrapolator.data_prep import KalmanFilterInput
-from backend.python.pos_extrapolator.filters.extended_kalman_filter import (
-    ExtendedKalmanFilterStrategy,
-    _add_to_diagonal,
-)
+from backend.python.pos_extrapolator.position_solver_2d import PositionSolver2d
 
 
-def _eye(n: int) -> list[list[float]]:
-    return [[1.0 if i == j else 0.0 for j in range(n)] for i in range(n)]
+def _robot_to_camera_translation(vector: np.ndarray) -> np.ndarray:
+    return PositionSolver2d.CAMERA_OUTPUT_TO_ROBOT_ROTATION.T @ vector
 
 
-def make_cfg(*, include_sensors: bool = True) -> KalmanFilterConfig:
-    # 6D state: [x, y, vx, vy, angle, omega]
-    dim_x = 6
-    dim_z = 4
-
-    state_vector = GenericVector(values=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], size=dim_x)
-    P = GenericMatrix(values=_eye(dim_x), rows=dim_x, cols=dim_x)
-    Q = GenericMatrix(values=_eye(dim_x), rows=dim_x, cols=dim_x)
-    R = GenericMatrix(values=_eye(dim_z), rows=dim_z, cols=dim_z)
-
-    sensors = {}
-    if include_sensors:
-        sensors = {
-            KalmanFilterSensorType.IMU: {
-                "imu0": KalmanFilterSensorConfig(measurement_noise_matrix=R)
-            }
-        }
-
-    return KalmanFilterConfig(
-        initial_state_vector=state_vector,
-        uncertainty_matrix=P,
-        process_noise_matrix=Q,
-        sensors=sensors,
+def _robot_to_camera_rotation(rotation: np.ndarray) -> np.ndarray:
+    return (
+        PositionSolver2d.CAMERA_OUTPUT_TO_ROBOT_ROTATION.T
+        @ rotation
+        @ PositionSolver2d.CAMERA_OUTPUT_TO_ROBOT_ROTATION
     )
 
 
-def make_kfi(
-    *, sensor_type: KalmanFilterSensorType, sensor_id: str
-) -> KalmanFilterInput:
-    return KalmanFilterInput(
-        input=np.array([0.0, 0.0, 0.0, 0.0]),
-        sensor_id=sensor_id,
-        sensor_type=sensor_type,
+def test_late_apriltag_replays_history_from_the_past():
+    solver = make_solver()
+    insert_sensor(
+        solver,
+        make_odom(vx=1.0, vy=0.0, dt_s=0.1),
+        "odom",
+        BASE_TIMESTAMP_MS,
+        received_at_s=BASE_RECEIVED_AT_S,
+    )
+    insert_sensor(
+        solver,
+        make_odom(vx=1.0, vy=0.0, dt_s=0.1),
+        "odom",
+        BASE_TIMESTAMP_MS + 100,
+        received_at_s=BASE_RECEIVED_AT_S + 0.1,
+    )
+    insert_sensor(
+        solver,
+        make_odom(vx=1.0, vy=0.0, dt_s=0.1),
+        "odom",
+        BASE_TIMESTAMP_MS + 200,
+        received_at_s=BASE_RECEIVED_AT_S + 0.2,
+    )
+    before = solver.get_state()
+
+    tag_R = _robot_to_camera_rotation(from_theta_to_3x3_mat(0))
+    tag_t = _robot_to_camera_translation(np.array([0.9, 0.0, 0.0]))
+    late_tag = make_processed_tag(tag_id=0, pose_R=tag_R, pose_t=tag_t)
+    insert_sensor(
+        solver,
+        late_tag,
+        "cam0",
+        BASE_TIMESTAMP_MS + 50,
+        received_at_s=BASE_RECEIVED_AT_S + 0.05,
+    )
+    after = solver.get_state()
+
+    assert float(before[solver.kPosXIdx]) == pytest.approx(0.2, abs=1e-6)
+    assert float(after[solver.kPosXIdx]) < float(before[solver.kPosXIdx])
+
+
+def test_predict_jacobian_tracks_heading_sensitivity():
+    solver = make_solver(initial_state=[0.0, 0.0, np.pi / 2])
+    insert_sensor(
+        solver,
+        make_odom(vx=1.0, vy=0.0, dt_s=0.1),
+        "odom",
+        BASE_TIMESTAMP_MS,
+        received_at_s=BASE_RECEIVED_AT_S,
+    )
+    insert_sensor(
+        solver,
+        make_odom(vx=1.0, vy=0.0, dt_s=0.1),
+        "odom",
+        BASE_TIMESTAMP_MS + 100,
+        received_at_s=BASE_RECEIVED_AT_S + 0.1,
     )
 
-
-def test_get_R_sensors_mapping_contains_sensor_and_id():
-    ekf = ExtendedKalmanFilterStrategy(make_cfg(), fake_dt=0.1)
-    assert KalmanFilterSensorType.IMU in ekf.R_sensors
-    assert "imu0" in ekf.R_sensors[KalmanFilterSensorType.IMU]
-    assert ekf.R_sensors[KalmanFilterSensorType.IMU]["imu0"].shape == (4, 4)
+    assert float(solver.F[solver.kPosXIdx, solver.kThetaIdx]) == pytest.approx(-0.1)
 
 
-def test_insert_data_warns_and_skips_unknown_sensor_type():
-    ekf = ExtendedKalmanFilterStrategy(make_cfg(), fake_dt=0.1)
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        ekf.insert_data(
-            make_kfi(sensor_type=KalmanFilterSensorType.ODOMETRY, sensor_id="odom")
-        )
-        assert any("Sensor type" in str(x.message) for x in w)
+def test_get_confidence_returns_constant_one():
+    solver = make_solver()
+    solver.P = np.eye(3)
+    assert solver.get_confidence() == 1.0
 
 
-def test_insert_data_warns_and_skips_unknown_sensor_id():
-    ekf = ExtendedKalmanFilterStrategy(make_cfg(), fake_dt=0.1)
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        ekf.insert_data(
-            make_kfi(sensor_type=KalmanFilterSensorType.IMU, sensor_id="missing")
-        )
-        assert any("Sensor id" in str(x.message) for x in w)
+def test_future_projection_rotates_heading_with_angular_velocity():
+    solver = make_solver()
+    insert_sensor(
+        solver,
+        make_imu(theta_rad=0.0, omega=1.0),
+        "imu0",
+        BASE_TIMESTAMP_MS,
+        received_at_s=BASE_RECEIVED_AT_S,
+    )
+
+    projected = solver.get_robot_state_estimate(future_s=np.pi / 2)
+
+    assert float(projected[4]) == pytest.approx(np.pi / 2, abs=1e-6)
+    assert float(projected[5]) == pytest.approx(1.0, abs=1e-6)
 
 
-def test_prediction_step_clamps_dt_when_negative_or_too_large(monkeypatch):
-    ekf = ExtendedKalmanFilterStrategy(make_cfg(), fake_dt=None)
+def test_imu_velocity_rotates_world_velocity_output():
+    solver = make_solver(imu_use_velocity=True, initial_state=[0.0, 0.0, np.pi / 2])
+    insert_sensor(
+        solver,
+        make_imu(theta_rad=np.pi / 2, omega=0.0, vx=1.0, vy=0.0),
+        "imu0",
+        BASE_TIMESTAMP_MS,
+        received_at_s=BASE_RECEIVED_AT_S,
+    )
 
-    # Too large dt
-    ekf.last_update_time = 0.0
-    monkeypatch.setattr("time.time", lambda: 10_000.0)
-    ekf.prediction_step()
-    assert ekf.F[0, 2] == pytest.approx(0.05)
-    assert ekf.F[1, 3] == pytest.approx(0.05)
-
-    # Negative dt
-    ekf.last_update_time = 10_000.0
-    monkeypatch.setattr("time.time", lambda: 9_999.0)
-    ekf.prediction_step()
-    assert ekf.F[0, 2] == pytest.approx(0.05)
-    assert ekf.F[1, 3] == pytest.approx(0.05)
-
-
-def test_set_delta_t_sets_velocity_and_rotation_entries():
-    ekf = ExtendedKalmanFilterStrategy(make_cfg(), fake_dt=0.1)
-    ekf._debug_set_state(np.array([0.0, 0.0, 0.0, 0.0, 0.6, 0.2]))
-    ekf.set_delta_t(0.2)
-    assert ekf.F[0, 2] == pytest.approx(0.2)
-    assert ekf.F[1, 3] == pytest.approx(0.2)
-    assert ekf.F[4, 5] == pytest.approx(0.2)
-
-
-def test_get_confidence_currently_returns_constant_one():
-    ekf = ExtendedKalmanFilterStrategy(make_cfg(), fake_dt=0.1)
-    ekf.P = np.eye(6)
-    ekf.P[0, 0] = np.nan
-    assert ekf.get_confidence() == 1.0
-
-    ekf.P = np.eye(6)
-    ekf.P[2, 2] = np.inf
-    assert ekf.get_confidence() == 1.0
-
-
-def test_add_to_diagonal_adds_value_to_diagonal_entries():
-    m = np.zeros((3, 3), dtype=float)
-    _add_to_diagonal(m, 2.5)
-    assert np.allclose(np.diag(m), np.array([2.5, 2.5, 2.5]))
-
-
-def test_get_state_future_predicts_from_current_filter_time():
-    ekf = ExtendedKalmanFilterStrategy(make_cfg(), fake_dt=1.0)
-    ekf._debug_set_state(np.array([0.0, 0.0, 2.0, 0.0, 0.0, 0.0]))
-
-    projected = ekf.get_state(future_s=2.0)
-
-    # get_state() projects +2s from current state (x=4), then advances filter by fake_dt (x=2)
-    assert projected[0] == pytest.approx(4.0)
-    assert ekf.x[0] == pytest.approx(2.0)
-
-
-def test_get_state_future_rotates_direction_with_angular_velocity():
-    ekf = ExtendedKalmanFilterStrategy(make_cfg(), fake_dt=0.0)
-    ekf._debug_set_state(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]))
-
-    projected = ekf.get_state(future_s=np.pi / 2)
-
-    assert projected[4] == pytest.approx(np.pi / 2, abs=1e-6)
-    assert projected[5] == pytest.approx(1.0, abs=1e-6)
+    estimate = solver.get_robot_state_estimate()
+    assert float(estimate[2]) == pytest.approx(0.0, abs=1e-6)
+    assert float(estimate[3]) == pytest.approx(1.0, abs=1e-6)

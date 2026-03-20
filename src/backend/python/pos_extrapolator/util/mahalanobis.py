@@ -46,11 +46,11 @@ def mahalanobis_distance(
     try:
         c, lower = cho_factor(R, check_finite=False)
         v = cho_solve((c, lower), y, check_finite=False)  # v = R^{-1} y
-        d2 = float(y.T @ v)  # y^T R^{-1} y
+        d2 = float((y.T @ v).item())  # y^T R^{-1} y
     except LinAlgError:
         # Fall back to pseudo-inverse for semi-definite / near-singular R
         R_pinv = pinvh(R, check_finite=False)
-        d2 = float(y.T @ (R_pinv @ y))
+        d2 = float((y.T @ (R_pinv @ y)).item())
 
     return d2 if squared else float(np.sqrt(d2))
 
