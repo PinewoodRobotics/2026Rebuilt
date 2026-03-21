@@ -5,6 +5,7 @@ import org.littletonrobotics.junction.Logger;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.ClosedLoopGeneralConfigs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.AudioConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
@@ -123,6 +124,10 @@ public class WheelMoverTalonFX extends WheelMoverBase {
 
     m_turnMotor.setPosition(
         turnCANcoder.getAbsolutePosition().getValueAsDouble());
+
+    AudioConfigs audioConfigs = new AudioConfigs().withAllowMusicDurDisable(true);
+    m_driveMotor.getConfigurator().apply(audioConfigs);
+    m_turnMotor.getConfigurator().apply(audioConfigs);
   }
 
   @Override
@@ -193,6 +198,14 @@ public class WheelMoverTalonFX extends WheelMoverBase {
 
   public double getCANCoderAngle() {
     return turnCANcoder.getAbsolutePosition().getValueAsDouble();
+  }
+
+  public TalonFX getDriveMotor() {
+    return m_driveMotor;
+  }
+
+  public TalonFX getTurnMotor() {
+    return m_turnMotor;
   }
 
   @Override

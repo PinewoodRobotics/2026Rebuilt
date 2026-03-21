@@ -1,5 +1,6 @@
 package frc.robot.subsystem;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.littletonrobotics.junction.Logger;
@@ -7,6 +8,8 @@ import org.pwrup.SwerveDrive;
 import org.pwrup.util.Config;
 import org.pwrup.util.Vec2;
 import org.pwrup.util.Wheel;
+
+import com.ctre.phoenix6.hardware.TalonFX;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.units.Units;
@@ -251,6 +254,25 @@ public class SwerveSubsystem extends SubsystemBase {
         m_rearLeftSwerveModule.getState(),
         m_rearRightSwerveModule.getState(),
     };
+  }
+
+  public List<TalonFX> getMusicTalonMotors() {
+    if (m_frontLeftSwerveModule instanceof WheelMoverTalonFX frontLeft
+        && m_frontRightSwerveModule instanceof WheelMoverTalonFX frontRight
+        && m_rearLeftSwerveModule instanceof WheelMoverTalonFX rearLeft
+        && m_rearRightSwerveModule instanceof WheelMoverTalonFX rearRight) {
+      return List.of(
+          frontLeft.getTurnMotor(),
+          frontRight.getTurnMotor(),
+          rearLeft.getTurnMotor(),
+          rearRight.getTurnMotor(),
+          frontLeft.getDriveMotor(),
+          frontRight.getDriveMotor(),
+          rearLeft.getDriveMotor(),
+          rearRight.getDriveMotor());
+    }
+
+    return List.of();
   }
 
   public void resetDriverRelative() {

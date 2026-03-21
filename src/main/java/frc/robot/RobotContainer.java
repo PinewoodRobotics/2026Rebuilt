@@ -25,6 +25,7 @@ import frc.robot.subsystem.IndexSubsystem;
 import frc.robot.subsystem.IntakeSubsystem;
 import frc.robot.subsystem.MatchStatusSubsystem;
 import frc.robot.subsystem.OdometrySubsystem;
+import frc.robot.subsystem.OrchestraSubsystem;
 import frc.robot.subsystem.PathPlannerSubsystem;
 import frc.robot.subsystem.ShooterSubsystem;
 import frc.robot.subsystem.SwerveSubsystem;
@@ -55,6 +56,7 @@ public class RobotContainer {
     UnifiedGyro.GetInstance();
     OdometrySubsystem.GetInstance(UnifiedGyro.GetInstance());
     SwerveSubsystem.GetInstance(UnifiedGyro.GetInstance());
+    OrchestraSubsystem.GetInstance();
 
     TurretSubsystem.GetInstance();
     ShooterSubsystem.GetInstance();

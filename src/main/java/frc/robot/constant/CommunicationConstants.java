@@ -7,6 +7,8 @@ public class CommunicationConstants {
   public static final String kCameraViewTopic = "apriltag/camera";
   public static final String kCameraTagsViewTopic = "apriltag/tag";
   public static final String kMatchStatusCameraTopic = "camera/front_left/video";
+  public static final String kMatchHudRoot = "matchhud";
+  public static final String kMatchHudStateTableName = "state";
 
   public static final String kOdometrySensorId = "odom";
 
