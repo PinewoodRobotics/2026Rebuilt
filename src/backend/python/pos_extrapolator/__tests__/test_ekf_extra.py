@@ -122,3 +122,75 @@ def test_imu_velocity_rotates_world_velocity_output():
     estimate = solver.get_robot_state_estimate()
     assert float(estimate[2]) == pytest.approx(0.0, abs=1e-6)
     assert float(estimate[3]) == pytest.approx(1.0, abs=1e-6)
+
+
+def test_odometry_prediction_stays_smooth_after_tag_correction():
+    solver = make_solver(insert_predicted_global_rotation=False)
+    tag_R = _robot_to_camera_rotation(from_theta_to_3x3_mat(0))
+    tag_t = _robot_to_camera_translation(np.array([1.0, 0.0, 0.0]))
+    insert_sensor(
+        solver,
+        make_processed_tag(tag_id=0, pose_R=tag_R, pose_t=tag_t),
+        "cam0",
+        BASE_TIMESTAMP_MS,
+        received_at_s=BASE_RECEIVED_AT_S,
+    )
+
+    positions: list[float] = []
+    for step in range(1, 4):
+        insert_sensor(
+            solver,
+            make_odom(vx=1.0, vy=0.0, dt_s=0.1),
+            "odom",
+            BASE_TIMESTAMP_MS + (step * 100),
+            received_at_s=BASE_RECEIVED_AT_S + (step * 0.1),
+        )
+        positions.append(float(solver.get_state()[solver.kPosXIdx]))
+
+    deltas = np.diff(positions)
+    assert positions == pytest.approx(sorted(positions), abs=1e-6)
+    assert deltas == pytest.approx([0.1, 0.1], abs=1e-6)
+
+
+def test_stale_late_tag_is_ignored_once_history_seed_has_advanced():
+    solver = make_solver(insert_predicted_global_rotation=False)
+    tag_R = _robot_to_camera_rotation(from_theta_to_3x3_mat(0))
+    initial_tag_t = _robot_to_camera_translation(np.array([1.0, 0.0, 0.0]))
+    insert_sensor(
+        solver,
+        make_processed_tag(tag_id=0, pose_R=tag_R, pose_t=initial_tag_t),
+        "cam0",
+        BASE_TIMESTAMP_MS,
+        received_at_s=BASE_RECEIVED_AT_S,
+    )
+    insert_sensor(
+        solver,
+        make_odom(vx=1.0, vy=0.0, dt_s=0.1),
+        "odom",
+        BASE_TIMESTAMP_MS + 100,
+        received_at_s=BASE_RECEIVED_AT_S + 0.1,
+    )
+    insert_sensor(
+        solver,
+        make_odom(vx=1.0, vy=0.0, dt_s=0.9),
+        "odom",
+        BASE_TIMESTAMP_MS + 1000,
+        received_at_s=BASE_RECEIVED_AT_S + 1.0,
+    )
+    before = solver.get_state().copy()
+
+    tag_t = _robot_to_camera_translation(np.array([0.9, 0.0, 0.0]))
+    insert_sensor(
+        solver,
+        make_processed_tag(tag_id=0, pose_R=tag_R, pose_t=tag_t),
+        "cam0",
+        BASE_TIMESTAMP_MS + 50,
+        received_at_s=BASE_RECEIVED_AT_S + 1.05,
+    )
+    after = solver.get_state()
+
+    assert float(before[solver.kPosXIdx]) == pytest.approx(
+        0.09090909090909094,
+        abs=1e-6,
+    )
+    assert np.allclose(after, before)

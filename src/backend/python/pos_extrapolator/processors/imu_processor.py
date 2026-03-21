@@ -9,10 +9,8 @@ from backend.generated.thrift.config.kalman_filter.ttypes import (
 from backend.python.pos_extrapolator.processor_registry import processor_for_data
 
 if TYPE_CHECKING:
-    from backend.python.pos_extrapolator.position_solver_2d import (
-        PositionSolver2d,
-        SensorEvent,
-    )
+    from backend.python.pos_extrapolator.position_solver_2d import PositionSolver2d
+    from backend.python.pos_extrapolator.util.solver_models import SensorEvent
 
 
 @processor_for_data(KalmanFilterSensorType.IMU)

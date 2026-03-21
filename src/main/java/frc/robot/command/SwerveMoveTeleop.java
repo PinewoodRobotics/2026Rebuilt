@@ -133,7 +133,7 @@ public class SwerveMoveTeleop extends Command {
   public void execute() {
     double multi = (BotConstants.alliance == Alliance.Red ? -1 : 1);
     double rawR = LocalMath.deadband(
-        controller.leftFlightStick.getJoystickRotation(),
+        -controller.leftFlightStick.getJoystickRotation(),
         ControllerConstants.kRotDeadband,
         ControllerConstants.kRotMinValue);
 

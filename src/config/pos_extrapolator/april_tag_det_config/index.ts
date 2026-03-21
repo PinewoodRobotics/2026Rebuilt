@@ -36,6 +36,7 @@ const april_tag_pos_config: AprilTagConfig = {
     min_distance_from_tag_to_use_noise_adjustment: 1.5,
   },
   insert_predicted_global_rotation: true,
+  apriltag_mahalanobis_gate_threshold: 5.0,
 };
 
 export default april_tag_pos_config;

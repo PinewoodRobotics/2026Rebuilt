@@ -81,6 +81,7 @@ public class OdometrySubsystem extends SubsystemBase implements IDataClass {
     var positionChange = getPoseDifference();
     var timeChange = getTimeDifference();
     var latestPosition = getLatestPosition();
+    var chassisSpeeds = SwerveSubsystem.GetInstance().getChassisSpeeds();
 
     var rotation = Vector2.newBuilder().setX((float) latestPosition.getRotation().getCos())
         .setY((float) latestPosition.getRotation().getSin())
@@ -92,8 +93,8 @@ public class OdometrySubsystem extends SubsystemBase implements IDataClass {
         .setDirection(rotation)
         .build();
 
-    var velocity = Vector2.newBuilder().setX((float) SwerveSubsystem.GetInstance().getChassisSpeeds().vxMetersPerSecond)
-        .setY((float) SwerveSubsystem.GetInstance().getChassisSpeeds().vyMetersPerSecond)
+    var velocity = Vector2.newBuilder().setX((float) chassisSpeeds.vxMetersPerSecond)
+        .setY((float) chassisSpeeds.vyMetersPerSecond)
         .build();
 
     var positionChangeVec = Vector2.newBuilder().setX((float) positionChange.getX()).setY((float) positionChange.getY())
@@ -105,7 +106,9 @@ public class OdometrySubsystem extends SubsystemBase implements IDataClass {
             .setVelocity(velocity)
             .setPositionChange(positionChangeVec)
             .setTimeChangeS((float) timeChange)
-            .build());
+            .setOmega((float) chassisSpeeds.omegaRadiansPerSecond)
+            .build())
+        .setTimestamp(System.currentTimeMillis());
 
     return all.build().toByteArray();
   }
@@ -125,5 +128,6 @@ public class OdometrySubsystem extends SubsystemBase implements IDataClass {
     timedPositions[1] = odometry.update(gyro.getRotation2d(), positions);
 
     Logger.recordOutput("Odometry/Position", timedPositions[1]);
+    Logger.recordOutput("Odometry/Velocity", swerve.getChassisSpeeds());
   }
 }

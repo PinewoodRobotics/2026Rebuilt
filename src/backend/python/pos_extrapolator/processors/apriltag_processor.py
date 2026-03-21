@@ -14,7 +14,10 @@ from backend.generated.thrift.config.common.ttypes import Point3
 from backend.generated.thrift.config.kalman_filter.ttypes import (
     KalmanFilterSensorType,
 )
-from backend.generated.thrift.config.pos_extrapolator.ttypes import TagNoiseAdjustMode
+from backend.generated.thrift.config.pos_extrapolator.ttypes import (
+    AprilTagConfig,
+    TagNoiseAdjustMode,
+)
 from backend.python.common.util.math import (
     create_transformation_matrix,
     from_float_list,
@@ -25,12 +28,20 @@ from backend.python.common.util.math import (
     make_transformation_matrix_p_d,
 )
 from backend.python.pos_extrapolator.processor_registry import processor_for_data
+from backend.python.pos_extrapolator.util.mahalanobis import mahalanobis_distance
 
 if TYPE_CHECKING:
-    from backend.python.pos_extrapolator.position_solver_2d import (
-        PositionSolver2d,
-        SensorEvent,
-    )
+    from backend.python.pos_extrapolator.position_solver_2d import PositionSolver2d
+    from backend.python.pos_extrapolator.util.solver_models import SensorEvent
+
+kDefaultAprilTagMahalanobisGateThreshold = 5.0
+
+
+def _apriltag_mahalanobis_gate_threshold(april_cfg: AprilTagConfig) -> float:
+    t = april_cfg.apriltag_mahalanobis_gate_threshold
+    if t is None:
+        return kDefaultAprilTagMahalanobisGateThreshold
+    return float(t)
 
 
 @dataclass
@@ -53,15 +64,15 @@ def process_apriltags(solver: "PositionSolver2d", event: "SensorEvent") -> None:
 
     solver.predict_to_timestamp(event.timestamp_s, solver.current_control)
 
+    gate_threshold = _apriltag_mahalanobis_gate_threshold(
+        solver.general_config.april_tag_config
+    )
+
     for measurement in build_apriltag_measurements(solver, data, sensor_id):
-        sensor_indices = [
-            solver.kPosXIdx if state_idx == solver.kPosXIdx else state_idx
-            for state_idx in measurement.state_indices
-        ]
         R = solver._sensor_noise(
             KalmanFilterSensorType.APRIL_TAG,
             sensor_id,
-            sensor_indices,
+            measurement.state_indices,
         )
         R = R * measurement.mult
         if measurement.add != 0.0:
@@ -69,9 +80,12 @@ def process_apriltags(solver: "PositionSolver2d", event: "SensorEvent") -> None:
             for idx in range(min(R.shape[0], R.shape[1])):
                 R[idx, idx] += measurement.add
 
-        if not solver.should_accept_apriltag_measurement(
+        if not should_accept_apriltag_measurement(
             measurement.values[:2],
             R if R.shape[0] >= 2 else np.eye(2, dtype=np.float64),
+            solver.P,
+            solver.x,
+            gate_threshold=gate_threshold,
         ):
             continue
 
@@ -80,8 +94,6 @@ def process_apriltags(solver: "PositionSolver2d", event: "SensorEvent") -> None:
             state_indices=measurement.state_indices,
             R=R,
         )
-        if solver.kThetaIdx in measurement.state_indices:
-            solver.has_gotten_rotation = True
 
 
 def build_apriltag_measurements(
@@ -166,7 +178,6 @@ def _solve_world_measurement_from_tag(
         T_tag_in_camera=T_tag_in_camera,
         T_camera_in_robot=T_camera_in_robot,
         T_tag_in_world=T_tag_in_world,
-        R_robot_rotation_world=predicted_robot_rotation_world,
     )
     position_world, constrained_rotation_world = get_translation_rotation_components(
         robot_in_world_with_predicted_theta
@@ -223,3 +234,24 @@ def april_tag_noise_adjustment(
         total_add += float(config.weight_per_confidence_tag) * float(tag.confidence)
 
     return total_add, total_mult
+
+
+def should_accept_apriltag_measurement(
+    measurement_xy: NDArray[np.float64],
+    measurement_covariance: NDArray[np.float64],
+    P: NDArray[np.float64],
+    x: NDArray[np.float64],
+    *,
+    gate_threshold: float,
+) -> bool:
+    state_indices = [0, 1]
+    innovation_covariance = P[np.ix_(state_indices, state_indices)] + (
+        measurement_covariance[np.ix_([0, 1], [0, 1])]
+    )
+    distance = mahalanobis_distance(
+        measurement_xy,
+        x[state_indices],
+        innovation_covariance,
+    )
+
+    return distance <= gate_threshold

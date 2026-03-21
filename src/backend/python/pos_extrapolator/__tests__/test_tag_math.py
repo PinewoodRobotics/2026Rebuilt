@@ -8,7 +8,7 @@ import numpy as np
 from numpy.typing import NDArray
 import pytest
 
-import backend.python.pos_extrapolator.tag_math as tm
+import backend.python.pos_extrapolator.util.tag_math as tm
 
 
 ArrF64 = NDArray[np.float64]

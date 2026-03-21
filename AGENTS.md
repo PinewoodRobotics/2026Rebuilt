@@ -37,6 +37,7 @@
 
 - Confirm whether automation should keep `TEAM_NUMBER=4765` and `EXPECTED_NUM_OF_PIS=3` as defaults or document per-robot override policy.
 - `README.md` and `docs/HowToInitialize.md` still reference older/manual backend setup (`applyBackend`, `make prep-project`, raw `pip install -r requirements.txt`); update docs to `deployBackend`/`make initialize` and mention `make generate`'s `.venv` dependency.
+- Recent `src/backend/python/pos_extrapolator/__tests__` growth has no dedicated top-level target yet; decide whether to add/document a focused pytest workflow (currently routed through `make test`).
 
 ## Agent docs
 

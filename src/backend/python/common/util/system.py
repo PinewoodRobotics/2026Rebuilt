@@ -110,8 +110,10 @@ def get_config_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def get_system_name(args: argparse.Namespace = get_config_parser().parse_args()) -> str:
+def get_system_name(args: argparse.Namespace | None = None) -> str:
     global self_name
+    if args is None:
+        args, _ = get_config_parser().parse_known_args()
     if self_name is None:
         with open(args.name_file_path, "r") as f:
             self_name = f.read().strip()
@@ -120,8 +122,10 @@ def get_system_name(args: argparse.Namespace = get_config_parser().parse_args())
 
 
 def load_basic_system_config(
-    args: argparse.Namespace = get_config_parser().parse_args(),
+    args: argparse.Namespace | None = None,
 ) -> BasicSystemConfig:
+    if args is None:
+        args, _ = get_config_parser().parse_known_args()
     system_name = get_system_name(args)
 
     with open(args.basic_system_config_file_path, "r") as f:
@@ -134,7 +138,7 @@ def load_basic_system_config(
 
 
 def load_configs() -> tuple[BasicSystemConfig, Config]:
-    args = get_config_parser().parse_args()
+    args, _ = get_config_parser().parse_known_args()
     basic_system_config = load_basic_system_config(args)
     config = from_uncertainty_config(args.config_file_path)
     if config is None or basic_system_config is None:

@@ -63,7 +63,10 @@ public class IntakeSubsystem extends SubsystemBase {
         IntakeConstants.intakeWristP,
         IntakeConstants.intakeWristI,
         IntakeConstants.intakeWristD)
-        .iZone(IntakeConstants.intakeWristIZone);
+        .iZone(IntakeConstants.intakeWristIZone)
+        .positionWrappingEnabled(true)
+        .positionWrappingMinInput(0)
+        .positionWrappingMinInput(1);
 
     wristConfig.absoluteEncoder.zeroOffset(IntakeConstants.intakeWristOffset.getRotations());
 

@@ -5,8 +5,8 @@ import edu.wpi.first.math.geometry.Rotation2d;
 public class IntakeConstants {
   public static final int intakeIntakerMotorID = 33;
   public static final boolean intakeIntakerInverted = true;
-  public static final double intakeMotorSpeed = 0.3;
-  public static final double extakeMotorSpeed = -0.3;
+  public static final double intakeMotorSpeed = 0.2;
+  public static final double extakeMotorSpeed = -0.2;
 
   public static final int intakeWristMotorID = 34;
   public static final boolean intakeWristInverted = false;

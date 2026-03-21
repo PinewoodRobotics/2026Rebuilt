@@ -8,13 +8,15 @@ from backend.generated.proto.python.sensor.odometry_pb2 import OdometryData
 from backend.generated.thrift.config.kalman_filter.ttypes import (
     KalmanFilterSensorType,
 )
+from backend.python.common.debug.logger import info
 from backend.python.pos_extrapolator.processor_registry import processor_for_data
 
 if TYPE_CHECKING:
-    from backend.python.pos_extrapolator.position_solver_2d import (
-        PositionSolver2d,
-        SensorEvent,
-    )
+    from backend.python.pos_extrapolator.position_solver_2d import PositionSolver2d
+    from backend.python.pos_extrapolator.util.solver_models import SensorEvent
+
+
+_debug_log_counter = 0
 
 
 @processor_for_data(KalmanFilterSensorType.ODOMETRY)
