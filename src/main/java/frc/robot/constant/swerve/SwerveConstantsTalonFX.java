@@ -14,20 +14,20 @@ import edu.wpi.first.units.measure.LinearVelocity;
 
 public class SwerveConstantsTalonFX {
   public static final Translation2d rearLeftTranslation = new Translation2d(
-      -0.3429,
-      0.3429);
+      -0.5842,
+      0.5842);
 
   public static final Translation2d rearRightTranslation = new Translation2d(
-      -0.3429,
-      -0.3429);
+      -0.5842,
+      -0.5842);
 
   public static final Translation2d frontRightTranslation = new Translation2d(
-      0.3429,
-      -0.3429);
+      0.5842,
+      -0.5842);
 
   public static final Translation2d frontLeftTranslation = new Translation2d(
-      0.3429,
-      0.3429);
+      0.5842,
+      0.5842);
 
   public static final LinearVelocity kMaxSpeed = Units.MetersPerSecond.of(0);
   public static final LinearAcceleration kMaxLinearAcceleration = Units.MetersPerSecondPerSecond.of(0);

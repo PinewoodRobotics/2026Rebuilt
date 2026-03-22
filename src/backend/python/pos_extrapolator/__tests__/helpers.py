@@ -30,6 +30,7 @@ from backend.generated.thrift.config.pos_extrapolator.ttypes import (
     PosExtrapolator,
     PosExtrapolatorMessageConfig,
     TagNoiseAdjustConfig,
+    TagRejectConfig,
 )
 from backend.python.common.util.math import from_theta_to_3x3_mat
 from backend.python.pos_extrapolator.position_solver_2d import PositionSolver2d
@@ -86,11 +87,16 @@ def make_config(
         tag_position_config=tags_in_world,
         camera_position_config=cameras_in_robot,
         noise_change_modes=[],
+        reject_modes=[],
         tag_noise_adjust_config=TagNoiseAdjustConfig(
             weight_per_m_from_distance_from_tag=0.0,
             weight_per_degree_from_angle_error_tag=0.0,
             weight_per_confidence_tag=0.0,
             min_distance_from_tag_to_use_noise_adjustment=0.0,
+        ),
+        tag_reject_config=TagRejectConfig(
+            max_distance_from_tag=0.0,
+            min_tag_confidence=0.0,
         ),
         insert_predicted_global_rotation=insert_predicted_global_rotation,
     )

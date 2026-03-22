@@ -70,7 +70,7 @@ public class SwerveMoveTeleop extends Command {
         new Vec2(rawX, rawY),
         rawR);
 
-    m_swerveSubsystem.drive(velocity, SwerveSubsystem.DriveType.DRIVER_RELATIVE);
+    m_swerveSubsystem.drive(velocity, SwerveSubsystem.DriveType.FIELD_RELATIVE);
   }
 
   @Override

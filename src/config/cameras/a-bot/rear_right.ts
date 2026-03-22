@@ -7,7 +7,7 @@ import { CameraConstants } from "../camera_constants";
 
 const name = "rear_right";
 
-const rear_left: CameraParameters = {
+const rear_right: CameraParameters = {
   pi_to_run_on: "tynan",
   name: name,
   camera_path: "/dev/usb_cam4",
@@ -36,4 +36,4 @@ const rear_left: CameraParameters = {
   do_detection: true,
 };
 
-export default rear_left;
+export default rear_right;

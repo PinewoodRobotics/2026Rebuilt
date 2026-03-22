@@ -7,7 +7,7 @@ import { CameraConstants } from "../camera_constants";
 
 const name = "rear_left";
 
-const rear_right: CameraParameters = {
+const rear_left: CameraParameters = {
   pi_to_run_on: "agatha-king",
   name: name,
   camera_path: "/dev/usb_cam3",
@@ -36,4 +36,4 @@ const rear_right: CameraParameters = {
   do_detection: true,
 };
 
-export default rear_right;
+export default rear_left;

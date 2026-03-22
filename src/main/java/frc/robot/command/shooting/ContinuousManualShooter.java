@@ -43,6 +43,7 @@ public class ContinuousManualShooter extends Command {
   @Override
   public void execute() {
     Logger.recordOutput("ContinuousManualShooter/Time", System.currentTimeMillis());
+
     AngularVelocity speed = speedSupplier.get();
     shooterSubsystem.setShooterVelocity(speed);
 

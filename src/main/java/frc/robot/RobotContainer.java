@@ -80,6 +80,9 @@ public class RobotContainer {
     setClimberCommands();
 
     BotConstants.SetAlliance();
+
+    PublicationSubsystem.ClearAll();
+    PublicationSubsystem.addDataClass(OdometrySubsystem.GetInstance());
   }
 
   private void setSwerveCommands() {
@@ -229,15 +232,11 @@ public class RobotContainer {
   }
 
   public void onAnyModeStart() {
-    PublicationSubsystem.ClearAll();
     var globalPosition = GlobalPosition.Get();
     if (globalPosition != null) {
       UnifiedGyro.GetInstance().resetRotation(globalPosition.getRotation());
       OdometrySubsystem.GetInstance().setOdometryPosition(globalPosition);
     }
-
-    UnifiedGyro.Register();
-    PublicationSubsystem.addDataClass(OdometrySubsystem.GetInstance());
     BotConstants.SetAlliance();
   }
 }

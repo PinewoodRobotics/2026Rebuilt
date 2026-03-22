@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import time
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
@@ -19,7 +20,10 @@ from backend.generated.thrift.config.pos_extrapolator.ttypes import (
     PosExtrapolator,
     TagNoiseAdjustConfig,
     TagNoiseAdjustMode,
+    TagRejectConfig,
+    TagRejectMode,
 )
+from backend.python.common.debug.logger import warning
 from backend.python.common.util.math import (
     create_transformation_matrix,
     extract_2d_from_3d_transformation,
@@ -34,6 +38,10 @@ from backend.python.common.util.math import (
 from backend.python.pos_extrapolator.processor_registry import processor_for_data
 from backend.python.pos_extrapolator.util.extrapolator_math import rotation_matrix_2d
 from backend.python.pos_extrapolator.util.mahalanobis import mahalanobis_distance
+from backend.python.pos_extrapolator.util.measurement_rate_log import (
+    log_apriltags_measurement_hz,
+    log_odometry_measurement_hz,
+)
 
 if TYPE_CHECKING:
     from backend.python.pos_extrapolator.position_solver_2d import PositionSolver2d
@@ -112,6 +120,8 @@ def process_apriltags(solver: "PositionSolver2d", event: "SensorEvent") -> None:
             "Tried to insert AprilTagData with raw tags, but tags are not in processed format"
         )
 
+    log_apriltags_measurement_hz()
+
     solver.nonlinear_predict_next(event.timestamp_s)
     R: NDArray[np.float64] = solver._sensor_noise(
         KalmanFilterSensorType.APRIL_TAG,
@@ -133,6 +143,14 @@ def process_apriltags(solver: "PositionSolver2d", event: "SensorEvent") -> None:
         )
 
         theta_tag_rad = _theta_from_rotation(R_tag_in_camera)
+
+        if april_tag_should_reject(
+            tag_in_camera_pose,
+            measurement,
+            solver.config.april_tag_config.tag_reject_config,
+            solver.config.april_tag_config,
+        ):
+            continue
 
         add, mult = april_tag_noise_adjustment(
             solver.x,
@@ -224,6 +242,26 @@ def april_tag_noise_adjustment(
         )
 
     return total_add, total_mult
+
+
+def april_tag_should_reject(
+    tag_pose_in_camera: NDArray[np.float64],
+    tag: ProcessedTag,
+    config_reject: TagRejectConfig,
+    config_tag: AprilTagConfig,
+) -> bool:
+    reject_modes = set(config_tag.reject_modes)
+    distance_from_tag = float(np.linalg.norm(tag_pose_in_camera))
+
+    if TagRejectMode.REJECT_OVER_MAX_DISTANCE_FROM_TAG in reject_modes:
+        if distance_from_tag > float(config_reject.max_distance_from_tag):
+            return True
+
+    if TagRejectMode.REJECT_UNDER_MIN_TAG_CONFIDENCE in reject_modes:
+        if float(tag.confidence) < float(config_reject.min_tag_confidence):
+            return True
+
+    return False
 
 
 def _theta_from_rotation(rotation_world: NDArray[np.float64]) -> float:

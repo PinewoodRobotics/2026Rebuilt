@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 from numpy.typing import NDArray
@@ -9,16 +9,15 @@ from backend.generated.proto.python.sensor.odometry_pb2 import OdometryData
 from backend.generated.thrift.config.kalman_filter.ttypes import (
     KalmanFilterSensorType,
 )
-from backend.python.common.debug.logger import info
 from backend.python.pos_extrapolator.processor_registry import processor_for_data
+from backend.python.pos_extrapolator.util.measurement_rate_log import (
+    log_odometry_measurement_hz,
+)
 from backend.python.pos_extrapolator.util.extrapolator_math import wrap_to_pi
 
 if TYPE_CHECKING:
     from backend.python.pos_extrapolator.position_solver_2d import PositionSolver2d
     from backend.python.pos_extrapolator.util.solver_models import SensorEvent
-
-
-_debug_log_counter = 0
 
 
 def _predict_odometry(
@@ -37,12 +36,12 @@ def _predict_odometry(
     cos_theta = float(np.cos(theta_mid))
 
     next_state = state.copy()
-    next_state[0] += cos_theta * float(
-        robot_translation[0]
-    ) - sin_theta * float(robot_translation[1])
-    next_state[1] += sin_theta * float(
-        robot_translation[0]
-    ) + cos_theta * float(robot_translation[1])
+    next_state[0] += cos_theta * float(robot_translation[0]) - sin_theta * float(
+        robot_translation[1]
+    )
+    next_state[1] += sin_theta * float(robot_translation[0]) + cos_theta * float(
+        robot_translation[1]
+    )
 
     next_state[2] = wrap_to_pi(theta + omega * dt_s)
     return next_state
@@ -52,11 +51,17 @@ def _predict_odometry(
 def process_odometry(solver: "PositionSolver2d", event: "SensorEvent") -> None:
     data = cast(OdometryData, event.data)
 
+    log_odometry_measurement_hz()
+
     solver.current_control.vx_robot = float(data.velocity.x)
     solver.current_control.vy_robot = float(data.velocity.y)
+    solver.current_control.omega = float(data.omega)
+
+    event_dt_s = solver.get_dt_s(event.timestamp_s)
+    odometry_dt_s = float(data.time_change_s)
 
     solver.nonlinear_predict(
-        solver.get_dt_s(event.timestamp_s),
+        odometry_dt_s if odometry_dt_s > 0.0 else event_dt_s,
         solver.current_control,
         innovation_function=_predict_odometry,
         innovation_args=(

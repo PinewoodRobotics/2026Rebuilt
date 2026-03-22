@@ -1,7 +1,10 @@
 import numpy as np
 import pytest
 
-from backend.generated.thrift.config.pos_extrapolator.ttypes import TagNoiseAdjustMode
+from backend.generated.thrift.config.pos_extrapolator.ttypes import (
+    TagNoiseAdjustMode,
+    TagRejectMode,
+)
 from backend.python.common.util.math import from_theta_to_3x3_mat
 from backend.python.pos_extrapolator.__tests__.helpers import (
     make_processed_tag,
@@ -12,6 +15,7 @@ from backend.python.pos_extrapolator.processors.apriltag_processor import (
     AprilTagHJacobean2d,
     AprilTagHx2d,
     april_tag_noise_adjustment,
+    april_tag_should_reject,
     get_tag_information,
     wrap_angle,
 )
@@ -160,3 +164,65 @@ def test_apriltag_confidence_noise_adjustment_applies_additive_weight():
 
     assert add == pytest.approx(1.0)
     assert mult == pytest.approx(1.0)
+
+
+def test_apriltag_rejects_measurement_over_max_distance():
+    solver = make_solver()
+    solver.general_config.april_tag_config.reject_modes = [
+        TagRejectMode.REJECT_OVER_MAX_DISTANCE_FROM_TAG
+    ]
+    solver.general_config.april_tag_config.tag_reject_config.max_distance_from_tag = 4.0
+
+    tag_R = _robot_to_camera_rotation(from_theta_to_3x3_mat(0))
+    tag_t = _robot_to_camera_translation(np.array([3.0, 4.0, 0.0]))
+    data = make_processed_tag(tag_id=0, pose_R=tag_R, pose_t=tag_t)
+
+    assert april_tag_should_reject(
+        PositionSolver2d.CAMERA_OUTPUT_TO_ROBOT_ROTATION
+        @ np.array(data.world_tags.tags[0].pose_t, dtype=np.float64),
+        data.world_tags.tags[0],
+        solver.config.april_tag_config.tag_reject_config,
+        solver.config.april_tag_config,
+    )
+
+
+def test_apriltag_rejects_measurement_under_min_confidence():
+    solver = make_solver()
+    solver.general_config.april_tag_config.reject_modes = [
+        TagRejectMode.REJECT_UNDER_MIN_TAG_CONFIDENCE
+    ]
+    solver.general_config.april_tag_config.tag_reject_config.min_tag_confidence = 0.5
+
+    tag_R = _robot_to_camera_rotation(from_theta_to_3x3_mat(0))
+    tag_t = _robot_to_camera_translation(np.array([1.0, 0.0, 0.0]))
+    data = make_processed_tag(tag_id=0, pose_R=tag_R, pose_t=tag_t, confidence=0.25)
+
+    assert april_tag_should_reject(
+        PositionSolver2d.CAMERA_OUTPUT_TO_ROBOT_ROTATION
+        @ np.array(data.world_tags.tags[0].pose_t, dtype=np.float64),
+        data.world_tags.tags[0],
+        solver.config.april_tag_config.tag_reject_config,
+        solver.config.april_tag_config,
+    )
+
+
+def test_apriltag_keeps_measurement_when_reject_thresholds_pass():
+    solver = make_solver()
+    solver.general_config.april_tag_config.reject_modes = [
+        TagRejectMode.REJECT_OVER_MAX_DISTANCE_FROM_TAG,
+        TagRejectMode.REJECT_UNDER_MIN_TAG_CONFIDENCE,
+    ]
+    solver.general_config.april_tag_config.tag_reject_config.max_distance_from_tag = 5.0
+    solver.general_config.april_tag_config.tag_reject_config.min_tag_confidence = 0.5
+
+    tag_R = _robot_to_camera_rotation(from_theta_to_3x3_mat(0))
+    tag_t = _robot_to_camera_translation(np.array([3.0, 4.0, 0.0]))
+    data = make_processed_tag(tag_id=0, pose_R=tag_R, pose_t=tag_t, confidence=0.5)
+
+    assert not april_tag_should_reject(
+        PositionSolver2d.CAMERA_OUTPUT_TO_ROBOT_ROTATION
+        @ np.array(data.world_tags.tags[0].pose_t, dtype=np.float64),
+        data.world_tags.tags[0],
+        solver.config.april_tag_config.tag_reject_config,
+        solver.config.april_tag_config,
+    )

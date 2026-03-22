@@ -7,6 +7,9 @@ from backend.generated.thrift.config.kalman_filter.ttypes import (
     KalmanFilterSensorType,
 )
 from backend.python.pos_extrapolator.processor_registry import processor_for_data
+from backend.python.pos_extrapolator.util.measurement_rate_log import (
+    log_imu_measurement_hz,
+)
 
 if TYPE_CHECKING:
     from backend.python.pos_extrapolator.position_solver_2d import PositionSolver2d
@@ -17,6 +20,8 @@ if TYPE_CHECKING:
 def process_imu(solver: "PositionSolver2d", event: "SensorEvent") -> None:
     data = cast(ImuData, event.data)
     imu_config = solver.config.imu_config[event.sensor_id]
+
+    log_imu_measurement_hz(event.sensor_id)
 
     if imu_config.use_velocity:
         solver.current_control.vx_robot = float(data.velocity.x)

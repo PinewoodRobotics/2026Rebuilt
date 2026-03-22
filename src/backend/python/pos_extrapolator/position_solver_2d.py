@@ -39,6 +39,7 @@ from backend.python.pos_extrapolator.util.extrapolator_math import (
     wrap_to_pi,
     rotation_matrix_2d,
 )
+from backend.python.common.debug.logger import error
 
 SENSOR_TYPE_TO_SOURCE: dict[AllowedSensors, DataSources] = {
     KalmanFilterSensorType.APRIL_TAG: DataSources.APRIL_TAG,
@@ -122,11 +123,6 @@ class PositionSolver2d(ExtendedKalmanFilter):
             timestamp_ms,
             local_reference_s=received_at_s,
         )
-        if (
-            self.last_action_time_s is not None
-            and timestamp_s < self.last_action_time_s
-        ):
-            return
 
         event = SensorEvent(
             timestamp_s=timestamp_s,
@@ -260,6 +256,9 @@ class PositionSolver2d(ExtendedKalmanFilter):
     ) -> NDArray[np.float64]:
         matrix = self.R_sensors.get(sensor_type, {}).get(sensor_id)
         if matrix is None:
+            error(
+                f"No sensor noise matrix found for sensor type {sensor_type} and sensor id {sensor_id}"
+            )
             return np.eye(len(sensor_indices), dtype=np.float64)
 
         valid_indices = [idx for idx in sensor_indices if idx < matrix.shape[0]]

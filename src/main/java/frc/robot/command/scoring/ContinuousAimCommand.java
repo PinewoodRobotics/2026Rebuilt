@@ -25,6 +25,15 @@ import frc.robot.subsystem.TurretSubsystem;
 import frc.robot.subsystem.GlobalPosition.GMFrame;
 
 public class ContinuousAimCommand extends Command {
+  public record AimSolution(
+      Translation2d targetInRobotFrame,
+      double distanceToTarget,
+      double flyTime,
+      Translation2d compensatedTargetInRobot,
+      Translation2d leadCompensation,
+      double turretAngle) {
+  }
+
   private final TurretSubsystem turretSubsystem;
   private final Supplier<Translation2d> targetGlobalPoseSupplier;
 
@@ -34,34 +43,48 @@ public class ContinuousAimCommand extends Command {
     addRequirements(this.turretSubsystem);
   }
 
+  public static AimSolution CalculateAimSolution(
+      Pose2d selfPose,
+      Translation2d targetGlobal,
+      ChassisSpeeds robotFieldSpeeds) {
+    Pose2d targetInRobotFramePose = new Pose2d(targetGlobal, new Rotation2d()).relativeTo(selfPose);
+    Translation2d targetInRobotFrame = targetInRobotFramePose.getTranslation();
+    double distanceToTarget = targetInRobotFrame.getNorm();
+    double flyTime = ShooterConstants.DistanceFromTargetToTime(distanceToTarget);
+    Translation2d compensatedTargetInRobot = GetCompensatedSpeed(selfPose, targetGlobal, robotFieldSpeeds);
+    Translation2d leadCompensation = compensatedTargetInRobot.minus(targetInRobotFrame);
+    double turretAngle = Math.atan2(compensatedTargetInRobot.getY(), compensatedTargetInRobot.getX());
+
+    return new AimSolution(
+        targetInRobotFrame,
+        distanceToTarget,
+        flyTime,
+        compensatedTargetInRobot,
+        leadCompensation,
+        turretAngle);
+  }
+
   @Override
   public void execute() {
     Pose2d selfPose = GlobalPosition.Get();
     Translation2d targetGlobal = targetGlobalPoseSupplier.get();
     ChassisSpeeds robotFieldSpeeds = GlobalPosition.Velocity(GMFrame.kFieldRelative);
-
-    Pose2d targetInRobotFrame = new Pose2d(targetGlobal, new Rotation2d()).relativeTo(selfPose);
-    double distanceToTarget = targetInRobotFrame.getTranslation().getNorm();
-    double flyTime = ShooterConstants.DistanceFromTargetToTime(distanceToTarget);
-    Translation2d compensatedTargetInRobot = GetCompensatedSpeed(selfPose, targetGlobal, robotFieldSpeeds);
-    Translation2d leadCompensation = compensatedTargetInRobot.minus(targetInRobotFrame.getTranslation());
-
-    double turretAngle = Math.atan2(compensatedTargetInRobot.getY(), compensatedTargetInRobot.getX());
+    AimSolution aimSolution = CalculateAimSolution(selfPose, targetGlobal, robotFieldSpeeds);
 
     double yawRateRadPerSec = robotFieldSpeeds.omegaRadiansPerSecond;
-    double ff = -yawRateRadPerSec * TurretConstants.kFFCommand;
+    double ff = yawRateRadPerSec * TurretConstants.kFFCommand;
 
-    turretSubsystem.setTurretPosition(Units.Radians.of(turretAngle), Units.Volts.of(ff));
+    turretSubsystem.setTurretPosition(Units.Radians.of(aimSolution.turretAngle()), Units.Volts.of(ff));
 
     Logger.recordOutput("Turret/TargetGlobal", targetGlobal);
 
-    Logger.recordOutput("Turret/DistanceToTarget", distanceToTarget);
-    Logger.recordOutput("Turret/FlyTime", flyTime);
+    Logger.recordOutput("Turret/DistanceToTarget", aimSolution.distanceToTarget());
+    Logger.recordOutput("Turret/FlyTime", aimSolution.flyTime());
 
-    Logger.recordOutput("Turret/LeadCompensation", leadCompensation);
-    Logger.recordOutput("Turret/CompensatedTargetRobotRelative", compensatedTargetInRobot);
+    Logger.recordOutput("Turret/LeadCompensation", aimSolution.leadCompensation());
+    Logger.recordOutput("Turret/CompensatedTargetRobotRelative", aimSolution.compensatedTargetInRobot());
     Logger.recordOutput("Turret/YawRateRadPerSec", yawRateRadPerSec);
-    Logger.recordOutput("Turret/Angle", turretAngle);
+    Logger.recordOutput("Turret/Angle", aimSolution.turretAngle());
     Logger.recordOutput("Turret/FF", ff);
   }
 

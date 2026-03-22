@@ -1,6 +1,7 @@
 # TODO: need to add a better way to handle the non-used indices in sensors (config method).
 
 import asyncio
+import time
 
 from backend.generated.proto.python.sensor.general_sensor_data_pb2 import (
     GeneralSensorData,
@@ -8,6 +9,7 @@ from backend.generated.proto.python.sensor.general_sensor_data_pb2 import (
 from backend.python.common.debug.logger import (
     error,
     info,
+    warning,
 )
 from backend.python.common.util.extension import subscribe_to_multiple_topics
 from backend.python.pos_extrapolator.position_solver_2d import PositionSolver2d
@@ -23,6 +25,7 @@ async def main():
     position_solver = PositionSolver2d(config.pos_extrapolator, config)
 
     async def process_data(message: bytes):
+        start_time = time.time()
         data = GeneralSensorData.FromString(message)
         one_of_name = data.WhichOneof("data")
 

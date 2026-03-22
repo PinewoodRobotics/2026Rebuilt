@@ -16,11 +16,11 @@ public class TurretConstants {
   public static final Angle kTurretTheta = Units.Degrees.of(45.0);
   public static final MotorType kTurretMotorType = MotorType.kBrushless;
 
-  public static final double kTurretP = 6 * 1; // 3;
+  public static final double kTurretP = 6; // 3;
   public static final double kTurretI = 0.0;
   public static final double kTurretD = 2;
   public static final double kTurretIZ = 0.0;
-  public static final double kFFCommand = 0.5;
+  public static final double kFFCommand = -0.5;
   public static final Voltage kFFBase = Units.Volts.of(0.5);
 
   public static final AngularVelocity kTurretMaxVelocity = Units.RadiansPerSecond.of(4.0);
