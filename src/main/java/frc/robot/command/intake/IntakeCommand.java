@@ -67,7 +67,7 @@ public class IntakeCommand extends Command {
       m_intakeSubsystem.setWristPosition(WristRaiseLocation.BOTTOM);
       if (isExtake) {
         m_intakeSubsystem.runIntakeMotor(IntakeConstants.extakeMotorSpeed);
-      } else if (IntakeConstants.kShouldWeAreWeGoingToPulseTheIntakeConstantVariable) {
+      } else if (shouldPulseExtake && IntakeConstants.kShouldWeAreWeGoingToPulseTheIntakeConstantVariable) {
         m_intakeSubsystem.runIntakeMotor(0);
       } else {
         m_intakeSubsystem.runIntakeMotor(IntakeConstants.intakeMotorSpeed);
