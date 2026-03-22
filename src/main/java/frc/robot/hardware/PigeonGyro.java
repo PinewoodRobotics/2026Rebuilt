@@ -46,7 +46,7 @@ public class PigeonGyro extends SubsystemBase implements IGyroscopeLike, IDataCl
 
   @Override
   public ChassisSpeeds getVelocity() {
-    return new ChassisSpeeds(0.0, 0.0, pigeon.getAngularVelocityZWorld().getValue().in(Units.RadiansPerSecond));
+    return new ChassisSpeeds(0.0, 0.0, pigeon.getAngularVelocityZWorld().getValue().in(Units.DegreesPerSecond));
   }
 
   @Override

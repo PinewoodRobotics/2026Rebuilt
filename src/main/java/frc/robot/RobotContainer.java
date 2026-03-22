@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.command.SwerveMoveTeleop;
+import frc.robot.command.climber.CalibrateClimberCommand;
 import frc.robot.command.climber.ManualClimberControlCommand;
 import frc.robot.command.intake.IntakeCommand;
 import frc.robot.command.scoring.ContinuousAimCommand;
@@ -20,6 +21,7 @@ import frc.robot.command.shooting.ContinuousShooter;
 import java.util.function.BooleanSupplier;
 
 import frc.robot.constant.BotConstants;
+import frc.robot.constant.ClimberConstants;
 import frc.robot.constant.IntakeConstants.WristRaiseLocation;
 import frc.robot.constant.PathPlannerConstants;
 import frc.robot.hardware.UnifiedGyro;
@@ -158,9 +160,14 @@ public class RobotContainer {
     ClimberSubsystem climberSubsystem = ClimberSubsystem.GetInstance();
     climberSubsystem.setDefaultCommand(new ManualClimberControlCommand(
         climberSubsystem,
-        m_leftFlightStick::getLeftSlider,
-        m_rightFlightStick::getLeftSlider,
-        m_leftFlightStick::getRightSlider));
+        m_leftFlightStick::getLeftSlider));
+
+    m_operatorPanel.redButton().whileTrue(Commands.startEnd(
+        () -> climberSubsystem.setVelocity(ClimberConstants.kManualDownVelocity),
+        climberSubsystem::stopHeightMotor,
+        climberSubsystem));
+
+    m_leftFlightStick.B7().onTrue(new CalibrateClimberCommand(climberSubsystem));
   }
 
   private void setIntakeCommands() {

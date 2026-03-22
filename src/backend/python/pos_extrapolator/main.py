@@ -20,7 +20,7 @@ async def main():
     info(f"Starting Position Extrapolator...")
     await autobahn_server.begin()
 
-    position_solver = PositionSolver2d(config.pos_extrapolator)
+    position_solver = PositionSolver2d(config.pos_extrapolator, config)
 
     async def process_data(message: bytes):
         data = GeneralSensorData.FromString(message)

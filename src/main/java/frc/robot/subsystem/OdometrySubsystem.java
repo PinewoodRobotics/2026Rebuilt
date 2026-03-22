@@ -5,10 +5,11 @@ import org.littletonrobotics.junction.Logger;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Twist2d;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constant.CommunicationConstants;
-import frc.robot.hardware.PigeonGyro;
 import frc.robot.hardware.UnifiedGyro;
 import frc4765.proto.sensor.GeneralSensorDataOuterClass.GeneralSensorData;
 import frc4765.proto.sensor.Odometry.OdometryData;
@@ -24,6 +25,7 @@ public class OdometrySubsystem extends SubsystemBase implements IDataClass {
   private final SwerveDriveOdometry odometry;
   private final IGyroscopeLike gyro;
   public Pose2d[] timedPositions = new Pose2d[2];
+  private final SwerveModulePosition[][] timedModulePositions = new SwerveModulePosition[2][];
   public long[] timestamps = new long[2];
 
   public static OdometrySubsystem GetInstance(IGyroscopeLike gyro, SwerveSubsystem swerve) {
@@ -45,20 +47,26 @@ public class OdometrySubsystem extends SubsystemBase implements IDataClass {
   public OdometrySubsystem(IGyroscopeLike gyro, SwerveSubsystem swerve) {
     this.gyro = gyro;
     this.swerve = swerve;
+    SwerveModulePosition[] initialModulePositions = copyModulePositions(swerve.getSwerveModulePositions());
     this.odometry = new SwerveDriveOdometry(
         swerve.getKinematics(),
         gyro.getRotation2d(),
-        swerve.getSwerveModulePositions(),
+        initialModulePositions,
         new Pose2d(5, 5, new Rotation2d()));
+    timedModulePositions[0] = copyModulePositions(initialModulePositions);
+    timedModulePositions[1] = copyModulePositions(initialModulePositions);
   }
 
   public void setOdometryPosition(Pose2d newPose) {
+    SwerveModulePosition[] currentModulePositions = copyModulePositions(swerve.getSwerveModulePositions());
     odometry.resetPosition(
         gyro.getRotation2d(),
-        swerve.getSwerveModulePositions(),
+        currentModulePositions,
         newPose);
     timedPositions[0] = newPose;
     timedPositions[1] = newPose;
+    timedModulePositions[0] = copyModulePositions(currentModulePositions);
+    timedModulePositions[1] = copyModulePositions(currentModulePositions);
   }
 
   private Pose2d getLatestPosition() {
@@ -66,7 +74,23 @@ public class OdometrySubsystem extends SubsystemBase implements IDataClass {
   }
 
   private Transform2d getPoseDifference() {
-    return timedPositions[1].minus(timedPositions[0]);
+    Twist2d wheelDelta = swerve.getKinematics().toTwist2d(
+        timedModulePositions[0],
+        timedModulePositions[1]);
+    return new Transform2d(
+        wheelDelta.dx,
+        wheelDelta.dy,
+        new Rotation2d(wheelDelta.dtheta));
+  }
+
+  private static SwerveModulePosition[] copyModulePositions(SwerveModulePosition[] positions) {
+    SwerveModulePosition[] copy = new SwerveModulePosition[positions.length];
+    for (int i = 0; i < positions.length; i++) {
+      copy[i] = new SwerveModulePosition(
+          positions[i].distanceMeters,
+          positions[i].angle);
+    }
+    return copy;
   }
 
   private double getTimeDifference() {
@@ -121,10 +145,12 @@ public class OdometrySubsystem extends SubsystemBase implements IDataClass {
   @Override
   public void periodic() {
     timedPositions[0] = timedPositions[1];
+    timedModulePositions[0] = timedModulePositions[1] == null ? null : copyModulePositions(timedModulePositions[1]);
     timestamps[0] = timestamps[1];
     timestamps[1] = System.currentTimeMillis();
 
     var positions = swerve.getSwerveModulePositions();
+    timedModulePositions[1] = copyModulePositions(positions);
     timedPositions[1] = odometry.update(gyro.getRotation2d(), positions);
 
     Logger.recordOutput("Odometry/Position", timedPositions[1]);

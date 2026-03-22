@@ -23,4 +23,4 @@ def process_imu(solver: "PositionSolver2d", event: "SensorEvent") -> None:
         solver.current_control.vy_robot = float(data.velocity.y)
 
     solver.current_control.omega = float(data.angularVelocityXYZ.z)
-    solver.nonlinear_predict_next()
+    solver.nonlinear_predict_next(event.timestamp_s)

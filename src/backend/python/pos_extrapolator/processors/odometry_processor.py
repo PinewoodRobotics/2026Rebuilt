@@ -25,27 +25,26 @@ def _predict_odometry(
     state: NDArray[np.float64],
     control: NDArray[np.float64],
     dt_s: float,
-    *,
     robot_translation: NDArray[np.float64],
 ) -> NDArray[np.float64]:
     if dt_s <= 0.0:
         return state.copy()
 
-    theta = float(state[PositionSolver2d.kThetaIdx])
+    theta = float(state[2])
     omega = float(control[2])
     theta_mid = theta + 0.5 * omega * dt_s
     sin_theta = float(np.sin(theta_mid))
     cos_theta = float(np.cos(theta_mid))
 
     next_state = state.copy()
-    next_state[PositionSolver2d.kPosXIdx] += cos_theta * float(
+    next_state[0] += cos_theta * float(
         robot_translation[0]
     ) - sin_theta * float(robot_translation[1])
-    next_state[PositionSolver2d.kPosYIdx] += sin_theta * float(
+    next_state[1] += sin_theta * float(
         robot_translation[0]
     ) + cos_theta * float(robot_translation[1])
 
-    next_state[PositionSolver2d.kThetaIdx] = wrap_to_pi(theta + omega * dt_s)
+    next_state[2] = wrap_to_pi(theta + omega * dt_s)
     return next_state
 
 
@@ -57,7 +56,7 @@ def process_odometry(solver: "PositionSolver2d", event: "SensorEvent") -> None:
     solver.current_control.vy_robot = float(data.velocity.y)
 
     solver.nonlinear_predict(
-        solver.get_dt_s(),
+        solver.get_dt_s(event.timestamp_s),
         solver.current_control,
         innovation_function=_predict_odometry,
         innovation_args=(

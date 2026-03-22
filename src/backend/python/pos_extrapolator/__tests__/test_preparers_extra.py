@@ -14,7 +14,7 @@ from backend.python.pos_extrapolator.__tests__.helpers import (
 )
 from backend.python.pos_extrapolator.position_solver_2d import PositionSolver2d
 from backend.python.pos_extrapolator.processors.apriltag_processor import (
-    build_apriltag_measurements,
+    get_tag_information,
 )
 
 
@@ -57,52 +57,29 @@ def test_apriltag_raw_tags_raise_value_error():
         )
 
 
-def test_unknown_apriltag_ids_are_skipped():
+def test_unknown_apriltag_ids_raise_value_error():
     solver = make_solver()
-    data = AprilTagData()
-    data.world_tags.tags.add(
-        id=999,
-        pose_R=[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
-        pose_t=[1.0, 0.0, 0.0],
-    )
-
-    measurements = build_apriltag_measurements(solver, data, "cam0")
-    assert measurements == []
+    with pytest.raises(ValueError):
+        get_tag_information(999, "cam0", solver)
 
 
-def test_mahalanobis_gate_rejects_far_apriltag_outlier():
+def test_processed_apriltag_updates_state():
     solver = make_solver()
-    solver.P = np.eye(3) * 1e-4
-
-    insert_sensor(
-        solver,
-        make_odom(vx=1.0, vy=0.0, dt_s=0.1),
-        "odom",
-        BASE_TIMESTAMP_MS,
-        received_at_s=BASE_RECEIVED_AT_S,
-    )
-    insert_sensor(
-        solver,
-        make_odom(vx=1.0, vy=0.0, dt_s=0.1),
-        "odom",
-        BASE_TIMESTAMP_MS + 100,
-        received_at_s=BASE_RECEIVED_AT_S + 0.1,
-    )
     before = solver.get_state()
 
     tag_R = _robot_to_camera_rotation(from_theta_to_3x3_mat(0))
-    tag_t = _robot_to_camera_translation(np.array([100.0, 0.0, 0.0]))
-    outlier = make_processed_tag(tag_id=0, pose_R=tag_R, pose_t=tag_t)
+    tag_t = _robot_to_camera_translation(np.array([1.0, 0.0, 0.0]))
+    measurement = make_processed_tag(tag_id=0, pose_R=tag_R, pose_t=tag_t)
     insert_sensor(
         solver,
-        outlier,
+        measurement,
         "cam0",
-        BASE_TIMESTAMP_MS + 100,
-        received_at_s=BASE_RECEIVED_AT_S + 0.1,
+        BASE_TIMESTAMP_MS,
+        received_at_s=BASE_RECEIVED_AT_S,
     )
     after = solver.get_state()
 
-    assert np.allclose(after, before)
+    assert not np.allclose(after, before)
 
 
 def test_late_packet_older_than_current_filter_time_is_ignored():

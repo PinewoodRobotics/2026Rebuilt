@@ -38,7 +38,7 @@ def test_get_robot_position_estimate_returns_six_value_state():
     estimate = extrapolator.get_robot_position_estimate()
 
     assert len(estimate) == 6
-    assert estimate[0] == pytest.approx(0.1, abs=1e-6)
+    assert estimate[0] == pytest.approx(0.02, abs=1e-6)
     assert estimate[2] == pytest.approx(1.0, abs=1e-6)
     assert estimate[5] == pytest.approx(0.0, abs=1e-6)
 

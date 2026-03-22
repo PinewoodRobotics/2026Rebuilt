@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+from typing import Any, cast
+
 import numpy as np
 
 from backend.generated.proto.python.sensor.apriltags_pb2 import (
@@ -30,6 +33,7 @@ from backend.generated.thrift.config.pos_extrapolator.ttypes import (
 )
 from backend.python.common.util.math import from_theta_to_3x3_mat
 from backend.python.pos_extrapolator.position_solver_2d import PositionSolver2d
+from backend.python.pos_extrapolator.processor_registry import AllowedSensors
 
 BASE_TIMESTAMP_MS = 1_700_000_000_000
 BASE_RECEIVED_AT_S = 1_000.0
@@ -92,7 +96,9 @@ def make_config(
     )
 
     kalman_config = KalmanFilterConfig(
-        initial_state_vector=GenericVector(values=initial_state, size=len(initial_state)),
+        initial_state_vector=GenericVector(
+            values=initial_state, size=len(initial_state)
+        ),
         uncertainty_matrix=diag_matrix(1.0, 1.0, 1.0),
         process_noise_matrix=diag_matrix(0.1, 0.1, 0.1),
         sensors={
@@ -120,12 +126,20 @@ def make_config(
     )
 
 
-def make_solver(**kwargs: object) -> PositionSolver2d:
-    return PositionSolver2d(make_config(**kwargs))
+def make_solver(**kwargs: Any) -> PositionSolver2d:
+    config = make_config(**kwargs)
+    return PositionSolver2d(
+        config,
+        cast(Any, SimpleNamespace(april_tag_config=config.april_tag_config)),
+    )
 
 
-def make_extrapolator(**kwargs: object) -> PositionSolver2d:
-    return PositionSolver2d(make_config(**kwargs))
+def make_extrapolator(**kwargs: Any) -> PositionSolver2d:
+    config = make_config(**kwargs)
+    return PositionSolver2d(
+        config,
+        cast(Any, SimpleNamespace(april_tag_config=config.april_tag_config)),
+    )
 
 
 def insert_sensor(
@@ -139,9 +153,9 @@ def insert_sensor(
     sensor_type = _sensor_type_for_data(data)
     solver.insert_sensor_data(
         data=data,
-        sensor_type=sensor_type,
+        sensor_type=cast(AllowedSensors, sensor_type),
         sensor_id=sensor_id,
-        timestamp_ms=timestamp_ms,
+        timestamp_ms=int(timestamp_ms),
         received_at_s=received_at_s,
     )
 
@@ -162,13 +176,18 @@ def make_odom(
     *,
     vx: float = 0.0,
     vy: float = 0.0,
-    dx: float = 0.0,
-    dy: float = 0.0,
+    dx: float | None = None,
+    dy: float | None = None,
     dt_s: float = 0.02,
     omega: float = 0.0,
     x: float = 0.0,
     y: float = 0.0,
 ) -> OdometryData:
+    if dx is None:
+        dx = vx * dt_s
+    if dy is None:
+        dy = vy * dt_s
+
     odom = OdometryData()
     odom.velocity.x = vx
     odom.velocity.y = vy

@@ -50,36 +50,38 @@ def wrap_angle(a: float) -> float:
 
 def AprilTagHx2d(
     x_hat: NDArray[np.float64],
-    *,
     T_tag_in_world: NDArray[np.float64],
     T_camera_in_robot: NDArray[np.float64],
 ) -> NDArray[np.float64]:
     x, y, theta = x_hat
-    T_robot_in_world = create_transformation_matrix(
-        rotation_matrix=rotation_matrix_2d(theta),
-        translation_vector=np.array([x, y], dtype=np.float64),
-    )
+    T_robot_in_world = np.eye(3, dtype=np.float64)
+    T_robot_in_world[:2, :2] = rotation_matrix_2d(theta)
+    T_robot_in_world[:2, 2] = np.array([x, y], dtype=np.float64)
 
-    T_tag_in_camera = world_robot_to_tag_camera(
-        T_robot_in_world=T_robot_in_world,
-        T_camera_in_robot=T_camera_in_robot,
-        T_tag_in_world=T_tag_in_world,
-    )
+    T_camera_in_world = T_robot_in_world @ T_camera_in_robot
+    T_world_in_camera = np.linalg.inv(T_camera_in_world)
+    T_tag_in_camera = T_world_in_camera @ T_tag_in_world
 
-    return T_tag_in_camera
+    return np.array(
+        [
+            T_tag_in_camera[0, 2],
+            T_tag_in_camera[1, 2],
+            yaw_from_T(T_tag_in_camera),
+        ],
+        dtype=np.float64,
+    )
 
 
 def AprilTagHJacobean2d(
     x_hat: NDArray[np.float64],
-    *,
     T_tag_in_world_2d: NDArray[np.float64],
     T_camera_in_robot_2d: NDArray[np.float64],
 ) -> NDArray[np.float64]:
     x, y, theta = x_hat
 
     phi = yaw_from_T(T_camera_in_robot_2d)
-    tx = T_tag_in_world_2d[0, 3]
-    ty = T_tag_in_world_2d[1, 3]
+    tx = T_tag_in_world_2d[0, 2]
+    ty = T_tag_in_world_2d[1, 2]
 
     beta = theta + phi
     dx = tx - x
@@ -110,7 +112,7 @@ def process_apriltags(solver: "PositionSolver2d", event: "SensorEvent") -> None:
             "Tried to insert AprilTagData with raw tags, but tags are not in processed format"
         )
 
-    solver.nonlinear_predict_next()
+    solver.nonlinear_predict_next(event.timestamp_s)
     R: NDArray[np.float64] = solver._sensor_noise(
         KalmanFilterSensorType.APRIL_TAG,
         sensor_id,
@@ -202,7 +204,7 @@ def april_tag_noise_adjustment(
     total_add = 0.0
     total_mult = 1.0
 
-    estimate_xy = x[[PositionSolver2d.kPosXIdx, PositionSolver2d.kPosYIdx]]
+    estimate_xy = x[:2]
     tag_xy = tag_pose_in_camera[:2]
 
     distance_from_estimate = float(np.linalg.norm(tag_xy - estimate_xy))

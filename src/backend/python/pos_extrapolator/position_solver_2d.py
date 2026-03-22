@@ -144,17 +144,20 @@ class PositionSolver2d(ExtendedKalmanFilter):
             )
         processor(self, event)
 
-    def get_dt_s(self) -> float:
-        self.current_time = time.time()
+    def get_dt_s(self, timestamp_s: float | None = None) -> float:
+        self.current_time = time.time() if timestamp_s is None else float(timestamp_s)
 
         if self.last_action_time_s is None:
-            self.last_action_time_s = time.time() - 0.05
+            self.last_action_time_s = self.current_time
+            return 0.0
 
-        return float(self.current_time - self.last_action_time_s)
+        delta_t = float(self.current_time - self.last_action_time_s)
+        self.last_action_time_s = self.current_time
+        return max(0.0, delta_t)
 
-    def nonlinear_predict_next(self):
+    def nonlinear_predict_next(self, timestamp_s: float | None = None):
         return self.nonlinear_predict(
-            delta_t=self.get_dt_s(), motion_input=self.current_control
+            delta_t=self.get_dt_s(timestamp_s), motion_input=self.current_control
         )
 
     def nonlinear_predict(
@@ -174,6 +177,7 @@ class PositionSolver2d(ExtendedKalmanFilter):
             innovation_function = self._predict_no_change
 
         control_vector = motion_input.as_vector()
+        self.F = self._motion_jacobian(self.x, control_vector, delta_t)
 
         self.x = innovation_function(self.x, control_vector, delta_t, *innovation_args)
         self.P = np.dot(self.F, self.P).dot(self.F.T) + self.Q
@@ -206,6 +210,30 @@ class PositionSolver2d(ExtendedKalmanFilter):
         )
         next_state[self.kThetaIdx] = wrap_to_pi(theta + omega * dt_s)
         return next_state
+
+    def _motion_jacobian(
+        self,
+        state: NDArray[np.float64],
+        control: NDArray[np.float64],
+        dt_s: float,
+    ) -> NDArray[np.float64]:
+        F = np.eye(self.kNumStates, dtype=np.float64)
+        if dt_s <= 0.0:
+            return F
+
+        theta = float(state[self.kThetaIdx])
+        omega = float(control[2])
+        theta_mid = theta + 0.5 * omega * dt_s
+        sin_theta = float(np.sin(theta_mid))
+        cos_theta = float(np.cos(theta_mid))
+
+        F[self.kPosXIdx, self.kThetaIdx] = dt_s * (
+            -sin_theta * float(control[0]) - cos_theta * float(control[1])
+        )
+        F[self.kPosYIdx, self.kThetaIdx] = dt_s * (
+            cos_theta * float(control[0]) - sin_theta * float(control[1])
+        )
+        return F
 
     def update(
         self,
