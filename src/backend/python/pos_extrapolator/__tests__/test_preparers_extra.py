@@ -105,7 +105,7 @@ def test_mahalanobis_gate_rejects_far_apriltag_outlier():
     assert np.allclose(after, before)
 
 
-def test_late_packet_older_than_history_window_is_ignored():
+def test_late_packet_older_than_current_filter_time_is_ignored():
     solver = make_solver()
     insert_sensor(
         solver,

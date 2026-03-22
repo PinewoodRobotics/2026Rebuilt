@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 import time
-
+from typing import Any, Callable
 from filterpy.kalman import ExtendedKalmanFilter
 import numpy as np
 from numpy.typing import NDArray
@@ -20,9 +19,7 @@ from backend.generated.thrift.config.pos_extrapolator.ttypes import (
     DataSources,
     PosExtrapolator,
 )
-from backend.python.pos_extrapolator.util.position_solver_history import (
-    PositionSolverHistory,
-)
+from backend.generated.thrift.config.ttypes import Config
 from backend.python.pos_extrapolator.processor_registry import (
     AllowedSensors,
     get_processor,
@@ -31,7 +28,6 @@ from backend.python.pos_extrapolator.util.solver_models import (
     MotionInput,
     SensorEvent,
     SensorPayload,
-    SolverSnapshot,
 )
 from backend.python.pos_extrapolator.util.time_conversion import SensorsTimeConverter
 from backend.python.pos_extrapolator.util.conversion import (
@@ -51,13 +47,29 @@ SENSOR_TYPE_TO_SOURCE: dict[AllowedSensors, DataSources] = {
 }
 
 
+def residual_general(
+    measurement: NDArray[np.float64],
+    estimate: NDArray[np.float64],
+    theta_idx: int | None = None,
+) -> NDArray[np.float64]:
+    delta = measurement - estimate
+    if theta_idx is not None:
+        delta[theta_idx] = wrap_to_pi(float(delta[theta_idx]))
+
+    return delta
+
+
+def residual(
+    measurement: NDArray[np.float64], estimate: NDArray[np.float64]
+) -> NDArray[np.float64]:
+    return residual_general(measurement, estimate, PositionSolver2d.kThetaIdx)
+
+
 class PositionSolver2d(ExtendedKalmanFilter):
     kNumStates = 3
     kPosXIdx = 0
     kPosYIdx = 1
     kThetaIdx = 2
-
-    kHistoryWindowS = 0.25
 
     CAMERA_OUTPUT_TO_ROBOT_ROTATION = np.array(
         [
@@ -68,69 +80,24 @@ class PositionSolver2d(ExtendedKalmanFilter):
         dtype=np.float64,
     )
 
-    def __init__(self, config: PosExtrapolator):
+    def __init__(self, config: PosExtrapolator, general_config: Config):
         super().__init__(dim_x=self.kNumStates, dim_z=self.kNumStates, dim_u=3)
         self.config = config
-        self.general_config = config
+        self.general_config = general_config
         self.enabled_sources = set(config.enabled_data_sources)
 
         self.x = load_vector(config.kalman_filter_config.initial_state_vector, 3)
         self.P = load_matrix(config.kalman_filter_config.uncertainty_matrix, 3)
-        self._base_Q = load_matrix(config.kalman_filter_config.process_noise_matrix, 3)
-        self.Q = np.zeros((self.kNumStates, self.kNumStates), dtype=np.float64)
-        self.F = np.eye(self.kNumStates, dtype=np.float64)
-        self.B = np.zeros((self.kNumStates, 3), dtype=np.float64)
+        self.Q = load_matrix(config.kalman_filter_config.process_noise_matrix, 3)
+
         self.R_sensors = get_R_sensors(config.kalman_filter_config)
 
         self.current_control = MotionInput(vx_robot=0.0, vy_robot=0.0, omega=0.0)
-        self.current_time_s: float = 0.0
+
         self._time_converter = SensorsTimeConverter()
-        self._history = PositionSolverHistory(self.kHistoryWindowS)
 
-        self.x_prior = self.x.copy()
-        self.P_prior = self.P.copy()
-        self.x_post = self.x.copy()
-        self.P_post = self.P.copy()
-
-    def _make_snapshot(self) -> SolverSnapshot:
-        return SolverSnapshot(
-            timestamp_s=self.current_time_s,
-            x=self.x.copy(),
-            P=self.P.copy(),
-            control=MotionInput(
-                vx_robot=self.current_control.vx_robot,
-                vy_robot=self.current_control.vy_robot,
-                omega=self.current_control.omega,
-            ),
-        )
-
-    def _restore_snapshot(self, snapshot: SolverSnapshot) -> None:
-        self.current_time_s = snapshot.timestamp_s
-        self.x = snapshot.x.copy()
-        self.P = snapshot.P.copy()
-        self.current_control = MotionInput(
-            vx_robot=snapshot.control.vx_robot,
-            vy_robot=snapshot.control.vy_robot,
-            omega=snapshot.control.omega,
-        )
-
-        self.x_prior = self.x.copy()
-        self.P_prior = self.P.copy()
-        self.x_post = self.x.copy()
-        self.P_post = self.P.copy()
-
-    def _replay_history_from(self, start_event_idx: int) -> None:
-        history = self._history
-        if history.is_empty():
-            raise ValueError("History must be initialized before replay")
-
-        if not history.has_seed_snapshot():
-            raise ValueError("History seed snapshot must exist before replay")
-        self._restore_snapshot(history.rollback_snapshot(start_event_idx))
-        history.discard_snapshots_from(start_event_idx)
-        for event in history.events_from(start_event_idx):
-            self._apply_event(event)
-            history.append_snapshot(self._make_snapshot())
+        self.last_action_time_s = None
+        self.current_time = time.time()
 
     def insert_sensor_data(
         self,
@@ -155,44 +122,19 @@ class PositionSolver2d(ExtendedKalmanFilter):
             timestamp_ms,
             local_reference_s=received_at_s,
         )
-
-        latest_history_time_s = self._history.latest_timestamp_s()
-        prune_reference_s = (
-            timestamp_s
-            if latest_history_time_s is None
-            else max(timestamp_s, latest_history_time_s)
-        )
-        self._history.prune(prune_reference_s)
-
         if (
-            latest_history_time_s is not None
-            and timestamp_s < latest_history_time_s - self.kHistoryWindowS
+            self.last_action_time_s is not None
+            and timestamp_s < self.last_action_time_s
         ):
-            return
-
-        history_start_s = self._history.start_timestamp_s()
-        if history_start_s is not None and timestamp_s < history_start_s:
             return
 
         event = SensorEvent(
             timestamp_s=timestamp_s,
             sensor_type=sensor_type,
             sensor_id=sensor_id,
-            data=deepcopy(data),
+            data=data,
         )
-
-        if not self._history.has_seed_snapshot():
-            seed_snapshot = self._make_snapshot()
-            if self.current_time_s == 0.0:
-                seed_snapshot.timestamp_s = timestamp_s
-            self._history.ensure_seed_snapshot(seed_snapshot)
-
-        replay_start_idx = self._history.insert_event(event)
-        self._replay_history_from(replay_start_idx)
-
-        current_snapshot = self._history.current_snapshot()
-        if current_snapshot is not None:
-            self._restore_snapshot(current_snapshot)
+        self._apply_event(event)
 
     def _apply_event(self, event: SensorEvent) -> None:
         processor = get_processor(event.sensor_type)
@@ -202,38 +144,45 @@ class PositionSolver2d(ExtendedKalmanFilter):
             )
         processor(self, event)
 
-    def predict_to_timestamp(self, timestamp_s: float, control: MotionInput) -> None:
-        dt_s = float(timestamp_s - self.current_time_s)
-        if dt_s <= 0.0:
-            self.current_time_s = timestamp_s
-            return
+    def get_dt_s(self) -> float:
+        self.current_time = time.time()
 
-        self._set_prediction_model(control, dt_s)
-        control_vector = control.as_vector()
-        self.x = self._propagate_state(self.x, control_vector, dt_s)
-        self.P = self.F @ self.P @ self.F.T + self.Q
-        self.current_time_s = timestamp_s
-        self.x[self.kThetaIdx] = wrap_to_pi(float(self.x[self.kThetaIdx]))
-        self.x_prior = self.x.copy()
-        self.P_prior = self.P.copy()
-        self.x_post = self.x.copy()
-        self.P_post = self.P.copy()
+        if self.last_action_time_s is None:
+            self.last_action_time_s = time.time() - 0.05
 
-    def _set_prediction_model(self, control: MotionInput, dt_s: float) -> None:
-        theta_mid = float(self.x[self.kThetaIdx]) + 0.5 * control.omega * dt_s
-        sin_theta = float(np.sin(theta_mid))
-        cos_theta = float(np.cos(theta_mid))
+        return float(self.current_time - self.last_action_time_s)
 
-        self.F = np.eye(self.kNumStates, dtype=np.float64)
-        self.F[self.kPosXIdx, self.kThetaIdx] = dt_s * (
-            -sin_theta * control.vx_robot - cos_theta * control.vy_robot
+    def nonlinear_predict_next(self):
+        return self.nonlinear_predict(
+            delta_t=self.get_dt_s(), motion_input=self.current_control
         )
-        self.F[self.kPosYIdx, self.kThetaIdx] = dt_s * (
-            cos_theta * control.vx_robot - sin_theta * control.vy_robot
-        )
-        self.Q = self._base_Q * dt_s
 
-    def _propagate_state(
+    def nonlinear_predict(
+        self,
+        delta_t: float,
+        motion_input: "MotionInput",
+        innovation_function: Callable[..., NDArray[np.float64]] | None = None,
+        innovation_args: tuple = (),
+    ) -> None:
+        """
+        Predict the state of the system using the motion input and the delta time.
+
+        USE THIS INSTEAD OF predict_x/predict methods!
+        """
+
+        if innovation_function is None:
+            innovation_function = self._predict_no_change
+
+        control_vector = motion_input.as_vector()
+
+        self.x = innovation_function(self.x, control_vector, delta_t, *innovation_args)
+        self.P = np.dot(self.F, self.P).dot(self.F.T) + self.Q
+
+        # save prior
+        self.x_prior = np.copy(self.x)
+        self.P_prior = np.copy(self.P)
+
+    def _predict_no_change(
         self,
         state: NDArray[np.float64],
         control: NDArray[np.float64],
@@ -258,6 +207,23 @@ class PositionSolver2d(ExtendedKalmanFilter):
         next_state[self.kThetaIdx] = wrap_to_pi(theta + omega * dt_s)
         return next_state
 
+    def update(
+        self,
+        z: NDArray[np.float64] | float | None,
+        HJacobian: Callable[..., NDArray[np.float64]],
+        Hx: Callable[..., NDArray[np.float64]],
+        R: NDArray[np.float64] | float | None = None,
+        args: tuple = (),
+        hx_args: tuple = (),
+        residual: Callable[[Any, Any], Any] = residual,
+    ) -> None:
+        """
+        NOTE: the residual assumes the state is in the order of [x, y, theta]
+        """
+
+        super().update(z, HJacobian, Hx, R, args, hx_args, residual)
+        self.x[self.kThetaIdx] = wrap_to_pi(float(self.x[self.kThetaIdx]))
+
     def _sensor_noise(
         self,
         sensor_type: KalmanFilterSensorType,
@@ -281,41 +247,6 @@ class PositionSolver2d(ExtendedKalmanFilter):
             padded[output_idx, output_idx] = float(matrix[matrix_idx, matrix_idx])
         return padded
 
-    def _correct(
-        self,
-        z: NDArray[np.float64],
-        state_indices: list[int],
-        R: NDArray[np.float64],
-    ) -> None:
-        H = np.zeros((len(state_indices), self.kNumStates), dtype=np.float64)
-        for row, state_idx in enumerate(state_indices):
-            H[row, state_idx] = 1.0
-
-        angle_measurement_idx = None
-        if self.kThetaIdx in state_indices:
-            angle_measurement_idx = state_indices.index(self.kThetaIdx)
-
-        def residual(
-            measurement: NDArray[np.float64], estimate: NDArray[np.float64]
-        ) -> NDArray[np.float64]:
-            delta = measurement - estimate
-            if angle_measurement_idx is not None:
-                delta[angle_measurement_idx] = wrap_to_pi(
-                    float(delta[angle_measurement_idx])
-                )
-            return delta
-
-        self.update(
-            np.asarray(z, dtype=np.float64).reshape(-1),
-            HJacobian=lambda _x: H,
-            Hx=lambda x: x[state_indices],
-            R=R,
-            residual=residual,
-        )
-        self.x[self.kThetaIdx] = wrap_to_pi(float(self.x[self.kThetaIdx]))
-        self.x_post = self.x.copy()
-        self.P_post = self.P.copy()
-
     def _world_velocity_from_pose(self, theta_rad: float) -> NDArray[np.float64]:
         return rotation_matrix_2d(theta_rad) @ np.array(
             [self.current_control.vx_robot, self.current_control.vy_robot],
@@ -325,7 +256,9 @@ class PositionSolver2d(ExtendedKalmanFilter):
     def get_state(self, future_s: float | None = None) -> NDArray[np.float64]:
         if future_s is None or future_s <= 0.0:
             return self.x.copy()
-        return self._propagate_state(self.x, self.current_control.as_vector(), future_s)
+        return self._predict_no_change(
+            self.x, self.current_control.as_vector(), future_s
+        )
 
     def get_robot_state_estimate(
         self, future_s: float | None = None

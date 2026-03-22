@@ -45,6 +45,36 @@ def create_transformation_matrix(
     return transformation_matrix
 
 
+def extract_2d_from_3d_transformation(
+    transformation_matrix: NDArray[np.float64],
+) -> NDArray[np.float64]:
+    """
+    Converts a 3D homogeneous transformation (at least 3x3, e.g., 4x4 or 3x4) to a 2D SE(2) homogeneous transformation matrix (3x3).
+
+    Args:
+        transformation_matrix: 3D homogeneous transformation matrix (shape >= 3x3).
+
+    Returns:
+        3x3 2D homogeneous transformation matrix:
+            [[R_2x2, t_2],
+             [0, 0, 1]]
+    """
+    if transformation_matrix.shape[0] < 3 or transformation_matrix.shape[1] < 3:
+        raise ValueError("Input transformation_matrix must be at least 3x3")
+    # Get the 2x2 rotation from the upper-left block
+    R_2x2 = transformation_matrix[:2, :2]
+    # Translation: For >=4 columns, take [:2, 3], else [:2, 2]
+    if transformation_matrix.shape[1] >= 4:
+        t_2 = transformation_matrix[:2, 3]
+    else:
+        t_2 = transformation_matrix[:2, 2]
+    # Construct the SE(2) homogeneous matrix
+    T_2d = np.eye(3, dtype=np.float64)
+    T_2d[:2, :2] = R_2x2
+    T_2d[:2, 2] = t_2
+    return T_2d
+
+
 def ensure_proper_rotation(rotation_matrix: NDArray[np.float64]) -> NDArray[np.float64]:
     u, _, vt = np.linalg.svd(rotation_matrix)
     r = u @ vt
@@ -52,6 +82,18 @@ def ensure_proper_rotation(rotation_matrix: NDArray[np.float64]) -> NDArray[np.f
         u[:, -1] *= -1
         r = u @ vt
     return r
+
+
+def world_robot_to_tag_camera(
+    *,
+    T_robot_in_world: NDArray[np.float64],
+    T_camera_in_robot: NDArray[np.float64],
+    T_tag_in_world: NDArray[np.float64],
+) -> NDArray[np.float64]:
+    T_camera_in_world = T_robot_in_world @ T_camera_in_robot
+    T_world_in_camera = np.linalg.inv(T_camera_in_world)
+    T_tag_in_camera = T_world_in_camera @ T_tag_in_world
+    return T_tag_in_camera
 
 
 # T_bbb_in_aaa = T_###_in_aaa @ T_bbb_in_###

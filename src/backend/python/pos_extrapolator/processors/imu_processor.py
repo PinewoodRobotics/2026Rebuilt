@@ -16,11 +16,11 @@ if TYPE_CHECKING:
 @processor_for_data(KalmanFilterSensorType.IMU)
 def process_imu(solver: "PositionSolver2d", event: "SensorEvent") -> None:
     data = cast(ImuData, event.data)
-    imu_config = solver.general_config.imu_config[event.sensor_id]
+    imu_config = solver.config.imu_config[event.sensor_id]
 
     if imu_config.use_velocity:
         solver.current_control.vx_robot = float(data.velocity.x)
         solver.current_control.vy_robot = float(data.velocity.y)
 
     solver.current_control.omega = float(data.angularVelocityXYZ.z)
-    solver.predict_to_timestamp(event.timestamp_s, solver.current_control)
+    solver.nonlinear_predict_next()

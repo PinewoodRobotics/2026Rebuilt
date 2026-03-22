@@ -26,7 +26,7 @@ def _robot_to_camera_rotation(rotation: np.ndarray) -> np.ndarray:
     )
 
 
-def test_late_apriltag_replays_history_from_the_past():
+def test_late_apriltag_is_ignored_when_out_of_order():
     solver = make_solver()
     insert_sensor(
         solver,
@@ -64,7 +64,7 @@ def test_late_apriltag_replays_history_from_the_past():
     after = solver.get_state()
 
     assert float(before[solver.kPosXIdx]) == pytest.approx(0.2, abs=1e-6)
-    assert float(after[solver.kPosXIdx]) < float(before[solver.kPosXIdx])
+    assert np.allclose(after, before)
 
 
 def test_predict_jacobian_tracks_heading_sensitivity():
@@ -152,7 +152,7 @@ def test_odometry_prediction_stays_smooth_after_tag_correction():
     assert deltas == pytest.approx([0.1, 0.1], abs=1e-6)
 
 
-def test_stale_late_tag_is_ignored_once_history_seed_has_advanced():
+def test_late_tag_is_ignored_after_newer_motion_has_been_applied():
     solver = make_solver(insert_predicted_global_rotation=False)
     tag_R = _robot_to_camera_rotation(from_theta_to_3x3_mat(0))
     initial_tag_t = _robot_to_camera_translation(np.array([1.0, 0.0, 0.0]))
@@ -189,8 +189,5 @@ def test_stale_late_tag_is_ignored_once_history_seed_has_advanced():
     )
     after = solver.get_state()
 
-    assert float(before[solver.kPosXIdx]) == pytest.approx(
-        0.09090909090909094,
-        abs=1e-6,
-    )
+    assert float(before[solver.kPosXIdx]) == pytest.approx(0.09090909090909094, abs=1e-6)
     assert np.allclose(after, before)
