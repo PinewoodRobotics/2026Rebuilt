@@ -4,10 +4,10 @@ import prod1 from "./cameras/prod_1";
 import lidar_configs from "./lidar";
 import pathfinding_config from "./pathfinding";
 import { pose_extrapolator } from "./pos_extrapolator";
-import front_left from "./cameras/a-bot/front_left";
+import front_left from "./cameras/a-bot/rear_left";
 import front_right from "./cameras/a-bot/front_right";
-import rear_left from "./cameras/a-bot/rear_left";
-import rear_right from "./cameras/a-bot/rear_right";
+import rear_left from "./cameras/a-bot/rear_right";
+import rear_right from "./cameras/a-bot/front_left";
 import jetson_cam from "./cameras/jetson_cam";
 import logitech_cam from "./cameras/b-bot/unused/logitech_cam";
 

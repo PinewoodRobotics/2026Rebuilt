@@ -5,9 +5,11 @@ import {
 import { MatrixUtil, VectorUtil } from "../../util/math";
 import { CameraConstants } from "../camera_constants";
 
+const name = "front_right";
+
 const front_right: CameraParameters = {
   pi_to_run_on: "tynan",
-  name: "front_right",
+  name: name,
   camera_path: "/dev/usb_cam1",
   flags: 0,
   width: 800,
@@ -28,7 +30,7 @@ const front_right: CameraParameters = {
     send_feed: CameraConstants.kSendFeed,
     compression_quality: CameraConstants.kCompressionQuality,
     do_compression: true,
-    publication_topic: "camera/front_right/video",
+    publication_topic: "camera/" + name + "/video",
     overlay_tags: true,
   },
   do_detection: true,

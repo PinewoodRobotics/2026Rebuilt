@@ -9,19 +9,19 @@ const april_tag_pos_config: AprilTagConfig = {
   tag_position_config: rebuilt_welded_field,
   camera_position_config: {
     front_left: {
-      position: VectorUtil.fromArray([0.078, 0.3241608, 0.0]),
-      rotation: MatrixUtil.buildRotationMatrixFromYaw(52.904),
+      position: VectorUtil.fromArray([0.0813, 0.324, 0.0]),
+      rotation: MatrixUtil.buildRotationMatrixFromYaw(45),
     },
     front_right: {
-      position: VectorUtil.fromArray([0.14, -0.3, 0.0]),
-      rotation: MatrixUtil.buildRotationMatrixFromYaw(-45),
+      position: VectorUtil.fromArray([0.136, -0.324, 0.0]),
+      rotation: MatrixUtil.buildRotationMatrixFromYaw(-52.904),
     },
     rear_left: {
-      position: VectorUtil.fromArray([-0.078, 0.3241608, 0.0]),
-      rotation: MatrixUtil.buildRotationMatrixFromYaw(127.096),
+      position: VectorUtil.fromArray([-0.0813, 0.324, 0.0]),
+      rotation: MatrixUtil.buildRotationMatrixFromYaw(135),
     },
     rear_right: {
-      position: VectorUtil.fromArray([-0.23, -0.33, 0.0]),
+      position: VectorUtil.fromArray([-0.297, -0.297, 0.0]),
       rotation: MatrixUtil.buildRotationMatrixFromYaw(225),
     },
   },
