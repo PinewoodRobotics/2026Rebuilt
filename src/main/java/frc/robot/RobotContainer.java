@@ -4,6 +4,7 @@ import org.littletonrobotics.junction.Logger;
 
 import com.pathplanner.lib.auto.NamedCommands;
 
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -82,8 +83,7 @@ public class RobotContainer {
 
     swerveSubsystem
         .setDefaultCommand(
-            new SwerveMoveTeleop(swerveSubsystem, m_flightModule, PathPlannerConstants.kLanes,
-                swerveSubsystem::isGpsAssist));
+            new SwerveMoveTeleop(swerveSubsystem, m_flightModule));
 
     // Toggle gps-based driving assist features
     m_leftFlightStick.B5().onTrue(new InstantCommand(() -> {
@@ -96,6 +96,13 @@ public class RobotContainer {
         .B5()
         .onTrue(swerveSubsystem.runOnce(() -> {
           swerveSubsystem.resetDriverRelative();
+        }));
+
+    // Reset gyro rotation of the swerve to the global position
+    m_rightFlightStick
+        .B6()
+        .onTrue(swerveSubsystem.runOnce(() -> {
+          swerveSubsystem.resetDriverRelative(new Rotation2d());
         }));
 
     // Reset gyro rotation everywhere (including backend with button)
