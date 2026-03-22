@@ -5,9 +5,11 @@ import org.littletonrobotics.junction.Logger;
 import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.command.SwerveMoveTeleop;
 import frc.robot.command.climber.ManualClimberControlCommand;
 import frc.robot.command.intake.IntakeCommand;
@@ -166,14 +168,15 @@ public class RobotContainer {
     IntakeCommand intakeCommand = new IntakeCommand(intakeSubsystem,
         () -> m_operatorPanel.metalSwitchDown().getAsBoolean() || m_rightFlightStick.trigger().getAsBoolean(),
         () -> m_rightFlightStick.B17().getAsBoolean());
+    Trigger teleopEnabled = new Trigger(DriverStation::isTeleopEnabled);
 
     intakeSubsystem
         .setDefaultCommand(intakeCommand);
 
-    m_operatorPanel.toggleWheelMiddle().onTrue(new InstantCommand(() -> {
+    m_operatorPanel.toggleWheelMiddle().and(teleopEnabled).onTrue(new InstantCommand(() -> {
       intakeCommand.setAlternateRaiseLocation(WristRaiseLocation.TOP);
     }));
-    m_operatorPanel.toggleWheelMidDown().onTrue(new InstantCommand(() -> {
+    m_operatorPanel.toggleWheelMidDown().and(teleopEnabled).onTrue(new InstantCommand(() -> {
       intakeCommand.setAlternateRaiseLocation(WristRaiseLocation.MIDDLE);
     }));
 
@@ -192,15 +195,18 @@ public class RobotContainer {
     var continuousManualShooter = new ContinuousManualShooter(
         ContinuousManualShooter.GetBaseSpeedSupplier(m_rightFlightStick::getRightSlider),
         indexExtakeOverrideSupplier);
+    Trigger shooterEnabled = m_operatorPanel.metalSwitchDown().and(DriverStation::isTeleopEnabled);
 
     // Enable shooter with metal switch down. While up, run motor base speed.
     // When enabled, run indexer only when shooter up to speed.
-    m_operatorPanel.metalSwitchDown()
+    shooterEnabled
         .whileTrue(Commands.either(
             continuousShooter,
             continuousManualShooter,
             ShooterSubsystem::getIsGpsAssistEnabled))
-        .whileFalse(new InstantCommand(() -> {
+        .negate()
+        .and(DriverStation::isTeleopEnabled)
+        .onTrue(new InstantCommand(() -> {
           ShooterSubsystem.GetInstance().runMotorBaseSpeed();
         }));
 
