@@ -32,5 +32,5 @@ public class TurretConstants {
 
   public static final boolean kMotorInverted = true;
 
-  public static final Angle kTurretOffset = Units.Rotations.of(0.744);
+  public static final Angle kTurretOffset = Units.Rotations.of(0.718);
 }

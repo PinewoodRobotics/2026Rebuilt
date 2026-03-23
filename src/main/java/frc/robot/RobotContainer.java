@@ -23,7 +23,7 @@ import java.util.function.BooleanSupplier;
 import frc.robot.constant.BotConstants;
 import frc.robot.constant.ClimberConstants;
 import frc.robot.constant.IntakeConstants.WristRaiseLocation;
-import frc.robot.constant.PathPlannerConstants;
+import frc.robot.constant.ShooterConstants;
 import frc.robot.hardware.UnifiedGyro;
 import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.IndexSubsystem;
@@ -139,8 +139,8 @@ public class RobotContainer {
         TurretSubsystem::getIsGpsAssistEnabled));
 
     m_operatorPanel.greenButton().onTrue(new InstantCommand(() -> {
-      TurretSubsystem.setGpsAssistEnabled(!TurretSubsystem.getIsGpsAssistEnabled());
-      ShooterSubsystem.setGpsAssistEnabled(!ShooterSubsystem.getIsGpsAssistEnabled());
+      boolean gpsAssistEnabled = !ShooterSubsystem.getIsGpsAssistEnabled();
+      ShooterSubsystem.setGpsAssistEnabled(gpsAssistEnabled);
 
       var current = TurretSubsystem.GetInstance().getCurrentCommand();
       if (current != null) {
@@ -171,6 +171,12 @@ public class RobotContainer {
         climberSubsystem));
 
     m_leftFlightStick.B7().onTrue(new CalibrateClimberCommand(climberSubsystem));
+
+    NamedCommands.registerCommand("MoveClimberUp",
+        new ManualClimberControlCommand(climberSubsystem, () -> 1.0));
+
+    NamedCommands.registerCommand("MoveClimberDown",
+        new ManualClimberControlCommand(climberSubsystem, () -> 0.0));
   }
 
   private void setIntakeCommands() {
@@ -203,7 +209,11 @@ public class RobotContainer {
     BooleanSupplier indexExtakeOverrideSupplier = () -> m_rightFlightStick.B17().getAsBoolean();
     var continuousShooter = new ContinuousShooter(() -> AimPoint.getTarget(), indexExtakeOverrideSupplier);
     var continuousManualShooter = new ContinuousManualShooter(
-        ContinuousManualShooter.GetBaseSpeedSupplier(m_rightFlightStick::getRightSlider),
+        ContinuousManualShooter.GetHeldSpeedSupplier(
+            () -> m_leftFlightStick.A().getAsBoolean(),
+            () -> m_leftFlightStick.B().getAsBoolean(),
+            ShooterConstants.kShooterBaseSpeed,
+            40.0),
         indexExtakeOverrideSupplier);
     Trigger shooterEnabled = m_operatorPanel.metalSwitchDown().and(DriverStation::isTeleopEnabled);
 

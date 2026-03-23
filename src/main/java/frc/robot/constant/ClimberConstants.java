@@ -27,7 +27,7 @@ public class ClimberConstants {
   public final static double kV = 0;
   public final static double kG = 0;
   public final static double kA = 0;
-  public final static double kVelocityP = 0;
+  public final static double kVelocityP = 5.0;
   public final static double kVelocityI = 0;
   public final static double kVelocityD = 0;
   public final static double kTolerance = Units.Feet.of(0.1).in(Units.Meters);
@@ -36,8 +36,8 @@ public class ClimberConstants {
   public static final double kMaxSetpointRamp = Units.Feet.of(0.15).in(Units.Meters);
   public static final double kOpenLoopRampSeconds = 0.25;
   public static final double kClosedLoopRampSeconds = 0.25;
-  public static final LinearVelocity kManualDownVelocity = Units.MetersPerSecond.of(-0.10);
-  public static final LinearVelocity kCalibrationVelocity = Units.MetersPerSecond.of(-0.10);
+  public static final LinearVelocity kManualDownVelocity = Units.MetersPerSecond.of(-0.4);
+  public static final LinearVelocity kCalibrationVelocity = Units.MetersPerSecond.of(-0.4);
   public static final double kCalibrationVelocityToleranceMetersPerSecond = 0.01;
   public static final double kCalibrationMinRuntimeSeconds = 0.25;
   public static final double kCalibrationSettledTimeSeconds = 0.20;

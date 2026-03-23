@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-import time
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
@@ -11,13 +9,11 @@ from backend.generated.proto.python.sensor.apriltags_pb2 import (
     AprilTagData,
     ProcessedTag,
 )
-from backend.generated.thrift.config.common.ttypes import Point3
 from backend.generated.thrift.config.kalman_filter.ttypes import (
     KalmanFilterSensorType,
 )
 from backend.generated.thrift.config.pos_extrapolator.ttypes import (
     AprilTagConfig,
-    PosExtrapolator,
     TagNoiseAdjustConfig,
     TagNoiseAdjustMode,
     TagRejectConfig,
@@ -30,17 +26,11 @@ from backend.python.common.util.math import (
     from_float_list,
     get_np_from_matrix,
     get_np_from_vector,
-    get_robot_in_world,
-    get_translation_rotation_components,
-    make_transformation_matrix_p_d,
-    world_robot_to_tag_camera,
 )
 from backend.python.pos_extrapolator.processor_registry import processor_for_data
 from backend.python.pos_extrapolator.util.extrapolator_math import rotation_matrix_2d
-from backend.python.pos_extrapolator.util.mahalanobis import mahalanobis_distance
 from backend.python.pos_extrapolator.util.measurement_rate_log import (
     log_apriltags_measurement_hz,
-    log_odometry_measurement_hz,
 )
 
 if TYPE_CHECKING:

@@ -28,17 +28,11 @@
               }
             ]
           }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "ClimberL1Command"
-          }
         }
       ]
     }
   },
-  "resetOdom": true,
+  "resetOdom": false,
   "folder": "Climber",
   "choreoAuto": false
 }

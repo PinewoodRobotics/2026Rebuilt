@@ -76,7 +76,9 @@ public class ContinuousAimCommand extends Command {
 
     turretSubsystem.setTurretPosition(Units.Radians.of(aimSolution.turretAngle()), Units.Volts.of(ff));
 
-    Logger.recordOutput("Turret/TargetGlobal", targetGlobal);
+    Logger.recordOutput("Turret/TargetGlobalTranslation", targetGlobal);
+
+    Logger.recordOutput("Turret/TargetGlobal", new Pose2d(targetGlobal, new Rotation2d()));
 
     Logger.recordOutput("Turret/DistanceToTarget", aimSolution.distanceToTarget());
     Logger.recordOutput("Turret/FlyTime", aimSolution.flyTime());
