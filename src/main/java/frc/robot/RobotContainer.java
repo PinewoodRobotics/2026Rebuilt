@@ -67,7 +67,6 @@ public class RobotContainer {
     IntakeSubsystem.GetInstance();
 
     // Initialize publication subsystem for sending data to Pi
-    PublicationSubsystem.GetInstance(Robot.getCommunicationClient());
     MatchStatusSubsystem.GetInstance();
 
     // setIntakeCommands();

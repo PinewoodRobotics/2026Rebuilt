@@ -5,9 +5,10 @@ import {
 } from "generated/thrift/gen-nodejs/pos_extrapolator_types";
 import { MatrixUtil, VectorUtil } from "../../util/math";
 import { rebuilt_welded_field } from "../tag_config/rebuilt_welded";
+import { rebuilt_welded_PEARL_field } from "../tag_config/rebuilt_welded_PEARL";
 
 const april_tag_pos_config: AprilTagConfig = {
-  tag_position_config: rebuilt_welded_field,
+  tag_position_config: rebuilt_welded_PEARL_field,
   camera_position_config: {
     front_left: {
       position: VectorUtil.fromArray([0.0813, 0.324, 0.0]),
@@ -26,14 +27,8 @@ const april_tag_pos_config: AprilTagConfig = {
       rotation: MatrixUtil.buildRotationMatrixFromYaw(225),
     },
   },
-  noise_change_modes: [
-    TagNoiseAdjustMode.ADD_WEIGHT_PER_M_DISTANCE_TAG,
-    TagNoiseAdjustMode.ADD_WEIGHT_PER_TAG_CONFIDENCE,
-  ],
-  reject_modes: [
-    TagRejectMode.REJECT_OVER_MAX_DISTANCE_FROM_TAG,
-    TagRejectMode.REJECT_UNDER_MIN_TAG_CONFIDENCE,
-  ],
+  noise_change_modes: [],
+  reject_modes: [TagRejectMode.REJECT_OVER_MAX_DISTANCE_FROM_TAG],
   tag_noise_adjust_config: {
     weight_per_m_from_distance_from_tag: 0.3,
     weight_per_degree_from_angle_error_tag: 0.0,
@@ -41,7 +36,7 @@ const april_tag_pos_config: AprilTagConfig = {
     min_distance_from_tag_to_use_noise_adjustment: 1.5,
   },
   tag_reject_config: {
-    max_distance_from_tag: 3.0,
+    max_distance_from_tag: 5.0,
     min_tag_confidence: 0.0,
   },
   insert_predicted_global_rotation: true,

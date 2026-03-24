@@ -19,7 +19,6 @@ from backend.generated.thrift.config.pos_extrapolator.ttypes import (
     TagRejectConfig,
     TagRejectMode,
 )
-from backend.python.common.debug.logger import warning
 from backend.python.common.util.math import (
     create_transformation_matrix,
     extract_2d_from_3d_transformation,

@@ -14,6 +14,8 @@ import com.revrobotics.spark.config.SparkFlexConfig;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ElevatorFeedforward;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.units.CurrentUnit;
+import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -128,7 +130,8 @@ public class ClimberSubsystem extends SubsystemBase {
   }
 
   public boolean isCalibrationVelocitySettled() {
-    return Math.abs(getHeightVelocityMetersPerSecond()) <= ClimberConstants.kCalibrationVelocityToleranceMetersPerSecond;
+    return Math.abs(getHeightVelocityMetersPerSecond()) <= ClimberConstants.kCalibrationVelocityToleranceMetersPerSecond
+        || m_climbMotor.getOutputCurrent() >= ClimberConstants.kCalibrationVoltageTolerance.in(Units.Amps);
   }
 
   public void zeroHeightEncoder() {

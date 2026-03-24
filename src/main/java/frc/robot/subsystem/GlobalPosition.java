@@ -17,6 +17,7 @@ import frc.robot.constant.BotConstants;
 import frc.robot.constant.CommunicationConstants;
 import frc.robot.util.AimPoint;
 import frc.robot.util.PositionUncertaintyVisualizer;
+import frc.robot.util.PositionUncertaintyVisualizer.PositionVisualizationMode;
 import frc4765.proto.util.Position.RobotPosition;
 import lombok.Getter;
 
@@ -143,15 +144,20 @@ public class GlobalPosition extends SubsystemBase {
 
   @Override
   public void periodic() {
+    Pose2d[] uncertaintyVisualization = PositionUncertaintyVisualizer.visualization(
+        position,
+        positionCovariance,
+        PositionVisualizationMode.PROBABILITY_ELLIPSE);
+
+    Pose2d[] covarianceVisualization = PositionUncertaintyVisualizer.visualization(
+        position,
+        positionCovariance,
+        PositionVisualizationMode.COVARIANCE_ELLIPSE);
+
     Logger.recordOutput("Global/pose", position);
     Logger.recordOutput("Global/velocity", positionVelocity);
-    Logger.recordOutput("Global/positionCovariance", positionCovariance);
-    Logger.recordOutput("Global/positionCovarianceMatrix", positionCovarianceMatrix);
-    Logger.recordOutput("Global/positionCovarianceDiagonal",
-        PositionUncertaintyVisualizer.covarianceDiagonal(positionCovariance));
-    Logger.recordOutput("Global/positionStdDev", PositionUncertaintyVisualizer.covarianceStdDev(positionCovariance));
-    Logger.recordOutput("Global/positionCovarianceEllipse",
-        PositionUncertaintyVisualizer.covarianceEllipse(position, positionCovariance));
+    Logger.recordOutput("Global/positionUncertaintyVisualization", uncertaintyVisualization);
+    Logger.recordOutput("Global/covarianceVisualization", covarianceVisualization);
     if (positionUpdateHz < 100) {
       Logger.recordOutput("Global/positionUpdateHz", positionUpdateHz);
     }

@@ -1,10 +1,14 @@
 package frc.robot.constant;
 
+import static edu.wpi.first.units.Units.Amps;
+
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
 import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearVelocity;
+import edu.wpi.first.units.measure.Voltage;
 
 public class ClimberConstants {
   public static final Distance kMaxHeight = Units.Inches.of(12.4);
@@ -39,6 +43,7 @@ public class ClimberConstants {
   public static final LinearVelocity kManualDownVelocity = Units.MetersPerSecond.of(-0.4);
   public static final LinearVelocity kCalibrationVelocity = Units.MetersPerSecond.of(-0.4);
   public static final double kCalibrationVelocityToleranceMetersPerSecond = 0.01;
+  public static final Current kCalibrationVoltageTolerance = Amps.of(25);
   public static final double kCalibrationMinRuntimeSeconds = 0.25;
   public static final double kCalibrationSettledTimeSeconds = 0.20;
 

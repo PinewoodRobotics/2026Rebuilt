@@ -26,7 +26,7 @@ public class ShooterConstants {
   public static final MotorType kShooterMotorTypeFollower = MotorType.kBrushless;
   public static final AngularVelocity kShooterMinVelocity = Units.RotationsPerSecond.of(25);
   public static final AngularVelocity kShooterMaxVelocity = Units.RotationsPerSecond.of(50.0);
-  public static final AngularVelocity kShooterVelocityTolerance = Units.RotationsPerSecond.of(2);
+  public static final AngularVelocity kShooterVelocityTolerance = Units.RotationsPerSecond.of(1);
 
   public static final AngularVelocity kShooterBaseSpeed = Units.RotationsPerSecond.of(25.0);
 

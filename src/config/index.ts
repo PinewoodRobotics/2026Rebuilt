@@ -11,7 +11,7 @@ import rear_right from "./cameras/a-bot/rear_right";
 
 const config: Config = {
   pos_extrapolator: pose_extrapolator,
-  cameras: [rear_right, front_left, front_right, rear_left],
+  cameras: [rear_left, rear_right, front_left, front_right],
   april_detection: april_tag_detection_config,
   lidar_configs: lidar_configs,
   pathfinding: pathfinding_config,
