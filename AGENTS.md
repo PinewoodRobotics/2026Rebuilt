@@ -30,6 +30,7 @@
 - `make deploy` defaults `TEAM_NUMBER=4765` unless overridden.
 - `./gradlew deployBackend` expects deployment on `EXPECTED_NUM_OF_PIS` (currently `3`) and fails if mismatch.
 - `make generate` assumes `.venv` already exists because `generate-proto-python` runs `.venv/bin/fix-protobuf-imports`; use `make initialize` first on a fresh clone.
+- `make test` also assumes `.venv` already exists because it executes `.venv/bin/python`; run `make initialize` first on a fresh clone.
 - `npm run config` can omit `--dir` and auto-detect `config/` or `src/config/`; `json`, `json-binary`, and `file` switches are supported.
 - Dynamic vendor dependency builds are intentionally forced every Gradle compile/build cycle (`buildDynamicDeps.outputs.upToDateWhen { false }`).
 
