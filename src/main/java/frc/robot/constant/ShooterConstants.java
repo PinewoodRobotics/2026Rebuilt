@@ -8,12 +8,13 @@ import edu.wpi.first.units.measure.AngularVelocity;
 public class ShooterConstants {
   public static final int kShooterCurrentLimit = 60;
 
-  public static final double kShooterP = 0.0005;
+  public static final double kShooterP = 0.0002;
   public static final double kShooterFollowerP = kShooterP; // 0.0025;
-  public static final double kShooterI = 0.000001;
-  public static final double kShooterD = 0.1 / 2;
+  public static final double kShooterI = 0.000000005;
+  public static final double kShooterD = 0.02;
   public static final double kShooterIZ = 0.0;
-  public static final double kFF = 0.0018;
+  public static final double kFFLeader = 0.00183;
+  public static final double kFFFollower = 0.0018;
 
   public static final boolean kShooterLeaderReversed = true;
   public static final boolean kShooterFollowerReversed = false;
@@ -35,8 +36,8 @@ public class ShooterConstants {
   public static final double kTimeVsDistanceSlope = 0.295;
   public static final double kTimeVsDistanceIntercept = 0.433;
 
-  public static final double kRPMVsDistanceSlope = 151;
-  public static final double kRPMVsDistanceIntercept = 1521;
+  public static final double kRPMVsDistanceSlope = 135;
+  public static final double kRPMVsDistanceIntercept = 1928;
 
   public static final double kOutMult = 1.0;
 

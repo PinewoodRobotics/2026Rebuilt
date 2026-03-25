@@ -4,11 +4,10 @@ import {
   TagRejectMode,
 } from "generated/thrift/gen-nodejs/pos_extrapolator_types";
 import { MatrixUtil, VectorUtil } from "../../util/math";
-import { rebuilt_welded_field } from "../tag_config/rebuilt_welded";
 import { rebuilt_welded_PEARL_field } from "../tag_config/rebuilt_welded_PEARL";
 
 const april_tag_pos_config: AprilTagConfig = {
-  tag_position_config: rebuilt_welded_PEARL_field,
+  tag_position_config: rebuilt_welded_PEARL_field.tagPositionConfig,
   camera_position_config: {
     front_left: {
       position: VectorUtil.fromArray([0.0813, 0.324, 0.0]),

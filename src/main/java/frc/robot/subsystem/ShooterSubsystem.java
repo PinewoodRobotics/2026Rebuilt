@@ -115,11 +115,13 @@ public class ShooterSubsystem extends SubsystemBase {
       return;
     }
 
-    double feedForward = ShooterConstants.kFF * targetRpm;
+    double feedForwardLeader = ShooterConstants.kFFLeader * targetRpm;
     leaderClosedLoopController.setSetpoint(targetRpm, ControlType.kVelocity,
-        ClosedLoopSlot.kSlot0, feedForward);
+        ClosedLoopSlot.kSlot0, feedForwardLeader);
+
+    double feedForwardFollower = ShooterConstants.kFFFollower * targetRpm;
     followerClosedLoopController.setSetpoint(targetRpm, ControlType.kVelocity,
-        ClosedLoopSlot.kSlot0, feedForward);
+        ClosedLoopSlot.kSlot0, feedForwardFollower);
   }
 
   public void stopShooter() {
