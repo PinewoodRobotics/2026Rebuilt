@@ -14,6 +14,8 @@ import frc.robot.command.SwerveMoveTeleop;
 import frc.robot.command.climber.CalibrateClimberCommand;
 import frc.robot.command.climber.ManualClimberControlCommand;
 import frc.robot.command.intake.IntakeCommand;
+import frc.robot.command.lighting.ShooterSpeedLighting;
+import frc.robot.command.lighting.TurretStateLighting;
 import frc.robot.command.scoring.ContinuousAimCommand;
 import frc.robot.command.scoring.ManualAimCommand;
 import frc.robot.command.shooting.ContinuousManualShooter;
@@ -28,6 +30,7 @@ import frc.robot.hardware.UnifiedGyro;
 import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.IndexSubsystem;
 import frc.robot.subsystem.IntakeSubsystem;
+import frc.robot.subsystem.LightsSubsystem;
 import frc.robot.subsystem.MatchStatusSubsystem;
 import frc.robot.subsystem.OdometrySubsystem;
 import frc.robot.subsystem.PathPlannerSubsystem;
@@ -68,6 +71,8 @@ public class RobotContainer {
 
     // Initialize publication subsystem for sending data to Pi
     MatchStatusSubsystem.GetInstance();
+
+    LightsSubsystem.GetInstance();
 
     // setIntakeCommands();
     // PathPlannerSubsystem.GetInstance();

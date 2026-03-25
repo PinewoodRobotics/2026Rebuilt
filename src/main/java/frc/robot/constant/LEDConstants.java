@@ -5,7 +5,7 @@ public class LEDConstants {
   }
 
   /** CAN ID of the CANdle device. Configure in Phoenix Tuner. */
-  public static final int candleCANId = 26;
+  public static final int candleCANId = 40;
 
   /** Full LED address space on CANdle: onboard [0..7] + strip [8..399]. */
   public static final int ledStartIndex = 0;
