@@ -176,6 +176,17 @@ public class ShooterSubsystem extends SubsystemBase {
     return Units.RPM.of((leaderEncoder.getVelocity() + followerEncoder.getVelocity()) / 2.0);
   }
 
+  public double getCurrentShooterVelocityRps() {
+    return getCurrentShooterVelocity().in(Units.RotationsPerSecond);
+  }
+
+  public double getRequestedShooterVelocityRps() {
+    if (lastShooterVelocitySetpoint == null) {
+      return 0.0;
+    }
+    return lastShooterVelocitySetpoint.in(Units.RotationsPerSecond);
+  }
+
   @Override
   public void periodic() {
     double currentLeaderVelocityRpm = leaderEncoder.getVelocity();
