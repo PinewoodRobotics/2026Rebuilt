@@ -76,7 +76,8 @@ public class RobotContainer {
     lights.addLightsCommand(new ShootingLighting(() -> !m_operatorPanel.metalSwitchDown().getAsBoolean()));
     // LED index test: hold left stick B8 — bright dot moves down the strip at 5
     // LEDs/s.
-    lights.addLightsCommand(new TestingLighting(() -> m_leftFlightStick.B8().getAsBoolean()));
+    // lights.addLightsCommand(new TestingLighting(() ->
+    // m_leftFlightStick.B8().getAsBoolean()));
 
     // setIntakeCommands();
     // PathPlannerSubsystem.GetInstance();
