@@ -14,8 +14,7 @@ import frc.robot.command.SwerveMoveTeleop;
 import frc.robot.command.climber.CalibrateClimberCommand;
 import frc.robot.command.climber.ManualClimberControlCommand;
 import frc.robot.command.intake.IntakeCommand;
-import frc.robot.command.lighting.ShooterSpeedLighting;
-import frc.robot.command.lighting.TurretStateLighting;
+import frc.robot.command.lighting.TestingLighting;
 import frc.robot.command.scoring.ContinuousAimCommand;
 import frc.robot.command.scoring.ManualAimCommand;
 import frc.robot.command.shooting.ContinuousManualShooter;
@@ -72,7 +71,10 @@ public class RobotContainer {
     // Initialize publication subsystem for sending data to Pi
     MatchStatusSubsystem.GetInstance();
 
-    LightsSubsystem.GetInstance();
+    var lights = LightsSubsystem.GetInstance();
+    // LED index test: hold left stick B8 — bright dot moves down the strip at 5
+    // LEDs/s.
+    lights.addLightsCommand(new TestingLighting(() -> m_leftFlightStick.B8().getAsBoolean()));
 
     // setIntakeCommands();
     // PathPlannerSubsystem.GetInstance();
@@ -167,7 +169,7 @@ public class RobotContainer {
     ClimberSubsystem climberSubsystem = ClimberSubsystem.GetInstance();
     climberSubsystem.setDefaultCommand(new ManualClimberControlCommand(
         climberSubsystem,
-        m_leftFlightStick::getLeftSlider));
+        m_leftFlightStick::getLeftSlider, false));
 
     m_operatorPanel.redButton().whileTrue(Commands.startEnd(
         () -> climberSubsystem.setVelocity(ClimberConstants.kManualDownVelocity),
@@ -177,10 +179,10 @@ public class RobotContainer {
     m_leftFlightStick.B7().onTrue(new CalibrateClimberCommand(climberSubsystem));
 
     NamedCommands.registerCommand("MoveClimberUp",
-        new ManualClimberControlCommand(climberSubsystem, () -> 1.0));
+        new ManualClimberControlCommand(climberSubsystem, () -> 1.0, true));
 
     NamedCommands.registerCommand("MoveClimberDown",
-        new ManualClimberControlCommand(climberSubsystem, () -> 0.0));
+        new ManualClimberControlCommand(climberSubsystem, () -> 0.5, false));
   }
 
   private void setIntakeCommands() {

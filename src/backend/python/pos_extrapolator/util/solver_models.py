@@ -35,3 +35,10 @@ class SensorEvent:
     sensor_type: AllowedSensors = field(compare=False)
     sensor_id: str = field(compare=False)
     data: SensorPayload = field(compare=False)
+
+
+@dataclass(order=True)
+class CachedFilterState:
+    timestamp_s: float
+    x: NDArray[np.float64]
+    P: NDArray[np.float64]

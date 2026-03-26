@@ -13,7 +13,7 @@ export const kalman_filter: KalmanFilterConfig = {
   process_noise_matrix: MatrixUtil.buildMatrixFromDiagonal([
     0.001 ** 2,
     0.001 ** 2,
-    (Math.PI / 540) ** 2,
+    (Math.PI / 640) ** 2,
   ]),
   sensors: {
     [KalmanFilterSensorType.APRIL_TAG]: {

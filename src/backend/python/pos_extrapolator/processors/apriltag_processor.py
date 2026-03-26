@@ -148,7 +148,7 @@ def process_apriltags(solver: "PositionSolver2d", event: "SensorEvent") -> None:
             solver.config.april_tag_config.tag_noise_adjust_config,
             solver.config.april_tag_config,
         )
-        R_local = (R_local * mult) + (add * np.eye(R_local.shape[0], dtype=np.float64))
+        R_local = (R_local * mult) + np.diag(add)
 
         data = np.array(
             [tag_in_camera_pose[0], tag_in_camera_pose[1], theta_tag_rad],
@@ -207,28 +207,38 @@ def april_tag_noise_adjustment(
     tag: ProcessedTag,
     config_noise: TagNoiseAdjustConfig,
     config_tag: AprilTagConfig,
-) -> tuple[float, float]:
-    total_add = 0.0
+) -> tuple[NDArray[np.float64], float]:
+    total_add = np.zeros(3, dtype=np.float64)
     total_mult = 1.0
 
     estimate_xy = x[:2]
     tag_xy = tag_pose_in_camera[:2]
 
     distance_from_estimate = float(np.linalg.norm(tag_xy - estimate_xy))
-
-    min_distance = float(config_noise.min_distance_from_tag_to_use_noise_adjustment)
-    if distance_from_estimate < min_distance:
-        return total_add, total_mult
-
     noise_modes = set(config_tag.noise_change_modes)
-    if TagNoiseAdjustMode.ADD_WEIGHT_PER_M_DISTANCE_TAG in noise_modes:
-        total_add += float(config_noise.weight_per_m_from_distance_from_tag) * (
-            distance_from_estimate
-        )
-    if TagNoiseAdjustMode.ADD_WEIGHT_PER_TAG_CONFIDENCE in noise_modes:
-        total_add += float(config_noise.weight_per_confidence_tag) * float(
-            tag.confidence
-        )
+
+    if TagNoiseAdjustMode.ADD_WEIGHT_PER_M_DISTANCE_TAG in noise_modes or TagNoiseAdjustMode.ADD_WEIGHT_PER_TAG_CONFIDENCE in noise_modes:
+        min_distance = float(config_noise.min_distance_from_tag_to_use_noise_adjustment)
+        if distance_from_estimate >= min_distance:
+            if TagNoiseAdjustMode.ADD_WEIGHT_PER_M_DISTANCE_TAG in noise_modes:
+                additive_noise = float(
+                    config_noise.weight_per_m_from_distance_from_tag
+                ) * distance_from_estimate
+                total_add += np.full(3, additive_noise, dtype=np.float64)
+            if TagNoiseAdjustMode.ADD_WEIGHT_PER_TAG_CONFIDENCE in noise_modes:
+                additive_noise = float(config_noise.weight_per_confidence_tag) * float(
+                    tag.confidence
+                )
+                total_add += np.full(3, additive_noise, dtype=np.float64)
+
+    if TagNoiseAdjustMode.ADD_ADDITIVE_NOISE_BY_TAG_ID in noise_modes:
+        additive_noise = config_noise.additive_noise_by_tag_id.get(tag.id)
+        if additive_noise is not None:
+            if additive_noise.size != 3 or len(additive_noise.values) != 3:
+                raise ValueError(
+                    "additive_noise_by_tag_id entries must have exactly three values for x, y, and theta"
+                )
+            total_add += np.array(additive_noise.values, dtype=np.float64)
 
     return total_add, total_mult
 

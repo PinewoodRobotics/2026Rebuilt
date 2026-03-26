@@ -28,6 +28,24 @@
               }
             ]
           }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "MoveClimberUp"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Climber Right Close"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "MoveClimberDown"
+          }
         }
       ]
     }

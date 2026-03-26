@@ -34,6 +34,12 @@
           "data": {
             "name": "MoveClimberUp"
           }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Climber Left Close"
+          }
         }
       ]
     }

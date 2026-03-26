@@ -1,0 +1,54 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 15.469,
+        "y": 5.40534157986111
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 15.469,
+        "y": 5.15534157986111
+      },
+      "isLocked": false,
+      "linkedName": "Climber Right Right End"
+    },
+    {
+      "anchor": {
+        "x": 15.49,
+        "y": 4.970452188614872
+      },
+      "prevControl": {
+        "x": 15.49,
+        "y": 5.220452188614872
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": null
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 0.2,
+    "maxAcceleration": 1.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 90.0
+  },
+  "reversed": false,
+  "folder": "Climber",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 90.0
+  },
+  "useDefaultConstraints": false
+}

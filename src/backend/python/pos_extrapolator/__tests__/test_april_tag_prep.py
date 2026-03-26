@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from backend.generated.thrift.config.common.ttypes import GenericVector
 from backend.generated.thrift.config.pos_extrapolator.ttypes import (
     TagNoiseAdjustMode,
     TagRejectMode,
@@ -138,7 +139,7 @@ def test_apriltag_distance_noise_adjustment_applies_additive_weight():
         solver.config.april_tag_config,
     )
 
-    assert add == pytest.approx(10.0)
+    assert add == pytest.approx(np.array([10.0, 10.0, 10.0], dtype=np.float64))
     assert mult == pytest.approx(1.0)
 
 
@@ -162,7 +163,55 @@ def test_apriltag_confidence_noise_adjustment_applies_additive_weight():
         solver.config.april_tag_config,
     )
 
-    assert add == pytest.approx(1.0)
+    assert add == pytest.approx(np.array([1.0, 1.0, 1.0], dtype=np.float64))
+    assert mult == pytest.approx(1.0)
+
+
+def test_apriltag_tag_specific_noise_adjustment_applies_per_axis_noise():
+    solver = make_solver()
+    solver.general_config.april_tag_config.noise_change_modes = [
+        TagNoiseAdjustMode.ADD_ADDITIVE_NOISE_BY_TAG_ID
+    ]
+    solver.general_config.april_tag_config.tag_noise_adjust_config.additive_noise_by_tag_id = {
+        0: GenericVector(values=[0.5, 1.5, 2.5], size=3)
+    }
+    tag_R = _robot_to_camera_rotation(from_theta_to_3x3_mat(0))
+    tag_t = _robot_to_camera_translation(np.array([1.0, 0.0, 0.0]))
+    data = make_processed_tag(tag_id=0, pose_R=tag_R, pose_t=tag_t)
+
+    add, mult = april_tag_noise_adjustment(
+        solver.x,
+        np.array([0.0, 0.0, 0.0]),
+        data.world_tags.tags[0],
+        solver.config.april_tag_config.tag_noise_adjust_config,
+        solver.config.april_tag_config,
+    )
+
+    assert add == pytest.approx(np.array([0.5, 1.5, 2.5], dtype=np.float64))
+    assert mult == pytest.approx(1.0)
+
+
+def test_apriltag_tag_specific_noise_adjustment_ignores_unconfigured_tags():
+    solver = make_solver()
+    solver.general_config.april_tag_config.noise_change_modes = [
+        TagNoiseAdjustMode.ADD_ADDITIVE_NOISE_BY_TAG_ID
+    ]
+    solver.general_config.april_tag_config.tag_noise_adjust_config.additive_noise_by_tag_id = {
+        1: GenericVector(values=[0.5, 1.5, 2.5], size=3)
+    }
+    tag_R = _robot_to_camera_rotation(from_theta_to_3x3_mat(0))
+    tag_t = _robot_to_camera_translation(np.array([1.0, 0.0, 0.0]))
+    data = make_processed_tag(tag_id=0, pose_R=tag_R, pose_t=tag_t)
+
+    add, mult = april_tag_noise_adjustment(
+        solver.x,
+        np.array([0.0, 0.0, 0.0]),
+        data.world_tags.tags[0],
+        solver.config.april_tag_config.tag_noise_adjust_config,
+        solver.config.april_tag_config,
+    )
+
+    assert add == pytest.approx(np.zeros(3, dtype=np.float64))
     assert mult == pytest.approx(1.0)
 
 

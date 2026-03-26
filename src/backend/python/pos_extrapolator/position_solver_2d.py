@@ -25,6 +25,7 @@ from backend.python.pos_extrapolator.processor_registry import (
     get_processor,
 )
 from backend.python.pos_extrapolator.util.solver_models import (
+    CachedFilterState,
     MotionInput,
     SensorEvent,
     SensorPayload,
@@ -64,6 +65,32 @@ def residual(
     measurement: NDArray[np.float64], estimate: NDArray[np.float64]
 ) -> NDArray[np.float64]:
     return residual_general(measurement, estimate, PositionSolver2d.kThetaIdx)
+
+
+class CachedHistory:
+    def __init__(self, max_history_length: int):
+        self.max_history_length = max_history_length
+        self.history_sensor_event = []
+        self.history_cached_filter_state = []
+
+    def add_sensor_event(self, sensor_event: SensorEvent) -> None:
+        self.add(self.history_sensor_event, sensor_event)
+
+    def add_cached_filter_state(self, cached_filter_state: CachedFilterState) -> None:
+        self.add(self.history_cached_filter_state, cached_filter_state)
+
+    def add(self, list, item) -> None:
+        list.append(item)
+        if len(list) > self.max_history_length:
+            list.pop(0)
+
+    def closest_state(self, timestamp_s: float) -> CachedFilterState:
+        closest_state = min(
+            self.history_cached_filter_state,
+            key=lambda x: abs(x.timestamp_s - timestamp_s),
+        )
+
+        return closest_state
 
 
 class PositionSolver2d(ExtendedKalmanFilter):

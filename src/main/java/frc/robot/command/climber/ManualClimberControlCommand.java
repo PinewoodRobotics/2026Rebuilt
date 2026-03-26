@@ -12,12 +12,14 @@ import frc.robot.subsystem.ClimberSubsystem;
 public class ManualClimberControlCommand extends Command {
   private final ClimberSubsystem m_climberSubsystem;
   private final DoubleSupplier m_heightSliderSupplier;
+  private boolean shouldEnd;
 
   public ManualClimberControlCommand(
       ClimberSubsystem climberSubsystem,
-      DoubleSupplier heightSliderSupplier) {
-    m_climberSubsystem = climberSubsystem;
-    m_heightSliderSupplier = heightSliderSupplier;
+      DoubleSupplier heightSliderSupplier, boolean shouldEnd) {
+    this.m_climberSubsystem = climberSubsystem;
+    this.m_heightSliderSupplier = heightSliderSupplier;
+    this.shouldEnd = shouldEnd;
     addRequirements(climberSubsystem);
   }
 
@@ -42,5 +44,10 @@ public class ManualClimberControlCommand extends Command {
     }
 
     return MathUtil.clamp((rawValue + 1.0) / 2.0, 0.0, 1.0);
+  }
+
+  @Override
+  public boolean isFinished() {
+    return shouldEnd && m_climberSubsystem.atTarget();
   }
 }

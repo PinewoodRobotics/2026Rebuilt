@@ -3,29 +3,29 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 13.153260706018518,
-        "y": 6.666507233796296
+        "x": 12.974275173611112,
+        "y": 6.6045052806712965
       },
       "prevControl": null,
       "nextControl": {
-        "x": 14.726601273148148,
-        "y": 6.619530092592592
+        "x": 14.547615740740742,
+        "y": 6.557528139467593
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 15.469443721064815,
+        "x": 15.469,
         "y": 5.40534157986111
       },
       "prevControl": {
-        "x": 15.502117766203705,
-        "y": 6.662833043978186
+        "x": 14.97710228587963,
+        "y": 6.53430201099537
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "Climber Right Right End"
     }
   ],
   "rotationTargets": [

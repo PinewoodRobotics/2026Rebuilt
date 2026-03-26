@@ -93,6 +93,7 @@ def make_config(
             weight_per_degree_from_angle_error_tag=0.0,
             weight_per_confidence_tag=0.0,
             min_distance_from_tag_to_use_noise_adjustment=0.0,
+            additive_noise_by_tag_id={},
         ),
         tag_reject_config=TagRejectConfig(
             max_distance_from_tag=0.0,

@@ -4,7 +4,7 @@ import {
 } from "generated/thrift/gen-nodejs/apriltag_types";
 
 export const april_tag_detection_config: AprilDetectionConfig = {
-  tag_size: 0.17,
+  tag_size: 0.1651,
   family: "tag36h11",
   nthreads: 4,
   quad_decimate: 1,

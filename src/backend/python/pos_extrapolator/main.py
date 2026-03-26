@@ -9,7 +9,6 @@ from backend.generated.proto.python.sensor.general_sensor_data_pb2 import (
 from backend.python.common.debug.logger import (
     error,
     info,
-    warning,
 )
 from backend.python.common.util.extension import subscribe_to_multiple_topics
 from backend.python.pos_extrapolator.position_solver_2d import PositionSolver2d
