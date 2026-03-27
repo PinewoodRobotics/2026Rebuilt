@@ -85,6 +85,11 @@ async def main():
             compression_quality=camera.video_options.compression_quality or 90,
             overlay_tags=camera.video_options.overlay_tags,
             do_detection=camera.do_detection,
+            image_edge_reject_margin_percent=(
+                config.april_detection.image_edge_reject_margin_percent
+                if config.april_detection.image_edge_reject_margin_percent is not None
+                else 0.0
+            ),
         )
 
         camera_detector_list.append(detector_cam)

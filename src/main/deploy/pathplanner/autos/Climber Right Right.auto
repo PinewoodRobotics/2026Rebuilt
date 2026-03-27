@@ -40,6 +40,12 @@
           "data": {
             "pathName": "Climber Left Close"
           }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "MoveClimberDown"
+          }
         }
       ]
     }

@@ -15,7 +15,6 @@ import frc.robot.command.climber.CalibrateClimberCommand;
 import frc.robot.command.climber.ManualClimberControlCommand;
 import frc.robot.command.intake.IntakeCommand;
 import frc.robot.command.lighting.ShootingLighting;
-import frc.robot.command.lighting.TestingLighting;
 import frc.robot.command.scoring.ContinuousAimCommand;
 import frc.robot.command.scoring.ManualAimCommand;
 import frc.robot.command.shooting.ContinuousManualShooter;
@@ -79,8 +78,8 @@ public class RobotContainer {
     // lights.addLightsCommand(new TestingLighting(() ->
     // m_leftFlightStick.B8().getAsBoolean()));
 
-    // setIntakeCommands();
-    // PathPlannerSubsystem.GetInstance();
+    // Preload PathPlanner before mode transitions to avoid first-enable auto hitch.
+    PathPlannerSubsystem.GetInstance();
 
     setSwerveCommands();
     setTurretCommands();
@@ -172,7 +171,7 @@ public class RobotContainer {
     ClimberSubsystem climberSubsystem = ClimberSubsystem.GetInstance();
     climberSubsystem.setDefaultCommand(new ManualClimberControlCommand(
         climberSubsystem,
-        m_leftFlightStick::getLeftSlider, false));
+        m_leftFlightStick::getLeftSlider, false, true));
 
     m_operatorPanel.redButton().whileTrue(Commands.startEnd(
         () -> climberSubsystem.setVelocity(ClimberConstants.kManualDownVelocity),
@@ -182,10 +181,10 @@ public class RobotContainer {
     m_leftFlightStick.B7().onTrue(new CalibrateClimberCommand(climberSubsystem));
 
     NamedCommands.registerCommand("MoveClimberUp",
-        new ManualClimberControlCommand(climberSubsystem, () -> 1.0, true));
+        new ManualClimberControlCommand(climberSubsystem, () -> 1.0, true, false));
 
     NamedCommands.registerCommand("MoveClimberDown",
-        new ManualClimberControlCommand(climberSubsystem, () -> 0.5, false));
+        new ManualClimberControlCommand(climberSubsystem, () -> 0.6, false, false));
   }
 
   private void setIntakeCommands() {
@@ -243,7 +242,7 @@ public class RobotContainer {
   }
 
   public Command getAutonomousCommand() {
-    return PathPlannerSubsystem.GetInstance().getAndInitAutoCommand(true);
+    return PathPlannerSubsystem.GetInstance().getAndInitAutoCommand(false);
   }
 
   public static boolean isShooterArmedForHud() {

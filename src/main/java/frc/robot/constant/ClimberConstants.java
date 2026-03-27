@@ -34,7 +34,7 @@ public class ClimberConstants {
   public final static double kVelocityP = 5.0;
   public final static double kVelocityI = 0;
   public final static double kVelocityD = 0;
-  public final static double kTolerance = Units.Feet.of(0.01).in(Units.Meters);
+  public final static double kTolerance = Units.Centimeter.of(0.7).in(Units.Meters);
 
   public final static boolean kSetpointRamping = true;
   public static final double kMaxSetpointRamp = Units.Feet.of(0.15).in(Units.Meters);

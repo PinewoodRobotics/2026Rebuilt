@@ -1,20 +1,22 @@
 import numpy as np
+import pytest
 
 from backend.generated.proto.python.sensor.apriltags_pb2 import ProcessedTag
 from backend.generated.proto.python.sensor.general_sensor_data_pb2 import (
     GeneralSensorData,
     SensorName,
 )
+from backend.python.april.src import detection_camera as detection_camera_module
 from backend.python.april.src.detection_camera import DetectionCamera
 from backend.python.april.src.tag_detector import TagDetection, TagDetector
 
 
 class _DummyCapture:
     def get_matrix(self):
-        raise AssertionError("not used in these tests")
+        return np.eye(3, dtype=np.float64)
 
     def get_dist_coeff(self):
-        raise AssertionError("not used in these tests")
+        return np.zeros(5, dtype=np.float64)
 
     def release(self):
         return None
@@ -113,3 +115,67 @@ def test_publish_emits_image_data_when_image_publisher_present():
     assert msg.sensor_id == "cam0"
     assert msg.image.width == 10
     assert msg.image.height == 10
+
+
+def test_process_tags_filters_out_detections_near_frame_edge(monkeypatch):
+    inside_detection = TagDetection(
+        corners=np.array([[15, 15], [30, 15], [30, 30], [15, 30]], dtype=np.int32),
+        tag_id=1,
+        hamming=0,
+        decision_margin=1.0,
+        homography=np.eye(3),
+        center=np.array([22.5, 22.5]),
+    )
+    edge_detection = TagDetection(
+        corners=np.array([[5, 15], [20, 15], [20, 30], [5, 30]], dtype=np.int32),
+        tag_id=2,
+        hamming=0,
+        decision_margin=1.0,
+        homography=np.eye(3),
+        center=np.array([12.5, 22.5]),
+    )
+    seen_ids: list[int] = []
+
+    def fake_post_process_detection(detections, *_args):
+        seen_ids.extend(det.tag_id for det in detections)
+        return []
+
+    monkeypatch.setattr(
+        detection_camera_module,
+        "process_image",
+        lambda _frame, _detector: [inside_detection, edge_detection],
+    )
+    monkeypatch.setattr(
+        detection_camera_module,
+        "post_process_detection",
+        fake_post_process_detection,
+    )
+
+    dc = DetectionCamera(
+        name="cam0",
+        video_capture=_DummyCapture(),
+        tag_size=0.17,
+        detector=_DummyDetector(),
+        publication_lambda=None,
+        publication_image_lambda=None,
+        overlay_tags=False,
+        image_edge_reject_margin_percent=10.0,
+    )
+
+    tags, filtered_detections = dc._process_tags(np.zeros((100, 100, 3), dtype=np.uint8))
+    assert tags == []
+    assert [det.tag_id for det in filtered_detections] == [1]
+    assert seen_ids == [1]
+
+
+def test_detection_camera_rejects_invalid_image_edge_margin():
+    with pytest.raises(ValueError):
+        DetectionCamera(
+            name="cam0",
+            video_capture=_DummyCapture(),
+            tag_size=0.17,
+            detector=_DummyDetector(),
+            publication_lambda=None,
+            publication_image_lambda=None,
+            image_edge_reject_margin_percent=50.0,
+        )

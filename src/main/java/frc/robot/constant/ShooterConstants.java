@@ -40,9 +40,11 @@ public class ShooterConstants {
   public static final double kRPMVsDistanceIntercept = 1928;
 
   public static final double kOutMult = 1.0;
+  public static final double kOutMultTime = 0.95;
+  public static final double kOutAddTime = 0.0;
 
   public static double DistanceFromTargetToTime(double distance) {
-    return kTimeVsDistanceSlope * distance + kTimeVsDistanceIntercept;
+    return kOutMultTime * (kTimeVsDistanceSlope * distance + kTimeVsDistanceIntercept) + kOutAddTime;
   }
 
   public static AngularVelocity DistanceFromTargetToVelocity(double distance) {

@@ -4,6 +4,8 @@ import static edu.wpi.first.units.Units.Meters;
 
 import java.util.function.DoubleSupplier;
 
+import org.littletonrobotics.junction.Logger;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constant.ClimberConstants;
@@ -13,24 +15,29 @@ public class ManualClimberControlCommand extends Command {
   private final ClimberSubsystem m_climberSubsystem;
   private final DoubleSupplier m_heightSliderSupplier;
   private boolean shouldEnd;
+  private boolean isSlider;
 
   public ManualClimberControlCommand(
       ClimberSubsystem climberSubsystem,
-      DoubleSupplier heightSliderSupplier, boolean shouldEnd) {
+      DoubleSupplier heightSliderSupplier, boolean shouldEnd, boolean isSlider) {
     this.m_climberSubsystem = climberSubsystem;
     this.m_heightSliderSupplier = heightSliderSupplier;
     this.shouldEnd = shouldEnd;
+    this.isSlider = isSlider;
     addRequirements(climberSubsystem);
   }
 
   @Override
   public void execute() {
-    double sliderPosition = normalizeSliderInput(m_heightSliderSupplier.getAsDouble());
+    double sliderPosition = isSlider ? normalizeSliderInput(m_heightSliderSupplier.getAsDouble())
+        : m_heightSliderSupplier.getAsDouble();
     double targetHeightMeters = MathUtil.interpolate(
         ClimberConstants.kMinHeight.in(Meters),
         ClimberConstants.kMaxHeight.in(Meters),
         sliderPosition);
     m_climberSubsystem.setHeight(Meters.of(targetHeightMeters));
+
+    Logger.recordOutput("Climber/ValueReq", m_heightSliderSupplier.getAsDouble());
   }
 
   @Override

@@ -11,10 +11,12 @@ from backend.python.common.camera.abstract_camera import AbstractCaptureDevice
 from backend.python.april.src.util import (
     convert_to_wpi_position,
     convert_to_wpi_rotation,
+    filter_detections_by_frame_edge_margin,
     post_process_detection,
     process_image,
     solve_pnp_tag_corners,
     to_float_list,
+    validate_image_edge_reject_margin_percent,
 )
 from backend.python.common.camera.image_utils import encode_image
 from backend.python.common.debug.replay_recorder import record_image
@@ -44,6 +46,7 @@ class DetectionCamera:
         compression_quality: int = 90,
         overlay_tags: bool = False,
         do_detection: bool = True,
+        image_edge_reject_margin_percent: float = 0.0,
     ):
         self.detector: TagDetector = detector
         self.tag_size: float = tag_size
@@ -57,6 +60,11 @@ class DetectionCamera:
         self.compression_quality: int = compression_quality
         self.overlay_tags: bool = overlay_tags
         self.do_detection = do_detection
+        self.image_edge_reject_margin_percent = (
+            validate_image_edge_reject_margin_percent(
+                image_edge_reject_margin_percent
+            )
+        )
 
         self.name: str = name
 
@@ -73,9 +81,15 @@ class DetectionCamera:
     ) -> tuple[list[ProcessedTag], list[TagDetection]]:
         tags_world: list[ProcessedTag] = []
         output_image_processing = process_image(frame, self.detector)
+        filtered_detections = filter_detections_by_frame_edge_margin(
+            output_image_processing,
+            frame_width=frame.shape[1],
+            frame_height=frame.shape[0],
+            image_edge_reject_margin_percent=self.image_edge_reject_margin_percent,
+        )
 
         tag_id_corners_found = post_process_detection(
-            output_image_processing,
+            filtered_detections,
             self.video_capture.get_matrix(),
             self.video_capture.get_dist_coeff(),
         )
@@ -99,7 +113,7 @@ class DetectionCamera:
                 )
             )
 
-        return tags_world, output_image_processing
+        return tags_world, filtered_detections
 
     def _run_loop(self):
         while self.thread.daemon and self.running:

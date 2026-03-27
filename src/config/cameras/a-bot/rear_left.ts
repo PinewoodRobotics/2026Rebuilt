@@ -23,7 +23,7 @@ const rear_left: CameraParameters = {
   dist_coeff: VectorUtil.fromArray([
     0.0533, -0.09247, -0.0002978, -0.000189, 0.0283,
   ]),
-  exposure_time: 8,
+  exposure_time: 30,
   camera_type: CameraType.OV2311,
   video_options: {
     send_feed: CameraConstants.kSendFeed,
