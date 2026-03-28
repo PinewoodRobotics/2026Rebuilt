@@ -1,6 +1,7 @@
 package frc.robot.subsystem;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.littletonrobotics.junction.Logger;
 import org.pwrup.SwerveDrive;
@@ -10,6 +11,8 @@ import org.pwrup.util.Wheel;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
@@ -22,6 +25,7 @@ import frc.robot.hardware.UnifiedGyro;
 import frc.robot.hardware.WheelMoverBase;
 import frc.robot.hardware.WheelMoverSpark;
 import frc.robot.hardware.WheelMoverTalonFX;
+import frc.robot.util.AimPoint;
 import frc.robot.util.LocalMath;
 import lombok.Getter;
 import lombok.Setter;
@@ -251,10 +255,18 @@ public class SwerveSubsystem extends SubsystemBase {
   }
 
   public static ChassisSpeeds fromPercentToVelocity(Vec2 percentXY, double rotationPercent) {
-    double vx = LocalMath.clamp(percentXY.getX(), -1, 1) * SwerveConstants.kRobotMaxSpeed.in(Units.MetersPerSecond);
-    double vy = LocalMath.clamp(percentXY.getY(), -1, 1) * SwerveConstants.kRobotMaxSpeed.in(Units.MetersPerSecond);
+    return fromPercentToVelocity(
+        percentXY, rotationPercent,
+        SwerveConstants.kRobotMaxSpeed,
+        SwerveConstants.kRobotMaxTurnSpeed);
+  }
+
+  public static ChassisSpeeds fromPercentToVelocity(Vec2 percentXY, double rotationPercent, LinearVelocity maxSpeed,
+      AngularVelocity maxTurnSpeed) {
+    double vx = LocalMath.clamp(percentXY.getX(), -1, 1) * maxSpeed.in(Units.MetersPerSecond);
+    double vy = LocalMath.clamp(percentXY.getY(), -1, 1) * maxSpeed.in(Units.MetersPerSecond);
     double omega = LocalMath.clamp(rotationPercent, -1, 1)
-        * SwerveConstants.kRobotMaxTurnSpeed.in(Units.RadiansPerSecond);
+        * maxTurnSpeed.in(Units.RadiansPerSecond);
     return new ChassisSpeeds(vx, vy, omega);
   }
 

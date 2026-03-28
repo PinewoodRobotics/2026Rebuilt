@@ -1,24 +1,13 @@
-import argparse
 import asyncio
-import random
-import time
-
-import pyapriltags
 
 from backend.python.april.src.detection_camera import DetectionCamera
 from backend.python.april.src.util import build_detector
 from backend.python.common.camera.abstract_camera import get_camera_capture_device
 from backend.python.common.debug.logger import LogLevel, init_logging, success
-from backend.generated.thrift.config.apriltag.ttypes import AprilDetectionConfig
-from backend.generated.thrift.config.camera.ttypes import CameraParameters, CameraType
 from autobahn_client.client import Autobahn
 from autobahn_client.util import Address
-from backend.python.common.config import from_uncertainty_config
-from backend.python.common.util.math import get_np_from_matrix, get_np_from_vector
 from backend.python.common.util.system import (
-    get_config_parser,
     get_system_name,
-    load_basic_system_config,
     load_configs,
 )
 

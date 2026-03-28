@@ -19,26 +19,27 @@ public class IntakeCommand extends Command {
 
   private boolean wasRunningIntake;
   private double intakeCycleStartS;
+  private boolean shouldEnd = false;
 
   public void setAlternateRaiseLocation(WristRaiseLocation location) {
     alternateRaiseLocation = location;
   }
 
   public IntakeCommand(IntakeSubsystem baseSubsystem, Supplier<Boolean> joystickSupplier,
-      Supplier<Boolean> extakeOverrideSupplier, WristRaiseLocation raiseLocation) {
+      Supplier<Boolean> extakeOverrideSupplier, WristRaiseLocation raiseLocation, boolean shouldEnd) {
     this.m_intakeSubsystem = baseSubsystem;
     this.joystickSupplier = joystickSupplier;
     this.extakeOverrideSupplier = extakeOverrideSupplier;
     this.alternateRaiseLocation = raiseLocation;
     this.wasRunningIntake = false;
     this.intakeCycleStartS = 0.0;
-
+    this.shouldEnd = shouldEnd;
     addRequirements(m_intakeSubsystem);
   }
 
   public IntakeCommand(IntakeSubsystem baseSubsystem, Supplier<Boolean> joystickSupplier,
       Supplier<Boolean> extakeOverrideSupplier) {
-    this(baseSubsystem, joystickSupplier, extakeOverrideSupplier, WristRaiseLocation.MIDDLE);
+    this(baseSubsystem, joystickSupplier, extakeOverrideSupplier, WristRaiseLocation.MIDDLE, false);
   }
 
   @Override
@@ -90,6 +91,6 @@ public class IntakeCommand extends Command {
 
   @Override
   public boolean isFinished() {
-    return false;
+    return shouldEnd && m_intakeSubsystem.wristAtSetpoint();
   }
 }

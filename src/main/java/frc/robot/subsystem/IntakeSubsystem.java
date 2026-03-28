@@ -99,6 +99,11 @@ public class IntakeSubsystem extends SubsystemBase {
     m_intakeIntakerMotor.set(0.0);
   }
 
+  public boolean wristAtSetpoint() {
+    return Math.abs(getWristPosition().minus(m_wristSetpoint).getRadians())
+        < IntakeConstants.kTolerance.getRadians();
+  }
+
   @Override
   public void periodic() {
     if (m_wristSetpoint != null) {

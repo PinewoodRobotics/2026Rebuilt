@@ -3,6 +3,8 @@ package frc.robot.command;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import org.littletonrobotics.junction.Logger;
@@ -20,8 +22,11 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constant.BotConstants;
 import frc.robot.constant.ControllerConstants;
+import frc.robot.constant.swerve.SwerveConstants;
 import frc.robot.subsystem.GlobalPosition;
+import frc.robot.subsystem.ShooterSubsystem;
 import frc.robot.subsystem.SwerveSubsystem;
+import frc.robot.util.AimPoint;
 import frc.robot.util.LocalMath;
 import lombok.Getter;
 import lombok.Setter;
@@ -35,12 +40,14 @@ public class SwerveMoveTeleop extends Command {
 
   private final SwerveSubsystem m_swerveSubsystem;
   private final FlightModule controller;
+  private final Optional<BooleanSupplier> isShootingSupplier;
 
   public SwerveMoveTeleop(
       SwerveSubsystem swerveSubsystem,
-      FlightModule controller) {
+      FlightModule controller, Optional<BooleanSupplier> isShootingSupplier) {
     this.m_swerveSubsystem = swerveSubsystem;
     this.controller = controller;
+    this.isShootingSupplier = isShootingSupplier;
     addRequirements(m_swerveSubsystem);
   }
 
@@ -69,6 +76,15 @@ public class SwerveMoveTeleop extends Command {
     var velocity = SwerveSubsystem.fromPercentToVelocity(
         new Vec2(rawX, rawY),
         rawR);
+
+    if (m_swerveSubsystem.isGpsAssist() && AimPoint.getZone(GlobalPosition.Get()) == AimPoint.ZoneName.FRONT_OF_HUB
+        && isShootingSupplier.isPresent() && isShootingSupplier.get().getAsBoolean()) {
+      velocity = SwerveSubsystem.fromPercentToVelocity(
+          new Vec2(rawX, rawY),
+          rawR,
+          SwerveConstants.kRobotMaxSpeed.times(SwerveConstants.kShootingSpeedMultiplier),
+          SwerveConstants.kRobotMaxTurnSpeed.times(SwerveConstants.kShootingSpeedMultiplier));
+    }
 
     m_swerveSubsystem.drive(velocity, SwerveSubsystem.DriveType.FIELD_RELATIVE);
   }

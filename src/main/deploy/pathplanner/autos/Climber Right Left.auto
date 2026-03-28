@@ -25,14 +25,33 @@
                 "data": {
                   "name": "ContinuousShooterCommand"
                 }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "IntakeBottomCommand"
+                }
               }
             ]
           }
         },
         {
-          "type": "named",
+          "type": "parallel",
           "data": {
-            "name": "MoveClimberUp"
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "MoveClimberUp"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "IntakeTopCommand"
+                }
+              }
+            ]
           }
         },
         {

@@ -16,12 +16,12 @@ public class ShootingLighting extends Command {
   private static final LedColor kMidSpeedColor = new LedColor(255, 120, 0, 0);
   private static final LedColor kNearSpeedColor = new LedColor(255, 255, 0, 0);
   private static final LedColor kReadyColor = new LedColor(0, 255, 0, 0);
-  private static final double kWarmupPulseHz = 7.0;
+  private static final double kWarmupPulseHz = 3.5;
   private static final double kWarmupPulseMinScalar = 0.15;
   private static final double kWarmupPulseMaxScalar = 1.0;
-  private static final double kLowSpeedChaseHz = 8.0;
-  private static final double kMidSpeedChaseHz = 5.0;
-  private static final double kNearSpeedBlinkHz = 5.5;
+  private static final double kLowSpeedChaseHz = 4.0;
+  private static final double kMidSpeedChaseHz = 2.5;
+  private static final double kNearSpeedBlinkHz = 2.75;
   private static final int kChaseWidth = 24;
   private static final int kPriority = 25;
   private static final double kMinTargetRps = 1e-6;

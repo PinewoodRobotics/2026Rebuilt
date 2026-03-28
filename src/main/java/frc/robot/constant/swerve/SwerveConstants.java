@@ -26,6 +26,8 @@ public final class SwerveConstants {
   public static final AngularAcceleration kRobotMaxTurnAcceleration = Units.RadiansPerSecondPerSecond.of(Math.PI);
   public static final LinearAcceleration kRobotMaxLinearAcceleration = Units.MetersPerSecondPerSecond.of(4.0);
 
+  public static final double kShootingSpeedMultiplier = 1.0;
+
   //////////////////////////////////////
 
   public Translation2d rearLeftTranslation;

@@ -30,6 +30,8 @@ public class GlobalPosition extends SubsystemBase {
   private static double[] positionCovariance = new double[0];
   private static double[][] positionCovarianceMatrix = new double[0][0];
 
+  private int resubCountTicks = 0;
+
   @Getter
   private static boolean isValid = false;
   private static final long kPositionUpdateTimeoutMs = 1000;
@@ -187,6 +189,21 @@ public class GlobalPosition extends SubsystemBase {
 
     Logger.recordOutput("Global/Position/IsValid", isValid);
     Logger.recordOutput("Global/alliance", BotConstants.alliance);
+
+    if (positionUpdateHz < 10) {
+      resubCountTicks++;
+      if (resubCountTicks % 50 == 0) {
+        Robot.getCommunicationClient().unsubscribe(CommunicationConstants.kPoseSubscribeTopic);
+        Robot.getCommunicationClient().subscribe(CommunicationConstants.kPoseSubscribeTopic,
+            NamedCallback.FromConsumer(this::subscription));
+
+        System.out.println("Resubscribing to topic!!");
+
+        resubCountTicks = 0;
+      }
+    } else {
+      resubCountTicks = 0;
+    }
   }
 
   private static double[] toDoubleArray(java.util.List<Float> values) {

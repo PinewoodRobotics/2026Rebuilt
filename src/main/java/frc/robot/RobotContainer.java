@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.command.ClimbAuto;
 import frc.robot.command.SwerveMoveTeleop;
 import frc.robot.command.climber.CalibrateClimberCommand;
 import frc.robot.command.climber.ManualClimberControlCommand;
@@ -19,6 +20,8 @@ import frc.robot.command.scoring.ContinuousAimCommand;
 import frc.robot.command.scoring.ManualAimCommand;
 import frc.robot.command.shooting.ContinuousManualShooter;
 import frc.robot.command.shooting.ContinuousShooter;
+
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
 import frc.robot.constant.BotConstants;
@@ -73,10 +76,6 @@ public class RobotContainer {
 
     var lights = LightsSubsystem.GetInstance();
     lights.addLightsCommand(new ShootingLighting(() -> !m_operatorPanel.metalSwitchDown().getAsBoolean()));
-    // LED index test: hold left stick B8 — bright dot moves down the strip at 5
-    // LEDs/s.
-    // lights.addLightsCommand(new TestingLighting(() ->
-    // m_leftFlightStick.B8().getAsBoolean()));
 
     // Preload PathPlanner before mode transitions to avoid first-enable auto hitch.
     PathPlannerSubsystem.GetInstance();
@@ -95,10 +94,11 @@ public class RobotContainer {
 
   private void setSwerveCommands() {
     SwerveSubsystem swerveSubsystem = SwerveSubsystem.GetInstance();
+    BooleanSupplier isShootingSupplier = () -> m_operatorPanel.metalSwitchDown().getAsBoolean();
 
     swerveSubsystem
         .setDefaultCommand(
-            new SwerveMoveTeleop(swerveSubsystem, m_flightModule));
+            new SwerveMoveTeleop(swerveSubsystem, m_flightModule, Optional.of(isShootingSupplier)));
 
     // Toggle gps-based driving assist features
     m_leftFlightStick.B5().onTrue(new InstantCommand(() -> {
@@ -185,6 +185,9 @@ public class RobotContainer {
 
     NamedCommands.registerCommand("MoveClimberDown",
         new ManualClimberControlCommand(climberSubsystem, () -> 0.6, false, false));
+
+    m_leftFlightStick.B17().whileTrue(new ClimbAuto(ClimbAuto.ClosePath.LEFT));
+    m_leftFlightStick.B16().whileTrue(new ClimbAuto(ClimbAuto.ClosePath.RIGHT));
   }
 
   private void setIntakeCommands() {
@@ -204,13 +207,17 @@ public class RobotContainer {
       intakeCommand.setAlternateRaiseLocation(WristRaiseLocation.MIDDLE);
     }));
 
-    NamedCommands.registerCommand("IntakeCommand",
+    NamedCommands.registerCommand("IntakeBottomCommand",
         new IntakeCommand(intakeSubsystem, () -> true,
-            () -> false, WristRaiseLocation.BOTTOM));
+            () -> false, WristRaiseLocation.BOTTOM, true));
 
     NamedCommands.registerCommand("IntakeMiddleCommand",
         new IntakeCommand(intakeSubsystem, () -> false,
-            () -> false, WristRaiseLocation.MIDDLE));
+            () -> false, WristRaiseLocation.MIDDLE, true));
+
+    NamedCommands.registerCommand("IntakeTopCommand",
+        new IntakeCommand(intakeSubsystem, () -> false,
+            () -> false, WristRaiseLocation.TOP, true));
   }
 
   private void setShooterCommands() {
