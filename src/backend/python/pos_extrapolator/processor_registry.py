@@ -11,10 +11,8 @@ AllowedSensors: TypeAlias = Literal[
 ]
 
 if TYPE_CHECKING:
-    from backend.python.pos_extrapolator.position_solver_2d import (
-        PositionSolver2d,
-        SensorEvent,
-    )
+    from backend.python.pos_extrapolator.position_solver_2d import PositionSolver2d
+    from backend.python.pos_extrapolator.util.solver_models import SensorEvent
 
 ProcessorFunc: TypeAlias = Callable[["PositionSolver2d", "SensorEvent"], None]
 
@@ -35,3 +33,12 @@ def processor_for_data(
 
 def get_processor(sensor_type: AllowedSensors) -> ProcessorFunc | None:
     return _PROCESSORS.get(sensor_type)
+
+
+# Import processors after registry API is defined so their decorators can import
+# processor_for_data without circular import.
+from backend.python.pos_extrapolator.processors import (  # noqa: E402, F401
+    apriltag_processor,
+    imu_processor,
+    odometry_processor,
+)

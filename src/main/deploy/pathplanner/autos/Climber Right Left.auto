@@ -25,20 +25,51 @@
                 "data": {
                   "name": "ContinuousShooterCommand"
                 }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "IntakeBottomCommand"
+                }
               }
             ]
           }
         },
         {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "MoveClimberUp"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "IntakeTopCommand"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Climber Right Close"
+          }
+        },
+        {
           "type": "named",
           "data": {
-            "name": "ClimberL1Command"
+            "name": "MoveClimberDown"
           }
         }
       ]
     }
   },
-  "resetOdom": true,
+  "resetOdom": false,
   "folder": "Climber",
   "choreoAuto": false
 }

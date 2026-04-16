@@ -38,9 +38,28 @@ def test_get_robot_position_estimate_returns_six_value_state():
     estimate = extrapolator.get_robot_position_estimate()
 
     assert len(estimate) == 6
-    assert estimate[0] == pytest.approx(0.1, abs=1e-6)
+    assert estimate[0] == pytest.approx(0.04, abs=1e-6)
     assert estimate[2] == pytest.approx(1.0, abs=1e-6)
     assert estimate[5] == pytest.approx(0.0, abs=1e-6)
+
+
+def test_odometry_uses_packet_time_change_instead_of_arrival_gap():
+    extrapolator = make_extrapolator()
+    extrapolator.insert_sensor_data(
+        make_odom(omega=2.0, dt_s=0.02),
+        "odom",
+        BASE_TIMESTAMP_MS,
+    )
+    extrapolator.insert_sensor_data(
+        make_odom(omega=2.0, dt_s=0.02),
+        "odom",
+        BASE_TIMESTAMP_MS + 500,
+    )
+
+    estimate = extrapolator.get_robot_position_estimate()
+
+    assert estimate[4] == pytest.approx(0.08, abs=1e-6)
+    assert estimate[5] == pytest.approx(2.0, abs=1e-6)
 
 
 def test_get_robot_position_maps_solver_state_to_proto_fields():

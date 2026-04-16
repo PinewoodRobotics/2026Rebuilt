@@ -63,7 +63,10 @@ public class IntakeSubsystem extends SubsystemBase {
         IntakeConstants.intakeWristP,
         IntakeConstants.intakeWristI,
         IntakeConstants.intakeWristD)
-        .iZone(IntakeConstants.intakeWristIZone);
+        .iZone(IntakeConstants.intakeWristIZone)
+        .positionWrappingEnabled(true)
+        .positionWrappingMinInput(0)
+        .positionWrappingMinInput(1);
 
     wristConfig.absoluteEncoder.zeroOffset(IntakeConstants.intakeWristOffset.getRotations());
 
@@ -94,6 +97,11 @@ public class IntakeSubsystem extends SubsystemBase {
 
   public void stopIntakeMotor() {
     m_intakeIntakerMotor.set(0.0);
+  }
+
+  public boolean wristAtSetpoint() {
+    return Math.abs(getWristPosition().minus(m_wristSetpoint).getRadians())
+        < IntakeConstants.kTolerance.getRadians();
   }
 
   @Override

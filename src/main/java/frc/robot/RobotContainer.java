@@ -4,25 +4,35 @@ import org.littletonrobotics.junction.Logger;
 
 import com.pathplanner.lib.auto.NamedCommands;
 
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.command.ClimbAuto;
 import frc.robot.command.SwerveMoveTeleop;
+import frc.robot.command.climber.CalibrateClimberCommand;
 import frc.robot.command.climber.ManualClimberControlCommand;
 import frc.robot.command.intake.IntakeCommand;
+import frc.robot.command.lighting.ShootingLighting;
 import frc.robot.command.scoring.ContinuousAimCommand;
 import frc.robot.command.scoring.ManualAimCommand;
 import frc.robot.command.shooting.ContinuousManualShooter;
 import frc.robot.command.shooting.ContinuousShooter;
+
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
 import frc.robot.constant.BotConstants;
+import frc.robot.constant.ClimberConstants;
 import frc.robot.constant.IntakeConstants.WristRaiseLocation;
-import frc.robot.constant.PathPlannerConstants;
+import frc.robot.constant.ShooterConstants;
 import frc.robot.hardware.UnifiedGyro;
 import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.IndexSubsystem;
 import frc.robot.subsystem.IntakeSubsystem;
+import frc.robot.subsystem.LightsSubsystem;
 import frc.robot.subsystem.MatchStatusSubsystem;
 import frc.robot.subsystem.OdometrySubsystem;
 import frc.robot.subsystem.OrchestraSubsystem;
@@ -64,11 +74,13 @@ public class RobotContainer {
     IntakeSubsystem.GetInstance();
 
     // Initialize publication subsystem for sending data to Pi
-    PublicationSubsystem.GetInstance(Robot.getCommunicationClient());
     MatchStatusSubsystem.GetInstance();
 
-    // setIntakeCommands();
-    // PathPlannerSubsystem.GetInstance();
+    var lights = LightsSubsystem.GetInstance();
+    lights.addLightsCommand(new ShootingLighting(() -> !m_operatorPanel.metalSwitchDown().getAsBoolean()));
+
+    // Preload PathPlanner before mode transitions to avoid first-enable auto hitch.
+    PathPlannerSubsystem.GetInstance();
 
     setSwerveCommands();
     setTurretCommands();
@@ -77,15 +89,18 @@ public class RobotContainer {
     setClimberCommands();
 
     BotConstants.SetAlliance();
+
+    PublicationSubsystem.ClearAll();
+    PublicationSubsystem.addDataClass(OdometrySubsystem.GetInstance());
   }
 
   private void setSwerveCommands() {
     SwerveSubsystem swerveSubsystem = SwerveSubsystem.GetInstance();
+    BooleanSupplier isShootingSupplier = () -> m_operatorPanel.metalSwitchDown().getAsBoolean();
 
     swerveSubsystem
         .setDefaultCommand(
-            new SwerveMoveTeleop(swerveSubsystem, m_flightModule, PathPlannerConstants.kLanes,
-                swerveSubsystem::isGpsAssist));
+            new SwerveMoveTeleop(swerveSubsystem, m_flightModule, Optional.of(isShootingSupplier)));
 
     // Toggle gps-based driving assist features
     m_leftFlightStick.B5().onTrue(new InstantCommand(() -> {
@@ -98,6 +113,13 @@ public class RobotContainer {
         .B5()
         .onTrue(swerveSubsystem.runOnce(() -> {
           swerveSubsystem.resetDriverRelative();
+        }));
+
+    // Reset gyro rotation of the swerve to the global position
+    m_rightFlightStick
+        .B6()
+        .onTrue(swerveSubsystem.runOnce(() -> {
+          swerveSubsystem.resetDriverRelative(new Rotation2d());
         }));
 
     // Reset gyro rotation everywhere (including backend with button)
@@ -127,8 +149,8 @@ public class RobotContainer {
         TurretSubsystem::getIsGpsAssistEnabled));
 
     m_operatorPanel.greenButton().onTrue(new InstantCommand(() -> {
-      TurretSubsystem.setGpsAssistEnabled(!TurretSubsystem.getIsGpsAssistEnabled());
-      ShooterSubsystem.setGpsAssistEnabled(!ShooterSubsystem.getIsGpsAssistEnabled());
+      boolean gpsAssistEnabled = !ShooterSubsystem.getIsGpsAssistEnabled();
+      ShooterSubsystem.setGpsAssistEnabled(gpsAssistEnabled);
 
       var current = TurretSubsystem.GetInstance().getCurrentCommand();
       if (current != null) {
@@ -151,9 +173,23 @@ public class RobotContainer {
     ClimberSubsystem climberSubsystem = ClimberSubsystem.GetInstance();
     climberSubsystem.setDefaultCommand(new ManualClimberControlCommand(
         climberSubsystem,
-        m_leftFlightStick::getLeftSlider,
-        m_rightFlightStick::getLeftSlider,
-        m_leftFlightStick::getRightSlider));
+        m_leftFlightStick::getLeftSlider, false, true));
+
+    m_operatorPanel.redButton().whileTrue(Commands.startEnd(
+        () -> climberSubsystem.setVelocity(ClimberConstants.kManualDownVelocity),
+        climberSubsystem::stopHeightMotor,
+        climberSubsystem));
+
+    m_leftFlightStick.B7().onTrue(new CalibrateClimberCommand(climberSubsystem));
+
+    NamedCommands.registerCommand("MoveClimberUp",
+        new ManualClimberControlCommand(climberSubsystem, () -> 1.0, true, false));
+
+    NamedCommands.registerCommand("MoveClimberDown",
+        new ManualClimberControlCommand(climberSubsystem, () -> 0.6, false, false));
+
+    m_leftFlightStick.B17().whileTrue(new ClimbAuto(ClimbAuto.ClosePath.LEFT));
+    m_leftFlightStick.B16().whileTrue(new ClimbAuto(ClimbAuto.ClosePath.RIGHT));
   }
 
   private void setIntakeCommands() {
@@ -161,41 +197,53 @@ public class RobotContainer {
     IntakeCommand intakeCommand = new IntakeCommand(intakeSubsystem,
         () -> m_operatorPanel.metalSwitchDown().getAsBoolean() || m_rightFlightStick.trigger().getAsBoolean(),
         () -> m_rightFlightStick.B17().getAsBoolean());
+    Trigger teleopEnabled = new Trigger(DriverStation::isTeleopEnabled);
 
     intakeSubsystem
         .setDefaultCommand(intakeCommand);
 
-    m_operatorPanel.toggleWheelMiddle().onTrue(new InstantCommand(() -> {
+    m_operatorPanel.toggleWheelMiddle().and(teleopEnabled).onTrue(new InstantCommand(() -> {
       intakeCommand.setAlternateRaiseLocation(WristRaiseLocation.TOP);
     }));
-    m_operatorPanel.toggleWheelMidDown().onTrue(new InstantCommand(() -> {
+    m_operatorPanel.toggleWheelMidDown().and(teleopEnabled).onTrue(new InstantCommand(() -> {
       intakeCommand.setAlternateRaiseLocation(WristRaiseLocation.MIDDLE);
     }));
 
-    NamedCommands.registerCommand("IntakeCommand",
+    NamedCommands.registerCommand("IntakeBottomCommand",
         new IntakeCommand(intakeSubsystem, () -> true,
-            () -> false, WristRaiseLocation.BOTTOM));
+            () -> false, WristRaiseLocation.BOTTOM, true));
 
     NamedCommands.registerCommand("IntakeMiddleCommand",
         new IntakeCommand(intakeSubsystem, () -> false,
-            () -> false, WristRaiseLocation.MIDDLE));
+            () -> false, WristRaiseLocation.MIDDLE, true));
+
+    NamedCommands.registerCommand("IntakeTopCommand",
+        new IntakeCommand(intakeSubsystem, () -> false,
+            () -> false, WristRaiseLocation.TOP, true));
   }
 
   private void setShooterCommands() {
     BooleanSupplier indexExtakeOverrideSupplier = () -> m_rightFlightStick.B17().getAsBoolean();
     var continuousShooter = new ContinuousShooter(() -> AimPoint.getTarget(), indexExtakeOverrideSupplier);
     var continuousManualShooter = new ContinuousManualShooter(
-        ContinuousManualShooter.GetBaseSpeedSupplier(m_rightFlightStick::getRightSlider),
+        ContinuousManualShooter.GetHeldSpeedSupplier(
+            () -> m_leftFlightStick.A().getAsBoolean(),
+            () -> m_leftFlightStick.B().getAsBoolean(),
+            ShooterConstants.kShooterBaseSpeed,
+            40.0),
         indexExtakeOverrideSupplier);
+    Trigger shooterEnabled = m_operatorPanel.metalSwitchDown().and(DriverStation::isTeleopEnabled);
 
     // Enable shooter with metal switch down. While up, run motor base speed.
     // When enabled, run indexer only when shooter up to speed.
-    m_operatorPanel.metalSwitchDown()
+    shooterEnabled
         .whileTrue(Commands.either(
             continuousShooter,
             continuousManualShooter,
             ShooterSubsystem::getIsGpsAssistEnabled))
-        .whileFalse(new InstantCommand(() -> {
+        .negate()
+        .and(DriverStation::isTeleopEnabled)
+        .onTrue(new InstantCommand(() -> {
           ShooterSubsystem.GetInstance().runMotorBaseSpeed();
         }));
 
@@ -203,7 +251,7 @@ public class RobotContainer {
   }
 
   public Command getAutonomousCommand() {
-    return PathPlannerSubsystem.GetInstance().getAndInitAutoCommand(true);
+    return PathPlannerSubsystem.GetInstance().getAndInitAutoCommand(false);
   }
 
   public static boolean isShooterArmedForHud() {
@@ -211,15 +259,11 @@ public class RobotContainer {
   }
 
   public void onAnyModeStart() {
-    PublicationSubsystem.ClearAll();
     var globalPosition = GlobalPosition.Get();
     if (globalPosition != null) {
       UnifiedGyro.GetInstance().resetRotation(globalPosition.getRotation());
       OdometrySubsystem.GetInstance().setOdometryPosition(globalPosition);
     }
-
-    UnifiedGyro.Register();
-    PublicationSubsystem.addDataClass(OdometrySubsystem.GetInstance());
     BotConstants.SetAlliance();
   }
 }

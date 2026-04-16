@@ -115,11 +115,13 @@ public class ShooterSubsystem extends SubsystemBase {
       return;
     }
 
-    double feedForward = ShooterConstants.kFF * targetRpm;
+    double feedForwardLeader = ShooterConstants.kFFLeader * targetRpm;
     leaderClosedLoopController.setSetpoint(targetRpm, ControlType.kVelocity,
-        ClosedLoopSlot.kSlot0, feedForward);
+        ClosedLoopSlot.kSlot0, feedForwardLeader);
+
+    double feedForwardFollower = ShooterConstants.kFFFollower * targetRpm;
     followerClosedLoopController.setSetpoint(targetRpm, ControlType.kVelocity,
-        ClosedLoopSlot.kSlot0, feedForward);
+        ClosedLoopSlot.kSlot0, feedForwardFollower);
   }
 
   public void stopShooter() {
@@ -172,6 +174,17 @@ public class ShooterSubsystem extends SubsystemBase {
    **/
   public AngularVelocity getCurrentShooterVelocity() {
     return Units.RPM.of((leaderEncoder.getVelocity() + followerEncoder.getVelocity()) / 2.0);
+  }
+
+  public double getCurrentShooterVelocityRps() {
+    return getCurrentShooterVelocity().in(Units.RotationsPerSecond);
+  }
+
+  public double getRequestedShooterVelocityRps() {
+    if (lastShooterVelocitySetpoint == null) {
+      return 0.0;
+    }
+    return lastShooterVelocitySetpoint.in(Units.RotationsPerSecond);
   }
 
   @Override

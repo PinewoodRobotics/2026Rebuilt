@@ -10,16 +10,12 @@ import april_tag_det_config from "./april_tag_det_config";
 
 export const pose_extrapolator: PosExtrapolator = {
   message_config: message_config,
-  enabled_data_sources: [
-    DataSources.APRIL_TAG,
-    DataSources.ODOMETRY,
-    DataSources.IMU,
-  ],
+  enabled_data_sources: [DataSources.ODOMETRY, DataSources.APRIL_TAG],
   odom_config: swerve_odom_config,
   imu_config: nav_x_config,
   kalman_filter_config: kalman_filter,
   time_s_between_position_sends: 0.02,
-  future_position_prediction_margin_s: 0,
+  future_position_prediction_margin_s: 0.0,
   april_tag_config: april_tag_det_config,
 };
 

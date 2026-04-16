@@ -1,5 +1,7 @@
 import numpy as np
+import pytest
 from backend.python.common.util.math import (
+    extract_2d_from_3d_transformation,
     from_theta_to_3x3_mat,
     get_np_from_matrix,
     get_np_from_vector,
@@ -9,6 +11,80 @@ from backend.python.common.util.math import (
     transform_vector_to_size,
 )
 from backend.generated.thrift.config.common.ttypes import GenericMatrix, GenericVector
+
+
+def test_extract_2d_from_3d_transformation_4x4():
+    transformation_matrix = np.array(
+        [
+            [0.0, -1.0, 0.0, 3.5],
+            [1.0, 0.0, 0.0, -2.0],
+            [0.0, 0.0, 1.0, 7.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
+
+    extracted = extract_2d_from_3d_transformation(
+        transformation_matrix=transformation_matrix
+    )
+
+    assert np.allclose(
+        extracted,
+        np.array(
+            [
+                [0.0, -1.0, 3.5],
+                [1.0, 0.0, -2.0],
+                [0.0, 0.0, 1.0],
+            ]
+        ),
+    )
+
+
+def test_extract_2d_from_3d_transformation_3x4():
+    transformation_matrix = np.array(
+        [
+            [1.0, 0.0, 0.0, 8.0],
+            [0.0, 1.0, 0.0, -6.0],
+            [0.0, 0.0, 1.0, 2.0],
+        ]
+    )
+
+    extracted = extract_2d_from_3d_transformation(
+        transformation_matrix=transformation_matrix
+    )
+
+    assert np.allclose(
+        extracted,
+        np.array(
+            [
+                [1.0, 0.0, 8.0],
+                [0.0, 1.0, -6.0],
+                [0.0, 0.0, 1.0],
+            ]
+        ),
+    )
+
+
+def test_extract_2d_from_3d_transformation_3x3():
+    transformation_matrix = np.array(
+        [
+            [0.0, -1.0, 4.0],
+            [1.0, 0.0, 5.0],
+            [0.0, 0.0, 1.0],
+        ]
+    )
+
+    extracted = extract_2d_from_3d_transformation(
+        transformation_matrix=transformation_matrix
+    )
+
+    assert np.allclose(extracted, transformation_matrix)
+
+
+def test_extract_2d_from_3d_transformation_rejects_too_small_matrix():
+    with pytest.raises(ValueError, match="at least 3x3"):
+        extract_2d_from_3d_transformation(
+            transformation_matrix=np.eye(2, dtype=np.float64)
+        )
 
 
 def test_get_robot_in_world():

@@ -8,6 +8,7 @@ import org.littletonrobotics.junction.Logger;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constant.ShooterConstants;
 import frc.robot.subsystem.IndexSubsystem;
@@ -43,6 +44,7 @@ public class ContinuousManualShooter extends Command {
   @Override
   public void execute() {
     Logger.recordOutput("ContinuousManualShooter/Time", System.currentTimeMillis());
+
     AngularVelocity speed = speedSupplier.get();
     shooterSubsystem.setShooterVelocity(speed);
 
@@ -76,6 +78,41 @@ public class ContinuousManualShooter extends Command {
           ShooterConstants.kShooterMaxVelocity.in(Units.RotationsPerSecond),
           slider);
       return Units.RotationsPerSecond.of(rps);
+    };
+  }
+
+  public static Supplier<AngularVelocity> GetHeldSpeedSupplier(
+      BooleanSupplier increaseSpeedSupplier,
+      BooleanSupplier decreaseSpeedSupplier,
+      AngularVelocity initialSpeed,
+      double velocityRateRpmPerSecond) {
+    return new Supplier<AngularVelocity>() {
+      private double targetVelocityRpm = MathUtil.clamp(
+          initialSpeed.in(Units.RPM),
+          ShooterConstants.kShooterMinVelocity.in(Units.RPM),
+          ShooterConstants.kShooterMaxVelocity.in(Units.RPM));
+      private double lastTimestampSeconds = Timer.getFPGATimestamp();
+
+      @Override
+      public AngularVelocity get() {
+        double currentTimestampSeconds = Timer.getFPGATimestamp();
+        double deltaTimeSeconds = Math.max(0.0, currentTimestampSeconds - lastTimestampSeconds);
+        lastTimestampSeconds = currentTimestampSeconds;
+
+        double direction = 0.0;
+        if (increaseSpeedSupplier.getAsBoolean()) {
+          direction += 1.0;
+        }
+        if (decreaseSpeedSupplier.getAsBoolean()) {
+          direction -= 1.0;
+        }
+
+        targetVelocityRpm = MathUtil.clamp(
+            targetVelocityRpm + direction * velocityRateRpmPerSecond * deltaTimeSeconds,
+            ShooterConstants.kShooterMinVelocity.in(Units.RPM),
+            ShooterConstants.kShooterMaxVelocity.in(Units.RPM));
+        return Units.RPM.of(targetVelocityRpm);
+      }
     };
   }
 }

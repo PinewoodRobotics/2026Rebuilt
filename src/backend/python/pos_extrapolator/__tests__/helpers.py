@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+from typing import Any, cast
+
 import numpy as np
 
 from backend.generated.proto.python.sensor.apriltags_pb2 import (
@@ -27,9 +30,11 @@ from backend.generated.thrift.config.pos_extrapolator.ttypes import (
     PosExtrapolator,
     PosExtrapolatorMessageConfig,
     TagNoiseAdjustConfig,
+    TagRejectConfig,
 )
 from backend.python.common.util.math import from_theta_to_3x3_mat
 from backend.python.pos_extrapolator.position_solver_2d import PositionSolver2d
+from backend.python.pos_extrapolator.processor_registry import AllowedSensors
 
 BASE_TIMESTAMP_MS = 1_700_000_000_000
 BASE_RECEIVED_AT_S = 1_000.0
@@ -82,17 +87,25 @@ def make_config(
         tag_position_config=tags_in_world,
         camera_position_config=cameras_in_robot,
         noise_change_modes=[],
+        reject_modes=[],
         tag_noise_adjust_config=TagNoiseAdjustConfig(
             weight_per_m_from_distance_from_tag=0.0,
             weight_per_degree_from_angle_error_tag=0.0,
             weight_per_confidence_tag=0.0,
             min_distance_from_tag_to_use_noise_adjustment=0.0,
+            additive_noise_by_tag_id={},
+        ),
+        tag_reject_config=TagRejectConfig(
+            max_distance_from_tag=0.0,
+            min_tag_confidence=0.0,
         ),
         insert_predicted_global_rotation=insert_predicted_global_rotation,
     )
 
     kalman_config = KalmanFilterConfig(
-        initial_state_vector=GenericVector(values=initial_state, size=len(initial_state)),
+        initial_state_vector=GenericVector(
+            values=initial_state, size=len(initial_state)
+        ),
         uncertainty_matrix=diag_matrix(1.0, 1.0, 1.0),
         process_noise_matrix=diag_matrix(0.1, 0.1, 0.1),
         sensors={
@@ -120,12 +133,20 @@ def make_config(
     )
 
 
-def make_solver(**kwargs: object) -> PositionSolver2d:
-    return PositionSolver2d(make_config(**kwargs))
+def make_solver(**kwargs: Any) -> PositionSolver2d:
+    config = make_config(**kwargs)
+    return PositionSolver2d(
+        config,
+        cast(Any, SimpleNamespace(april_tag_config=config.april_tag_config)),
+    )
 
 
-def make_extrapolator(**kwargs: object) -> PositionSolver2d:
-    return PositionSolver2d(make_config(**kwargs))
+def make_extrapolator(**kwargs: Any) -> PositionSolver2d:
+    config = make_config(**kwargs)
+    return PositionSolver2d(
+        config,
+        cast(Any, SimpleNamespace(april_tag_config=config.april_tag_config)),
+    )
 
 
 def insert_sensor(
@@ -139,9 +160,9 @@ def insert_sensor(
     sensor_type = _sensor_type_for_data(data)
     solver.insert_sensor_data(
         data=data,
-        sensor_type=sensor_type,
+        sensor_type=cast(AllowedSensors, sensor_type),
         sensor_id=sensor_id,
-        timestamp_ms=timestamp_ms,
+        timestamp_ms=int(timestamp_ms),
         received_at_s=received_at_s,
     )
 
@@ -162,13 +183,18 @@ def make_odom(
     *,
     vx: float = 0.0,
     vy: float = 0.0,
-    dx: float = 0.0,
-    dy: float = 0.0,
+    dx: float | None = None,
+    dy: float | None = None,
     dt_s: float = 0.02,
     omega: float = 0.0,
     x: float = 0.0,
     y: float = 0.0,
 ) -> OdometryData:
+    if dx is None:
+        dx = vx * dt_s
+    if dy is None:
+        dy = vy * dt_s
+
     odom = OdometryData()
     odom.velocity.x = vx
     odom.velocity.y = vy

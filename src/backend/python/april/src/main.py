@@ -1,24 +1,13 @@
-import argparse
 import asyncio
-import random
-import time
-
-import pyapriltags
 
 from backend.python.april.src.detection_camera import DetectionCamera
 from backend.python.april.src.util import build_detector
 from backend.python.common.camera.abstract_camera import get_camera_capture_device
 from backend.python.common.debug.logger import LogLevel, init_logging, success
-from backend.generated.thrift.config.apriltag.ttypes import AprilDetectionConfig
-from backend.generated.thrift.config.camera.ttypes import CameraParameters, CameraType
 from autobahn_client.client import Autobahn
 from autobahn_client.util import Address
-from backend.python.common.config import from_uncertainty_config
-from backend.python.common.util.math import get_np_from_matrix, get_np_from_vector
 from backend.python.common.util.system import (
-    get_config_parser,
     get_system_name,
-    load_basic_system_config,
     load_configs,
 )
 
@@ -85,6 +74,11 @@ async def main():
             compression_quality=camera.video_options.compression_quality or 90,
             overlay_tags=camera.video_options.overlay_tags,
             do_detection=camera.do_detection,
+            image_edge_reject_margin_percent=(
+                config.april_detection.image_edge_reject_margin_percent
+                if config.april_detection.image_edge_reject_margin_percent is not None
+                else 0.0
+            ),
         )
 
         camera_detector_list.append(detector_cam)

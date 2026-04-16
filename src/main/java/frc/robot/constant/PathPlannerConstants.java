@@ -10,8 +10,7 @@ import edu.wpi.first.units.measure.Distance;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.path.PathConstraints;
-import frc.robot.command.SwerveMoveTeleop.AxisConstraint;
-import frc.robot.command.SwerveMoveTeleop.Lane;
+
 import frc.robot.util.PathedAuto;
 import frc.robot.util.SharedStringTopic;
 
@@ -117,8 +116,4 @@ public class PathPlannerConstants {
   public static final Distance distanceConsideredOffTarget = edu.wpi.first.units.Units.Meters.of(1.0);
 
   public static final String kAutoSelectTopic = "PathPlanner/SelectedPath";
-
-  public static final Lane[] kLanes = {
-      new Lane(new Pose2d(11.94, 7.52, new Rotation2d(1, 0)), 1.0, AxisConstraint.Y),
-  };
 }

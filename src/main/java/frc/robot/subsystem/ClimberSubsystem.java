@@ -1,37 +1,46 @@
 package frc.robot.subsystem;
 
 import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.MetersPerSecond;
 
 import org.littletonrobotics.junction.Logger;
 
-import com.revrobotics.spark.SparkBase.PersistMode;
-import com.revrobotics.spark.SparkBase.ResetMode;
-import com.revrobotics.spark.SparkMax;
+import com.revrobotics.PersistMode;
+import com.revrobotics.ResetMode;
+import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.spark.config.SparkFlexConfig;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ElevatorFeedforward;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.units.CurrentUnit;
+import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constant.ClimberConstants;
 import frc.robot.util.LocalMath;
 
 public class ClimberSubsystem extends SubsystemBase {
+  private static final double kNominalVoltage = 12.0;
 
   private static ClimberSubsystem self;
 
-  private SparkMax m_climbMotor;
-  private SparkMax m_wristMotor;
-  private PIDController m_pid;
-  private ElevatorFeedforward m_feedforward;
-  private boolean m_isHeightVoltageControl = false;
-  private double m_heightVoltagePercent = 0.0;
-  private double m_wristVoltagePercent = 0.0;
+  public enum ControlType {
+    HEIGHT,
+    VELOCITY,
+  }
 
+  private final SparkFlex m_climbMotor;
+  private final PIDController m_heightPid;
+  private final PIDController m_velocityPid;
+  private final ElevatorFeedforward m_feedforward;
+
+  private ControlType m_controlType = ControlType.HEIGHT;
   private Distance m_setpoint = ClimberConstants.kStartingHeight;
-  private Distance m_currentPosition = ClimberConstants.kStartingHeight;
+  private Distance m_rampedSetpoint = ClimberConstants.kStartingHeight;
+  private LinearVelocity m_velocitySetpoint = MetersPerSecond.of(0.0);
 
   public static ClimberSubsystem GetInstance() {
     if (self == null) {
@@ -42,181 +51,198 @@ public class ClimberSubsystem extends SubsystemBase {
   }
 
   public ClimberSubsystem() {
-    m_climbMotor = new SparkMax(ClimberConstants.kLeftMotorID, ClimberConstants.kMotorType);
-    m_wristMotor = new SparkMax(ClimberConstants.kWristMotorID, ClimberConstants.kMotorType);
-
-    m_pid = new PIDController(
+    m_climbMotor = new SparkFlex(ClimberConstants.kClimberMotorID, ClimberConstants.kMotorType);
+    m_heightPid = new PIDController(
         ClimberConstants.kP,
         ClimberConstants.kI,
         ClimberConstants.kD);
-    m_pid.setTolerance(ClimberConstants.kTolerance);
-    m_feedforward = new ElevatorFeedforward(ClimberConstants.kS, ClimberConstants.kG, ClimberConstants.kV,
+    m_velocityPid = new PIDController(
+        ClimberConstants.kVelocityP,
+        ClimberConstants.kVelocityI,
+        ClimberConstants.kVelocityD);
+    m_feedforward = new ElevatorFeedforward(
+        ClimberConstants.kS,
+        ClimberConstants.kG,
+        ClimberConstants.kV,
         ClimberConstants.kA);
 
-    configureMotors();
+    m_heightPid.setTolerance(ClimberConstants.kTolerance);
+    m_heightPid.setIZone(ClimberConstants.kIZone);
+
+    configureMotor();
   }
 
-  private void configureMotors() {
-    SparkMaxConfig leftMotorConfig = new SparkMaxConfig();
-    leftMotorConfig.inverted(ClimberConstants.kLeftMotorInverted)
+  private void configureMotor() {
+    SparkFlexConfig config = new SparkFlexConfig();
+    config.inverted(ClimberConstants.kMotorInverted)
         .idleMode(IdleMode.kBrake)
-        .smartCurrentLimit(ClimberConstants.kLiftCurrentLimit);
-    leftMotorConfig.encoder
+        .smartCurrentLimit(ClimberConstants.kLiftCurrentLimit)
+        .openLoopRampRate(ClimberConstants.kOpenLoopRampSeconds)
+        .closedLoopRampRate(ClimberConstants.kClosedLoopRampSeconds);
+    config.encoder
         .positionConversionFactor(ClimberConstants.kGearHeightRatio)
         .velocityConversionFactor(ClimberConstants.kGearHeightRatio / 60.0);
 
-    m_climbMotor.configure(leftMotorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+    m_climbMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     m_climbMotor.getEncoder().setPosition(ClimberConstants.kStartingHeight.in(Meters));
+    m_rampedSetpoint = ClimberConstants.kStartingHeight;
+  }
 
-    SparkMaxConfig wristMotorConfig = new SparkMaxConfig();
-    wristMotorConfig.inverted(ClimberConstants.kWristMotorInverted)
-        .idleMode(IdleMode.kCoast)
-        .smartCurrentLimit(ClimberConstants.kWristCurrentLimit);
-    wristMotorConfig.encoder
-        .positionConversionFactor(ClimberConstants.kWristGearRatio)
-        .velocityConversionFactor(ClimberConstants.kWristGearRatio / 60.0);
-    m_wristMotor.configure(wristMotorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-    m_wristMotor.stopMotor();
-
-    m_pid.setIZone(ClimberConstants.kIZone);
+  private Distance clampHeight(Distance height) {
+    return Meters.of(MathUtil.clamp(
+        height.in(Meters),
+        ClimberConstants.kMinHeight.in(Meters),
+        ClimberConstants.kMaxHeight.in(Meters)));
   }
 
   public void setHeight(Distance height) {
-    m_isHeightVoltageControl = false;
-    if (height.gt(ClimberConstants.kMaxHeight)) {
-      System.out.println("WARNING: tried to exceed elevator max height: " + height.in(Meters));
-      height = ClimberConstants.kMaxHeight;
-    } else if (height.lt(ClimberConstants.kMinHeight)) {
-      System.out.println("WARNING: tried to exceed elevator min height: " + height.in(Meters));
-      height = ClimberConstants.kMinHeight;
-    }
-    m_setpoint = height;
+    m_controlType = ControlType.HEIGHT;
+    m_setpoint = clampHeight(height);
   }
 
-  public void setHeightPercent(double heightPercent) {
-    double clampedPercent = MathUtil.clamp(heightPercent, 0.0, 1.0);
-    double targetHeightMeters = MathUtil.interpolate(
-        ClimberConstants.kMinHeight.in(Meters),
-        ClimberConstants.kMaxHeight.in(Meters),
-        clampedPercent);
-    setHeight(Meters.of(targetHeightMeters));
+  public void setVelocity(LinearVelocity velocity) {
+    m_controlType = ControlType.VELOCITY;
+    m_velocitySetpoint = velocity;
   }
 
-  public void setHeightVoltagePercent(double heightVoltagePercent) {
-    m_isHeightVoltageControl = true;
-    m_heightVoltagePercent = MathUtil.clamp(heightVoltagePercent, -1.0, 1.0);
+  public Distance getHeight() {
+    return Meters.of(m_climbMotor.getEncoder().getPosition());
   }
 
   public Distance getAverageHeight() {
-    double height = m_climbMotor.getEncoder().getPosition();
-    return Distance.ofRelativeUnits(height, Meters);
+    return getHeight();
   }
 
-  private double calculateSpeed(Distance setpoint) {
-    double motorPowerPid = m_pid.calculate(getAverageHeight().in(Meters), setpoint.in(Meters));
-    double ff = calculateFeedForwardValue(m_feedforward);
-    return MathUtil.clamp(motorPowerPid + ff, -1, 1);
+  public double getHeightVelocityMetersPerSecond() {
+    return m_climbMotor.getEncoder().getVelocity();
+  }
+
+  public LinearVelocity getHeightVelocity() {
+    return MetersPerSecond.of(getHeightVelocityMetersPerSecond());
+  }
+
+  public double getAppliedVoltage() {
+    return m_climbMotor.getAppliedOutput() * m_climbMotor.getBusVoltage();
+  }
+
+  public double getOutputCurrentAmps() {
+    return m_climbMotor.getOutputCurrent();
+  }
+
+  public boolean isCalibrationVelocitySettled() {
+    return Math.abs(getHeightVelocityMetersPerSecond()) <= ClimberConstants.kCalibrationVelocityToleranceMetersPerSecond
+        || m_climbMotor.getOutputCurrent() >= ClimberConstants.kCalibrationVoltageTolerance.in(Units.Amps);
+  }
+
+  public void zeroHeightEncoder() {
+    m_climbMotor.getEncoder().setPosition(ClimberConstants.kMinHeight.in(Meters));
+  }
+
+  private double calculateFeedForwardValue() {
+    return m_feedforward.calculate(0.0);
+  }
+
+  private double calculateHeightControlVoltage(Distance setpoint) {
+    double motorPowerPid = m_heightPid.calculate(getHeight().in(Meters), setpoint.in(Meters));
+    return MathUtil.clamp(motorPowerPid + calculateFeedForwardValue(), -1.0, 1.0) * kNominalVoltage;
+  }
+
+  private double calculateVelocityControlVoltage(LinearVelocity velocitySetpoint) {
+    double targetVelocityMetersPerSecond = velocitySetpoint.in(MetersPerSecond);
+    double currentVelocityMetersPerSecond = getHeightVelocityMetersPerSecond();
+    double velocityPid = m_velocityPid.calculate(currentVelocityMetersPerSecond, targetVelocityMetersPerSecond);
+    double velocityFeedforward = m_feedforward.calculate(targetVelocityMetersPerSecond);
+    return MathUtil.clamp(velocityPid + velocityFeedforward, -kNominalVoltage, kNominalVoltage);
+  }
+
+  private double clampHeightControlVoltage(double requestedVoltage) {
+    double clampedVoltage = MathUtil.clamp(requestedVoltage, -kNominalVoltage, kNominalVoltage);
+    double currentHeightMeters = getHeight().in(Meters);
+
+    if (currentHeightMeters >= ClimberConstants.kMaxHeight.in(Meters) && clampedVoltage > 0.0) {
+      return 0.0;
+    }
+    if (currentHeightMeters <= ClimberConstants.kMinHeight.in(Meters) && clampedVoltage < 0.0) {
+      return 0.0;
+    }
+
+    return clampedVoltage;
   }
 
   public boolean atTarget() {
-    return Math.abs(getAverageHeight().minus(m_setpoint).in(Meters)) < ClimberConstants.kTolerance;
+    return Math.abs(getHeight().minus(m_setpoint).in(Meters)) < ClimberConstants.kTolerance;
   }
 
   public void stopMotors() {
     stopHeightMotor();
-    stopWristMotor();
   }
 
   public void stopHeightMotor() {
-    m_heightVoltagePercent = 0.0;
-    m_climbMotor.stopMotor();
+    Distance currentHeight = getHeight();
+    m_controlType = ControlType.HEIGHT;
+    m_setpoint = currentHeight;
+    m_rampedSetpoint = currentHeight;
+    m_velocitySetpoint = MetersPerSecond.of(0.0);
+    m_heightPid.reset();
+    m_velocityPid.reset();
   }
 
-  public double getWristPositionRotations() {
-    if (m_wristMotor == null) {
-      return 0.0;
-    }
-
-    return m_wristMotor.getEncoder().getPosition();
+  private Distance rampSetpoint(Distance setpoint) {
+    return Meters.of(LocalMath.rampSetpoint(
+        setpoint.in(Meters),
+        m_rampedSetpoint.in(Meters),
+        ClimberConstants.kMaxSetpointRamp));
   }
 
-  public void setWristEncoderPosition(double rotations) {
-    if (m_wristMotor == null) {
-      return;
-    }
-
-    m_wristMotor.getEncoder().setPosition(rotations);
-  }
-
-  public void setWristVoltagePercent(double wristVoltagePercent) {
-    if (m_wristMotor == null) {
-      return;
-    }
-
-    m_wristVoltagePercent = MathUtil.clamp(wristVoltagePercent, 0.0, 1.0);
-  }
-
-  public void zeroWristEncoder() {
-    setWristEncoderPosition(0.0);
-  }
-
-  public void stopWristMotor() {
-    if (m_wristMotor != null) {
-      m_wristVoltagePercent = 0.0;
-      m_wristMotor.stopMotor();
-    }
-  }
-
-  public void stopWrist() {
-    stopWristMotor();
-  }
-
-  private double calculateFeedForwardValue(ElevatorFeedforward feedforward) {
-    double currentVelocity = m_climbMotor.getEncoder().getVelocity();
-    return feedforward.calculate(currentVelocity);
-  }
-
-  private Distance rampSetpoint(Distance set) {
-    return Distance.ofRelativeUnits(
-        LocalMath.rampSetpoint(set.in(Meters), m_currentPosition.in(Meters), ClimberConstants.kMaxSetpointRamp),
-        Meters);
-  }
-
-  private Distance calculateTemporarySetpoint(Distance set) {
+  private Distance calculateTemporarySetpoint(Distance setpoint) {
     if (ClimberConstants.kSetpointRamping) {
-      set = rampSetpoint(set);
+      return rampSetpoint(setpoint);
     }
-    return set;
+
+    return setpoint;
   }
 
   public void resetIAccum() {
-    m_pid.reset();
+    m_heightPid.reset();
+    m_velocityPid.reset();
   }
 
   @Override
   public void periodic() {
-    Logger.recordOutput("Climber/Setpoint", m_setpoint.in(Meters));
-    Logger.recordOutput("Climber/CurrentPosition", m_currentPosition.in(Meters));
+    Distance currentHeight = getHeight();
+    double requestedVoltage;
+
+    switch (m_controlType) {
+      case VELOCITY:
+        m_rampedSetpoint = currentHeight;
+        requestedVoltage = calculateVelocityControlVoltage(m_velocitySetpoint);
+        break;
+      case HEIGHT:
+      default:
+        m_rampedSetpoint = calculateTemporarySetpoint(m_setpoint);
+        requestedVoltage = calculateHeightControlVoltage(m_rampedSetpoint);
+        break;
+    }
+
+    double appliedVoltage = m_controlType == ControlType.VELOCITY
+        ? requestedVoltage
+        : clampHeightControlVoltage(requestedVoltage);
+
+    m_climbMotor.setVoltage(appliedVoltage);
+
+    Logger.recordOutput("Climber/CurrentHeightMeters", currentHeight.in(Meters));
+    Logger.recordOutput("Climber/ControlType", m_controlType.toString());
+    Logger.recordOutput("Climber/TargetHeightMeters", m_setpoint.in(Meters));
+    Logger.recordOutput("Climber/RampedSetpointMeters", m_rampedSetpoint.in(Meters));
+    Logger.recordOutput("Climber/VelocitySetpointMetersPerSecond", m_velocitySetpoint.in(MetersPerSecond));
     Logger.recordOutput("Climber/AtTarget", atTarget());
-    Logger.recordOutput("Climber/LeftMotor", m_climbMotor.getEncoder().getPosition());
-    Logger.recordOutput("Climber/HeightVoltageControl", m_isHeightVoltageControl);
-    Logger.recordOutput("Climber/HeightVoltagePercent", m_heightVoltagePercent);
-    Logger.recordOutput("Climber/WristConfigured", m_wristMotor != null);
-    Logger.recordOutput("Climber/WristVoltagePercent", m_wristVoltagePercent);
-    if (m_wristMotor != null) {
-      Logger.recordOutput("Climber/WristPosition", getWristPositionRotations());
-    }
-
-    m_currentPosition = calculateTemporarySetpoint(m_setpoint);
-
-    if (m_isHeightVoltageControl) {
-      m_climbMotor.setVoltage(m_heightVoltagePercent * 12.0);
-    } else {
-      double speed = calculateSpeed(m_currentPosition);
-      m_climbMotor.setVoltage(speed * 12.0);
-    }
-    if (m_wristMotor != null) {
-      m_wristMotor.setVoltage(m_wristVoltagePercent * 12.0);
-    }
+    Logger.recordOutput("Climber/RequestedVoltage", requestedVoltage);
+    Logger.recordOutput("Climber/AppliedVoltageCommand", appliedVoltage);
+    Logger.recordOutput("Climber/VelocityMetersPerSecond", getHeightVelocityMetersPerSecond());
+    Logger.recordOutput("Climber/AppliedVoltage", getAppliedVoltage());
+    Logger.recordOutput("Climber/OutputCurrentAmps", getOutputCurrentAmps());
+    Logger.recordOutput("Climber/CalibrationVelocitySettled", isCalibrationVelocitySettled());
+    Logger.recordOutput("Climber/AppliedOutput", m_climbMotor.getAppliedOutput());
+    Logger.recordOutput("Climber/OutputCurrent", getOutputCurrentAmps());
   }
 }

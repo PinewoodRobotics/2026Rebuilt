@@ -90,6 +90,42 @@ def post_process_detection(
     ]
 
 
+def validate_image_edge_reject_margin_percent(
+    image_edge_reject_margin_percent: float,
+) -> float:
+    if image_edge_reject_margin_percent < 0.0:
+        raise ValueError("image_edge_reject_margin_percent must be >= 0")
+    if image_edge_reject_margin_percent >= 50.0:
+        raise ValueError("image_edge_reject_margin_percent must be < 50")
+    return image_edge_reject_margin_percent
+
+
+def filter_detections_by_frame_edge_margin(
+    detections: list[TagDetection],
+    frame_width: int,
+    frame_height: int,
+    image_edge_reject_margin_percent: float,
+) -> list[TagDetection]:
+    if image_edge_reject_margin_percent <= 0.0:
+        return detections
+
+    validate_image_edge_reject_margin_percent(image_edge_reject_margin_percent)
+
+    margin_x = frame_width * (image_edge_reject_margin_percent / 100.0)
+    margin_y = frame_height * (image_edge_reject_margin_percent / 100.0)
+    max_x = frame_width - margin_x
+    max_y = frame_height - margin_y
+
+    return [
+        detection
+        for detection in detections
+        if np.all(detection.corners[:, 0] >= margin_x)
+        and np.all(detection.corners[:, 0] <= max_x)
+        and np.all(detection.corners[:, 1] >= margin_y)
+        and np.all(detection.corners[:, 1] <= max_y)
+    ]
+
+
 def from_detection_to_corners_raw(
     detection: pyapriltags.Detection,
 ) -> list[Vector2]:

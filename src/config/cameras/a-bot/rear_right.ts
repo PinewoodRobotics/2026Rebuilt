@@ -5,30 +5,31 @@ import {
 import { MatrixUtil, VectorUtil } from "../../util/math";
 import { CameraConstants } from "../camera_constants";
 
+const name = "rear_right";
+
 const rear_right: CameraParameters = {
-  pi_to_run_on: "agatha-king",
-  name: "rear_right",
-  camera_path: "/dev/usb_cam3",
+  pi_to_run_on: "tynan",
+  name: name,
+  camera_path: "/dev/usb_cam4",
   flags: 0,
   width: 800,
   height: 600,
   max_fps: 100,
   camera_matrix: MatrixUtil.buildMatrix([
-    [456.10504968438045, 0.0, 403.6933383290121],
-    [0.0, 456.0604482158868, 341.09074241391494],
+    [456.549, 0.0, 404.488],
+    [0.0, 456.5886, 320.76],
     [0.0, 0.0, 1.0],
   ]),
   dist_coeff: VectorUtil.fromArray([
-    0.04841029488157198, -0.08174454831935413, 0.0001501040390929917,
-    0.00011501008144279749, 0.021698542194869413,
+    0.050907, -0.0819, -0.000034809075335798206, 0.0002923, 0.0186098,
   ]),
-  exposure_time: 8,
+  exposure_time: 30,
   camera_type: CameraType.OV2311,
   video_options: {
     send_feed: CameraConstants.kSendFeed,
     compression_quality: CameraConstants.kCompressionQuality,
     overlay_tags: true,
-    publication_topic: "camera/rear_right/video",
+    publication_topic: "camera/" + name + "/video",
     do_compression: true,
   },
   do_detection: true,

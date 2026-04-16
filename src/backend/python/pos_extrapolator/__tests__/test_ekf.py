@@ -9,6 +9,7 @@ from backend.python.pos_extrapolator.__tests__.helpers import (
     make_odom,
     make_solver,
 )
+from backend.python.pos_extrapolator.position_solver_2d import residual_general
 
 
 def test_predict_only_motion_uses_control_updates_between_timestamps():
@@ -31,18 +32,22 @@ def test_predict_only_motion_uses_control_updates_between_timestamps():
     state = solver.get_robot_state_estimate()
 
     assert len(state) == 6
-    assert float(state[0]) == pytest.approx(1.0, abs=1e-6)
-    assert float(state[1]) == pytest.approx(1.0, abs=1e-6)
+    assert float(state[0]) == pytest.approx(0.1, abs=1e-6)
+    assert float(state[1]) == pytest.approx(0.1, abs=1e-6)
     assert float(state[2]) == pytest.approx(1.0, abs=1e-6)
     assert float(state[3]) == pytest.approx(1.0, abs=1e-6)
 
 
 def test_rotation_measurement_wraps_angle_residual():
     solver = make_solver(initial_state=[0.0, 0.0, 3.10])
-    solver._correct(
+    solver.update(
         z=np.array([-3.10], dtype=np.float64),
-        state_indices=[solver.kThetaIdx],
+        HJacobian=lambda _: np.array([[0.0, 0.0, 1.0]], dtype=np.float64),
+        Hx=lambda x: np.array([x[solver.kThetaIdx]], dtype=np.float64),
         R=np.array([[0.1]], dtype=np.float64),
+        residual=lambda measurement, estimate: residual_general(
+            measurement, estimate, 0
+        ),
     )
 
     state = solver.get_state()

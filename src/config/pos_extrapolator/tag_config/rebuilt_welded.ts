@@ -7,7 +7,9 @@ export const rebuilt_welded_field = {
   },
   2: {
     position: VectorUtil.fromArray([11.9154194, 4.638039999999999, 1.12395]),
-    rotation: fromQuaternionNoRoll_ZYX([0.7071067811865476, 0.0, 0.0, 0.7071067811865476]),
+    rotation: fromQuaternionNoRoll_ZYX([
+      0.7071067811865476, 0.0, 0.0, 0.7071067811865476,
+    ]),
   },
   3: {
     position: VectorUtil.fromArray([11.3118646, 4.3902376, 1.12395]),
@@ -19,7 +21,9 @@ export const rebuilt_welded_field = {
   },
   5: {
     position: VectorUtil.fromArray([11.9154194, 3.4312351999999997, 1.12395]),
-    rotation: fromQuaternionNoRoll_ZYX([-0.7071067811865475, 0.0, 0.0, 0.7071067811865476]),
+    rotation: fromQuaternionNoRoll_ZYX([
+      -0.7071067811865475, -0.0, 0.0, 0.7071067811865476,
+    ]),
   },
   6: {
     position: VectorUtil.fromArray([11.8779798, 0.6444996, 0.889]),
@@ -31,10 +35,14 @@ export const rebuilt_welded_field = {
   },
   8: {
     position: VectorUtil.fromArray([12.2710194, 3.4312351999999997, 1.12395]),
-    rotation: fromQuaternionNoRoll_ZYX([-0.7071067811865475, 0.0, 0.0, 0.7071067811865476]),
+    rotation: fromQuaternionNoRoll_ZYX([
+      -0.7071067811865475, -0.0, 0.0, 0.7071067811865476,
+    ]),
   },
   9: {
-    position: VectorUtil.fromArray([12.519177399999998, 3.6790375999999996, 1.12395]),
+    position: VectorUtil.fromArray([
+      12.519177399999998, 3.6790375999999996, 1.12395,
+    ]),
     rotation: fromQuaternionNoRoll_ZYX([1.0, 0.0, 0.0, 0.0]),
   },
   10: {
@@ -43,7 +51,9 @@ export const rebuilt_welded_field = {
   },
   11: {
     position: VectorUtil.fromArray([12.2710194, 4.638039999999999, 1.12395]),
-    rotation: fromQuaternionNoRoll_ZYX([0.7071067811865476, 0.0, 0.0, 0.7071067811865476]),
+    rotation: fromQuaternionNoRoll_ZYX([
+      0.7071067811865476, 0.0, 0.0, 0.7071067811865476,
+    ]),
   },
   12: {
     position: VectorUtil.fromArray([11.9528844, 7.4247756, 0.889]),
@@ -71,10 +81,14 @@ export const rebuilt_welded_field = {
   },
   18: {
     position: VectorUtil.fromArray([4.6256194, 3.4312351999999997, 1.12395]),
-    rotation: fromQuaternionNoRoll_ZYX([-0.7071067811865475, 0.0, 0.0, 0.7071067811865476]),
+    rotation: fromQuaternionNoRoll_ZYX([
+      -0.7071067811865475, -0.0, 0.0, 0.7071067811865476,
+    ]),
   },
   19: {
-    position: VectorUtil.fromArray([5.229174199999999, 3.6790375999999996, 1.12395]),
+    position: VectorUtil.fromArray([
+      5.229174199999999, 3.6790375999999996, 1.12395,
+    ]),
     rotation: fromQuaternionNoRoll_ZYX([1.0, 0.0, 0.0, 0.0]),
   },
   20: {
@@ -83,7 +97,9 @@ export const rebuilt_welded_field = {
   },
   21: {
     position: VectorUtil.fromArray([4.6256194, 4.638039999999999, 1.12395]),
-    rotation: fromQuaternionNoRoll_ZYX([0.7071067811865476, 0.0, 0.0, 0.7071067811865476]),
+    rotation: fromQuaternionNoRoll_ZYX([
+      0.7071067811865476, 0.0, 0.0, 0.7071067811865476,
+    ]),
   },
   22: {
     position: VectorUtil.fromArray([4.6630844, 7.4247756, 0.889]),
@@ -95,7 +111,9 @@ export const rebuilt_welded_field = {
   },
   24: {
     position: VectorUtil.fromArray([4.2700194, 4.638039999999999, 1.12395]),
-    rotation: fromQuaternionNoRoll_ZYX([0.7071067811865476, 0.0, 0.0, 0.7071067811865476]),
+    rotation: fromQuaternionNoRoll_ZYX([
+      0.7071067811865476, 0.0, 0.0, 0.7071067811865476,
+    ]),
   },
   25: {
     position: VectorUtil.fromArray([4.0218614, 4.3902376, 1.12395]),
@@ -107,7 +125,9 @@ export const rebuilt_welded_field = {
   },
   27: {
     position: VectorUtil.fromArray([4.2700194, 3.4312351999999997, 1.12395]),
-    rotation: fromQuaternionNoRoll_ZYX([-0.7071067811865475, 0.0, 0.0, 0.7071067811865476]),
+    rotation: fromQuaternionNoRoll_ZYX([
+      -0.7071067811865475, -0.0, 0.0, 0.7071067811865476,
+    ]),
   },
   28: {
     position: VectorUtil.fromArray([4.5881798, 0.6444996, 0.889]),

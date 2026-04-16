@@ -1,45 +1,51 @@
 package frc.robot.command.intake;
 
 import java.util.function.Supplier;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.constant.IndexConstants;
 import frc.robot.constant.IntakeConstants;
 import frc.robot.constant.IntakeConstants.WristRaiseLocation;
-import frc.robot.subsystem.IndexSubsystem;
 import frc.robot.subsystem.IntakeSubsystem;
 
 public class IntakeCommand extends Command {
+  private static final double kExtakePulseDurationS = 0.5;
+  private static final double kExtakePulsePeriodS = 1.0;
 
   private final IntakeSubsystem m_intakeSubsystem;
-  private final IndexSubsystem m_indexSubsystem;
 
   private final Supplier<Boolean> joystickSupplier;
   private final Supplier<Boolean> extakeOverrideSupplier;
   private WristRaiseLocation alternateRaiseLocation = WristRaiseLocation.MIDDLE;
+
+  private boolean wasRunningIntake;
+  private double intakeCycleStartS;
+  private boolean shouldEnd = false;
 
   public void setAlternateRaiseLocation(WristRaiseLocation location) {
     alternateRaiseLocation = location;
   }
 
   public IntakeCommand(IntakeSubsystem baseSubsystem, Supplier<Boolean> joystickSupplier,
-      Supplier<Boolean> extakeOverrideSupplier, WristRaiseLocation raiseLocation) {
-    m_intakeSubsystem = baseSubsystem;
-    m_indexSubsystem = IndexSubsystem.GetInstance();
+      Supplier<Boolean> extakeOverrideSupplier, WristRaiseLocation raiseLocation, boolean shouldEnd) {
+    this.m_intakeSubsystem = baseSubsystem;
     this.joystickSupplier = joystickSupplier;
     this.extakeOverrideSupplier = extakeOverrideSupplier;
-
-    alternateRaiseLocation = raiseLocation;
-
+    this.alternateRaiseLocation = raiseLocation;
+    this.wasRunningIntake = false;
+    this.intakeCycleStartS = 0.0;
+    this.shouldEnd = shouldEnd;
     addRequirements(m_intakeSubsystem);
   }
 
   public IntakeCommand(IntakeSubsystem baseSubsystem, Supplier<Boolean> joystickSupplier,
       Supplier<Boolean> extakeOverrideSupplier) {
-    this(baseSubsystem, joystickSupplier, extakeOverrideSupplier, WristRaiseLocation.MIDDLE);
+    this(baseSubsystem, joystickSupplier, extakeOverrideSupplier, WristRaiseLocation.MIDDLE, false);
   }
 
   @Override
   public void initialize() {
+    wasRunningIntake = false;
+    intakeCycleStartS = 0.0;
   }
 
   @Override
@@ -51,13 +57,28 @@ public class IntakeCommand extends Command {
     boolean joystickValue = joystickSupplier.get();
     boolean isExtake = extakeOverrideSupplier.get();
     if (joystickValue) {
+      if (!wasRunningIntake) {
+        intakeCycleStartS = Timer.getFPGATimestamp();
+        wasRunningIntake = true;
+      }
+
+      double cycleElapsedS = Timer.getFPGATimestamp() - intakeCycleStartS;
+      boolean shouldPulseExtake = (cycleElapsedS % kExtakePulsePeriodS) < kExtakePulseDurationS;
+
       m_intakeSubsystem.setWristPosition(WristRaiseLocation.BOTTOM);
-      m_intakeSubsystem
-          .runIntakeMotor(
-              isExtake ? IntakeConstants.extakeMotorSpeed : IntakeConstants.intakeMotorSpeed);
+      if (isExtake) {
+        m_intakeSubsystem.runIntakeMotor(IntakeConstants.extakeMotorSpeed);
+      } else if (shouldPulseExtake && IntakeConstants.kShouldWeAreWeGoingToPulseTheIntakeConstantVariable) {
+        m_intakeSubsystem.runIntakeMotor(0);
+      } else {
+        m_intakeSubsystem.runIntakeMotor(IntakeConstants.intakeMotorSpeed);
+      }
+
       // m_indexSubsystem.runMotor(isExtake ? -IndexConstants.kIndexMotorSpeed :
       // IndexConstants.kIndexMotorSpeed);
     } else {
+      wasRunningIntake = false;
+      intakeCycleStartS = 0.0;
       m_intakeSubsystem
           .setWristPosition(alternateRaiseLocation);
       m_intakeSubsystem.stopIntakeMotor();
@@ -70,6 +91,6 @@ public class IntakeCommand extends Command {
 
   @Override
   public boolean isFinished() {
-    return false;
+    return shouldEnd && m_intakeSubsystem.wristAtSetpoint();
   }
 }

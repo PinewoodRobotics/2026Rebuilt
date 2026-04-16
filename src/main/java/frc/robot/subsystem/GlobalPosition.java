@@ -17,6 +17,7 @@ import frc.robot.constant.BotConstants;
 import frc.robot.constant.CommunicationConstants;
 import frc.robot.util.AimPoint;
 import frc.robot.util.PositionUncertaintyVisualizer;
+import frc.robot.util.PositionUncertaintyVisualizer.PositionVisualizationMode;
 import frc4765.proto.util.Position.RobotPosition;
 import lombok.Getter;
 
@@ -28,6 +29,8 @@ public class GlobalPosition extends SubsystemBase {
   private static ChassisSpeeds positionVelocity = new ChassisSpeeds(0, 0, 0);
   private static double[] positionCovariance = new double[0];
   private static double[][] positionCovarianceMatrix = new double[0][0];
+
+  private int resubCountTicks = 0;
 
   @Getter
   private static boolean isValid = false;
@@ -143,15 +146,20 @@ public class GlobalPosition extends SubsystemBase {
 
   @Override
   public void periodic() {
+    Pose2d[] uncertaintyVisualization = PositionUncertaintyVisualizer.visualization(
+        position,
+        positionCovariance,
+        PositionVisualizationMode.PROBABILITY_ELLIPSE);
+
+    Pose2d[] covarianceVisualization = PositionUncertaintyVisualizer.visualization(
+        position,
+        positionCovariance,
+        PositionVisualizationMode.COVARIANCE_ELLIPSE);
+
     Logger.recordOutput("Global/pose", position);
     Logger.recordOutput("Global/velocity", positionVelocity);
-    Logger.recordOutput("Global/positionCovariance", positionCovariance);
-    Logger.recordOutput("Global/positionCovarianceMatrix", positionCovarianceMatrix);
-    Logger.recordOutput("Global/positionCovarianceDiagonal",
-        PositionUncertaintyVisualizer.covarianceDiagonal(positionCovariance));
-    Logger.recordOutput("Global/positionStdDev", PositionUncertaintyVisualizer.covarianceStdDev(positionCovariance));
-    Logger.recordOutput("Global/positionCovarianceEllipse",
-        PositionUncertaintyVisualizer.covarianceEllipse(position, positionCovariance));
+    Logger.recordOutput("Global/positionUncertaintyVisualization", uncertaintyVisualization);
+    Logger.recordOutput("Global/covarianceVisualization", covarianceVisualization);
     if (positionUpdateHz < 100) {
       Logger.recordOutput("Global/positionUpdateHz", positionUpdateHz);
     }
@@ -181,6 +189,21 @@ public class GlobalPosition extends SubsystemBase {
 
     Logger.recordOutput("Global/Position/IsValid", isValid);
     Logger.recordOutput("Global/alliance", BotConstants.alliance);
+
+    if (positionUpdateHz < 10) {
+      resubCountTicks++;
+      if (resubCountTicks % 50 == 0) {
+        Robot.getCommunicationClient().unsubscribe(CommunicationConstants.kPoseSubscribeTopic);
+        Robot.getCommunicationClient().subscribe(CommunicationConstants.kPoseSubscribeTopic,
+            NamedCallback.FromConsumer(this::subscription));
+
+        System.out.println("Resubscribing to topic!!");
+
+        resubCountTicks = 0;
+      }
+    } else {
+      resubCountTicks = 0;
+    }
   }
 
   private static double[] toDoubleArray(java.util.List<Float> values) {

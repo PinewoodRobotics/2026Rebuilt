@@ -1,6 +1,7 @@
 # TODO: need to add a better way to handle the non-used indices in sensors (config method).
 
 import asyncio
+import time
 
 from backend.generated.proto.python.sensor.general_sensor_data_pb2 import (
     GeneralSensorData,
@@ -20,9 +21,10 @@ async def main():
     info(f"Starting Position Extrapolator...")
     await autobahn_server.begin()
 
-    position_solver = PositionSolver2d(config.pos_extrapolator)
+    position_solver = PositionSolver2d(config.pos_extrapolator, config)
 
     async def process_data(message: bytes):
+        start_time = time.time()
         data = GeneralSensorData.FromString(message)
         one_of_name = data.WhichOneof("data")
 

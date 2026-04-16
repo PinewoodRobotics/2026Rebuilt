@@ -21,6 +21,13 @@ import frc.robot.util.LocalMath;
 import lombok.Getter;
 
 public class ContinuousShooter extends Command {
+  public record ShotSolution(
+      Translation2d targetRelative,
+      Translation2d compensatedTargetRelative,
+      double rawDistance,
+      double compensatedDistance) {
+  }
+
   private final Supplier<Translation2d> targetGlobalPoseSupplier;
   private final Supplier<Translation2d> selfGlobalPoseSupplier;
   private final BooleanSupplier indexExtakeOverrideSupplier;
@@ -64,28 +71,40 @@ public class ContinuousShooter extends Command {
     this(() -> new Translation2d());
   }
 
+  public static ShotSolution CalculateShotSolution(
+      Pose2d selfPose,
+      Translation2d targetGlobal,
+      ChassisSpeeds robotFieldSpeeds) {
+    Translation2d targetRelative = LocalMath.fromGlobalToRelative(selfPose.getTranslation(), targetGlobal);
+    Translation2d compensatedTargetRelative = ContinuousAimCommand.GetCompensatedSpeed(
+        selfPose,
+        targetGlobal,
+        robotFieldSpeeds);
+
+    double rawDistance = targetRelative.getNorm();
+    double compensatedDistance = compensatedTargetRelative.getNorm();
+
+    return new ShotSolution(targetRelative, compensatedTargetRelative, rawDistance, compensatedDistance);
+  }
+
   @Override
   public void execute() {
     Logger.recordOutput("ContinuousShooter/Time", System.currentTimeMillis());
     Translation2d target = targetGlobalPoseSupplier.get();
     Translation2d self = selfGlobalPoseSupplier.get();
-    Translation2d targetRelative = LocalMath.fromGlobalToRelative(self, target);
     Pose2d selfPose = new Pose2d(self, GlobalPosition.Get().getRotation());
     ChassisSpeeds robotFieldSpeeds = GlobalPosition.Velocity(GMFrame.kFieldRelative);
-    Translation2d compensatedTargetRelative = ContinuousAimCommand.GetCompensatedSpeed(
+    ShotSolution shotSolution = CalculateShotSolution(
         selfPose,
         target,
         robotFieldSpeeds);
-
-    double rawDistance = targetRelative.getNorm();
-    double compensatedDistance = compensatedTargetRelative.getNorm();
     shooterSubsystem.setShooterVelocity(
-        ShooterConstants.DistanceFromTargetToVelocity(compensatedDistance));
+        ShooterConstants.DistanceFromTargetToVelocity(shotSolution.compensatedDistance()));
 
-    Logger.recordOutput("ContinuousShooter/TargetRelative", targetRelative);
-    Logger.recordOutput("ContinuousShooter/CompensatedTargetRelative", compensatedTargetRelative);
-    Logger.recordOutput("ContinuousShooter/RawDistanceToTarget", rawDistance);
-    Logger.recordOutput("ContinuousShooter/CompensatedDistanceToTarget", compensatedDistance);
+    Logger.recordOutput("ContinuousShooter/TargetRelative", shotSolution.targetRelative());
+    Logger.recordOutput("ContinuousShooter/CompensatedTargetRelative", shotSolution.compensatedTargetRelative());
+    Logger.recordOutput("ContinuousShooter/RawDistanceToTarget", shotSolution.rawDistance());
+    Logger.recordOutput("ContinuousShooter/CompensatedDistanceToTarget", shotSolution.compensatedDistance());
 
     if (indexExtakeOverrideSupplier.getAsBoolean()) {
       isShooting = false;
@@ -109,5 +128,4 @@ public class ContinuousShooter extends Command {
     isShooting = false;
     indexSubsystem.stopMotor();
   }
-
 }

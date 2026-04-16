@@ -29,7 +29,7 @@ public final class AimPoint {
       new Zone(ZoneName.FRONT_OF_HUB,
           atFieldPercent(0.0, 0.0),
           atFieldPercent(0.25, 1.00),
-          atFieldPercent(0.30, 0.50)),
+          atFieldPercent(0.28, 0.50)),
       new Zone(
           ZoneName.LEFT_CENTER,
           atFieldPercent(0.25, 0.00),
@@ -137,8 +137,14 @@ public final class AimPoint {
     return new Translation2d(FIELD_LENGTH_METERS * xPercent, FIELD_WIDTH_METERS * yPercent);
   }
 
+  /**
+   * Field poses use the WPILib blue-origin frame. Zone geometry is stored in that
+   * same frame. Mirror
+   * across the field center only on red (PathPlanner convention: flip paths for
+   * red, not blue).
+   */
   private static Pose2d toBluePerspective(Pose2d fieldPose, Alliance alliance) {
-    if (alliance == Alliance.Red) {
+    if (alliance == Alliance.Blue) {
       return fieldPose;
     }
     return new Pose2d(
@@ -148,7 +154,7 @@ public final class AimPoint {
   }
 
   private static Translation2d fromBluePerspective(Translation2d bluePoint, Alliance alliance) {
-    if (alliance == Alliance.Red) {
+    if (alliance == Alliance.Blue) {
       return bluePoint;
     }
     return new Translation2d(flipX(bluePoint.getX()), bluePoint.getY());

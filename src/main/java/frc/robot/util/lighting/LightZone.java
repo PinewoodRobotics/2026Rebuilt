@@ -4,10 +4,7 @@ import frc.robot.constant.LEDConstants;
 
 public enum LightZone {
   ONBOARD(LEDConstants.onboardStartIndex, LEDConstants.onboardEndIndex),
-  FULL_STRIP(LEDConstants.ledStartIndex, LEDConstants.ledEndIndex),
-  EXTERNAL_STRIP(LEDConstants.externalStripStartIndex, LEDConstants.externalStripEndIndex),
-  LEFT_HALF(LEDConstants.leftHalfStartIndex, LEDConstants.leftHalfEndIndex),
-  RIGHT_HALF(LEDConstants.rightHalfStartIndex, LEDConstants.rightHalfEndIndex);
+  FULL_STRIP(LEDConstants.ledStartIndex, LEDConstants.ledEndIndex);
 
   private final int startInclusive;
   private final int endInclusive;

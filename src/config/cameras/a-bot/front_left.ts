@@ -1,35 +1,36 @@
 import {
-  CameraParameters,
   CameraType,
+  type CameraParameters,
 } from "generated/thrift/gen-nodejs/camera_types";
 import { MatrixUtil, VectorUtil } from "../../util/math";
 import { CameraConstants } from "../camera_constants";
 
+const name = "front_left";
+
 const front_left: CameraParameters = {
-  pi_to_run_on: "tynan",
-  name: "front_left",
-  camera_path: "/dev/usb_cam4",
+  pi_to_run_on: "agatha-king",
+  name: name,
+  camera_path: "/dev/usb_cam1",
   flags: 0,
   width: 800,
   height: 600,
   max_fps: 100,
   camera_matrix: MatrixUtil.buildMatrix([
-    [456.81085799059014, 0.0, 395.06984136844125],
-    [0.0, 456.7987342006777, 334.73571738807914],
+    [455.332, 0.0, 395.913],
+    [0.0, 455.171, 334.9959],
     [0.0, 0.0, 1.0],
   ]),
   dist_coeff: VectorUtil.fromArray([
-    0.052745830893280964, -0.08619099299637119, -0.00044316972116126193,
-    0.00004422164981020342, 0.022592221476200467,
+    0.0529963, -0.0945668, 0.000320554, 0.0000654123, 0.030807495,
   ]),
-  exposure_time: 8,
+  exposure_time: 30,
   camera_type: CameraType.OV2311,
   video_options: {
     send_feed: CameraConstants.kSendFeed,
     compression_quality: CameraConstants.kCompressionQuality,
-    publication_topic: "camera/front_left/video",
-    do_compression: true,
     overlay_tags: true,
+    publication_topic: "camera/" + name + "/video",
+    do_compression: true,
   },
   do_detection: true,
 };

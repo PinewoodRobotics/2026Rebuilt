@@ -13,21 +13,26 @@ import edu.wpi.first.units.measure.LinearAcceleration;
 import edu.wpi.first.units.measure.LinearVelocity;
 
 public class SwerveConstantsTalonFX {
+  // stats used by SwerveSubsystem for math
+  public static final Distance kWheelDiameter = Units.Meters.of(0.089);
+  public static final double kDriveBaseWidth = 0.5842;
+  public static final double kDriveBaseLength = 0.5842;
+
   public static final Translation2d rearLeftTranslation = new Translation2d(
-      -0.3429,
-      0.3429);
+      -kDriveBaseWidth / 2,
+      kDriveBaseWidth / 2);
 
   public static final Translation2d rearRightTranslation = new Translation2d(
-      -0.3429,
-      -0.3429);
+      -kDriveBaseWidth / 2,
+      -kDriveBaseWidth / 2);
 
   public static final Translation2d frontRightTranslation = new Translation2d(
-      0.3429,
-      -0.3429);
+      kDriveBaseWidth / 2,
+      -kDriveBaseWidth / 2);
 
   public static final Translation2d frontLeftTranslation = new Translation2d(
-      0.3429,
-      0.3429);
+      kDriveBaseWidth / 2,
+      kDriveBaseWidth / 2);
 
   public static final LinearVelocity kMaxSpeed = Units.MetersPerSecond.of(0);
   public static final LinearAcceleration kMaxLinearAcceleration = Units.MetersPerSecondPerSecond.of(0);
@@ -85,11 +90,6 @@ public class SwerveConstantsTalonFX {
   public static final double kFrontRightCANcoderMagnetOffset = -0.285;
   public static final double kRearLeftCANcoderMagnetOffset = 0.317;
   public static final double kRearRightCANcoderMagnetOffset = 0.062;
-
-  // stats used by SwerveSubsystem for math
-  public static final Distance kWheelDiameter = Units.Meters.of(0.089);
-  public static final double kDriveBaseWidth = 0.66;
-  public static final double kDriveBaseLength = 0.66;
 
   // stats used by SwerveSubsystem for deadbanding
   public static final double kXSpeedDeadband = 0.05;
