@@ -28,6 +28,10 @@ public final class SwerveConstants {
 
   public static final double kShootingSpeedMultiplier = 1.0;
 
+  /** Per-module volts/amps logging for offline motor-model identification; adds CAN load, so off for competition. */
+  public static final boolean kLogMotorTelemetry = false;
+  public static final double kMotorTelemetryHz = 50.0;
+
   //////////////////////////////////////
 
   public Translation2d rearLeftTranslation;

@@ -2,6 +2,7 @@ package frc.robot.hardware;
 
 import org.littletonrobotics.junction.Logger;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.ClosedLoopGeneralConfigs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
@@ -37,6 +38,13 @@ public class WheelMoverTalonFX extends WheelMoverBase {
   private final int port;
 
   private CANcoder turnCANcoder;
+
+  private BaseStatusSignal driveVoltsSignal;
+  private BaseStatusSignal driveStatorSignal;
+  private BaseStatusSignal driveSupplySignal;
+  private BaseStatusSignal turnVoltsSignal;
+  private BaseStatusSignal turnStatorSignal;
+  private BaseStatusSignal turnSupplySignal;
 
   public WheelMoverTalonFX(
       int driveMotorChannel,
@@ -123,6 +131,21 @@ public class WheelMoverTalonFX extends WheelMoverBase {
 
     m_turnMotor.setPosition(
         turnCANcoder.getAbsolutePosition().getValueAsDouble());
+
+    if (SwerveConstants.kLogMotorTelemetry) {
+      driveVoltsSignal = m_driveMotor.getMotorVoltage(false);
+      driveStatorSignal = m_driveMotor.getStatorCurrent(false);
+      driveSupplySignal = m_driveMotor.getSupplyCurrent(false);
+      turnVoltsSignal = m_turnMotor.getMotorVoltage(false);
+      turnStatorSignal = m_turnMotor.getStatorCurrent(false);
+      turnSupplySignal = m_turnMotor.getSupplyCurrent(false);
+
+      // Stator and supply current share the SupplyAndTemp status frame, so raising the
+      // rate on stator raises it for both; passing supply too would be a no-op. Motor
+      // voltage is a separate frame (MotorOutput) already published at 100 Hz.
+      BaseStatusSignal.setUpdateFrequencyForAll(
+          SwerveConstants.kMotorTelemetryHz, driveStatorSignal, turnStatorSignal);
+    }
   }
 
   @Override
@@ -238,6 +261,26 @@ public class WheelMoverTalonFX extends WheelMoverBase {
 
     Logger.recordOutput(base + "rawCurrentAngle", rawAngle);
 
+    if (SwerveConstants.kLogMotorTelemetry) {
+      BaseStatusSignal.refreshAll(
+          driveVoltsSignal, driveStatorSignal, driveSupplySignal,
+          turnVoltsSignal, turnStatorSignal, turnSupplySignal);
+
+      // Volts and amps arrive on separate status frames at different rates, so within one
+      // loop the pair can be up to a frame apart -- significant against the 78 ms time
+      // constant being identified. Log each frame's timestamp so the fit can align them.
+      Logger.recordOutput(base + "driveAppliedVolts", driveVoltsSignal.getValueAsDouble());
+      Logger.recordOutput(base + "driveStatorAmps", driveStatorSignal.getValueAsDouble());
+      Logger.recordOutput(base + "driveSupplyAmps", driveSupplySignal.getValueAsDouble());
+      Logger.recordOutput(base + "driveVoltsTimestamp", driveVoltsSignal.getTimestamp().getTime());
+      Logger.recordOutput(base + "driveAmpsTimestamp", driveStatorSignal.getTimestamp().getTime());
+
+      Logger.recordOutput(base + "turnAppliedVolts", turnVoltsSignal.getValueAsDouble());
+      Logger.recordOutput(base + "turnStatorAmps", turnStatorSignal.getValueAsDouble());
+      Logger.recordOutput(base + "turnSupplyAmps", turnSupplySignal.getValueAsDouble());
+      Logger.recordOutput(base + "turnVoltsTimestamp", turnVoltsSignal.getTimestamp().getTime());
+      Logger.recordOutput(base + "turnAmpsTimestamp", turnStatorSignal.getTimestamp().getTime());
+    }
   }
 
   // ***********************************************************************************************
