@@ -4,7 +4,7 @@ import {
 } from "generated/thrift/gen-nodejs/apriltag_types";
 
 export const april_tag_detection_config: AprilDetectionConfig = {
-  tag_size: 0.17,
+  tag_size: 0.1651,
   family: "tag36h11",
   nthreads: 4,
   quad_decimate: 1,
@@ -16,6 +16,7 @@ export const april_tag_detection_config: AprilDetectionConfig = {
   post_tag_output_topic: "apriltag/tag",
   send_stats: true,
   stats_topic: "apriltag/stats",
+  image_edge_reject_margin_percent: 10,
   pi_name_to_special_detector_config: {
     jetson1: {
       type: SpecialDetectorType.GPU_CUDA,

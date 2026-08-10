@@ -1,11 +1,18 @@
+import os
 from numpy.typing import NDArray
 from backend.python.common.camera.type_camera.OV2311_camera import OV2311Camera
 from backend.python.common.util.system import SystemStatus, get_system_status
 import numpy as np
 
 
+def _should_run_camera_test() -> bool:
+    if get_system_status() == SystemStatus.SIMULATION:
+        return False
+    return os.path.exists("/dev/video0")
+
+
 def test_camera_open():
-    if get_system_status() != SystemStatus.DEVELOPMENT:
+    if not _should_run_camera_test():
         return  # hardware-only
 
     video_capture = OV2311Camera(
@@ -33,7 +40,7 @@ def calculate_avg_pixel_value(frame: NDArray[np.uint8]) -> float:
 
 
 def test_camera_exposure_time():
-    if get_system_status() != SystemStatus.DEVELOPMENT:
+    if not _should_run_camera_test():
         return  # hardware-only
 
     video_capture = OV2311Camera(

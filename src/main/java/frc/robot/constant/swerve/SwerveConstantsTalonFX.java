@@ -3,8 +3,6 @@ package frc.robot.constant.swerve;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.AngularAcceleration;
@@ -12,92 +10,86 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearAcceleration;
-import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.units.measure.LinearVelocity;
 
 public class SwerveConstantsTalonFX {
+  // stats used by SwerveSubsystem for math
+  public static final Distance kWheelDiameter = Units.Meters.of(0.089);
+  public static final double kDriveBaseWidth = 0.5842;
+  public static final double kDriveBaseLength = 0.5842;
+
   public static final Translation2d rearLeftTranslation = new Translation2d(
-      0.38,
-      0.38);
+      -kDriveBaseWidth / 2,
+      kDriveBaseWidth / 2);
 
   public static final Translation2d rearRightTranslation = new Translation2d(
-      0.38,
-      -0.38);
+      -kDriveBaseWidth / 2,
+      -kDriveBaseWidth / 2);
 
   public static final Translation2d frontRightTranslation = new Translation2d(
-      -0.38,
-      -0.38);
+      kDriveBaseWidth / 2,
+      -kDriveBaseWidth / 2);
 
   public static final Translation2d frontLeftTranslation = new Translation2d(
-      -0.38,
-      0.38);
+      kDriveBaseWidth / 2,
+      kDriveBaseWidth / 2);
 
-  public static final double kMaxSpeedMPSNormElevator = 2;
-  public static final double kMaxSpeedMPSTopElevator = 0.6;
-  public static double tempMaxSpeed = kMaxSpeedMPSNormElevator;
-
-  public static final AngularVelocity kMaxTurnSpeed = Units.RadiansPerSecond.of(Math.PI / 1.3); // 180 deg/s
-  public static final AngularAcceleration kMaxTurnAcceleration = Units.RadiansPerSecondPerSecond.of(10.0);
-  /** Units: radians/sec^3 */
-  public static final double kMaxTurnJerk = 100.0;
-
-  public static final LinearAcceleration kMaxLinearAcceleration = Units.MetersPerSecondPerSecond.of(3.0);
+  public static final LinearVelocity kMaxSpeed = Units.MetersPerSecond.of(0);
+  public static final LinearAcceleration kMaxLinearAcceleration = Units.MetersPerSecondPerSecond.of(0);
   /** Units: meters/sec^3 */
   public static final double kMaxLinearJerk = 20.0;
 
-  public static final Current kTurnCurrentLimit = Units.Amps.of(10);
+  public static final Current kTurnCurrentLimit = Units.Amps.of(30);
   public static final Current kDriveCurrentLimit = Units.Amps.of(30);
 
   // the driving motor ports
   public static final int kFrontLeftDriveMotorPort = 7;
-  public static final int kFrontRightDriveMotorPort = 9;
-  public static final int kRearLeftDriveMotorPort = 11;
-  public static final int kRearRightDriveMotorPort = 13;
+  public static final int kFrontRightDriveMotorPort = 13;
+  public static final int kRearLeftDriveMotorPort = 9;
+  public static final int kRearRightDriveMotorPort = 11;
 
   // whether the driving encoders are flipped
-  public static final InvertedValue kFrontLeftDriveMotorReversed = InvertedValue.Clockwise_Positive;
-  public static final InvertedValue kRearLeftDriveMotorReversed = InvertedValue.Clockwise_Positive;
-  public static final InvertedValue kFrontRightDriveMotorReversed = InvertedValue.Clockwise_Positive;
+  public static final InvertedValue kFrontLeftDriveMotorReversed = InvertedValue.CounterClockwise_Positive;
+  public static final InvertedValue kRearLeftDriveMotorReversed = InvertedValue.CounterClockwise_Positive;
+  public static final InvertedValue kFrontRightDriveMotorReversed = InvertedValue.CounterClockwise_Positive;
   public static final InvertedValue kRearRightDriveMotorReversed = InvertedValue.Clockwise_Positive;
 
   // the turning motor ports
   public static final int kFrontLeftTurningMotorPort = 6;
-  public static final int kFrontRightTurningMotorPort = 8;
-  public static final int kRearLeftTurningMotorPort = 10;
-  public static final int kRearRightTurningMotorPort = 12;
+  public static final int kFrontRightTurningMotorPort = 12;
+  public static final int kRearLeftTurningMotorPort = 8;
+  public static final int kRearRightTurningMotorPort = 10;
 
-  // whether the turning enoders are flipped
-  public static final InvertedValue kFrontLeftTurningMotorReversed = InvertedValue.Clockwise_Positive;
-  public static final InvertedValue kFrontRightTurningMotorReversed = InvertedValue.Clockwise_Positive;
-  public static final InvertedValue kRearLeftTurningMotorReversed = InvertedValue.Clockwise_Positive;
-  public static final InvertedValue kRearRightTurningMotorReversed = InvertedValue.Clockwise_Positive;
+  // Whether the turning motors are flipped. These are module-local hardware
+  // settings and should not change when the robot/world coordinate frame changes.
+  public static final InvertedValue kFrontLeftTurningMotorReversed = InvertedValue.CounterClockwise_Positive;
+  public static final InvertedValue kFrontRightTurningMotorReversed = InvertedValue.CounterClockwise_Positive;
+  public static final InvertedValue kRearLeftTurningMotorReversed = InvertedValue.CounterClockwise_Positive;
+  public static final InvertedValue kRearRightTurningMotorReversed = InvertedValue.CounterClockwise_Positive;
 
   // the CANCoder turning encoder ports - updated 2/12/24
   public static final int kFrontLeftCANcoderPort = 2;
-  public static final int kFrontRightCANcoderPort = 3;
-  public static final int kRearLeftCANcoderPort = 4;
-  public static final int kRearRightCANcoderPort = 5;
+  public static final int kFrontRightCANcoderPort = 5;
+  public static final int kRearLeftCANcoderPort = 3;
+  public static final int kRearRightCANcoderPort = 4;
 
   // whether the turning CANCoders are flipped
 
-  public static final SensorDirectionValue kFrontLeftCANcoderDirection = SensorDirectionValue.Clockwise_Positive;
-  public static final SensorDirectionValue kFrontRightCANcoderDirection = SensorDirectionValue.Clockwise_Positive;
-  public static final SensorDirectionValue kRearLeftCANcoderDirection = SensorDirectionValue.Clockwise_Positive;
-  public static final SensorDirectionValue kRearRightCANcoderDirection = SensorDirectionValue.Clockwise_Positive;
+  public static final SensorDirectionValue kFrontLeftCANcoderDirection = SensorDirectionValue.CounterClockwise_Positive;
+  public static final SensorDirectionValue kFrontRightCANcoderDirection = SensorDirectionValue.CounterClockwise_Positive;
+  public static final SensorDirectionValue kRearLeftCANcoderDirection = SensorDirectionValue.CounterClockwise_Positive;
+  public static final SensorDirectionValue kRearRightCANcoderDirection = SensorDirectionValue.CounterClockwise_Positive;
 
-  // magnetic offset for the CANCoders
+  // Magnetic offsets for the CANCoders.
+  // These are calibrated physical zeros for the modules, not field-frame values.
   // you can find these by connecting to the RoboRIO by USB on the drive station,
   // opening the Phoenix Tuner app, and taking snapshots of
   // the rotational values of the CANCoders while in they are in the forward state
   // units: rotations
   public static final double kFrontLeftCANcoderMagnetOffset = -0.184;
-  public static final double kFrontRightCANcoderMagnetOffset = -0.18;
-  public static final double kRearLeftCANcoderMagnetOffset = 0.302;
-  public static final double kRearRightCANcoderMagnetOffset = 0.459;
-
-  // stats used by SwerveSubsystem for math
-  public static final Distance kWheelDiameter = Units.Meters.of(0.089);
-  public static final double kDriveBaseWidth = 0.66;
-  public static final double kDriveBaseLength = 0.66;
+  public static final double kFrontRightCANcoderMagnetOffset = -0.285;
+  public static final double kRearLeftCANcoderMagnetOffset = 0.317;
+  public static final double kRearRightCANcoderMagnetOffset = 0.062;
 
   // stats used by SwerveSubsystem for deadbanding
   public static final double kXSpeedDeadband = 0.05;
@@ -116,12 +108,12 @@ public class SwerveConstantsTalonFX {
   public static final double kDirectionMultiplier = 0.01;
 
   // PID values for the driving
-  public static final double kDriveP = 0.01;
-  public static final double kDriveI = 0;
+  public static final double kDriveP = 0.5;
+  public static final double kDriveI = 1;
   public static final double kDriveD = 0;
   public static final double kDriveIZ = 0;
   public static final double kDriveFF = 0;
-  public static final Voltage kDriveV = Units.Volts.of(0.6); // Velocity feedforward - critical for velocity control
+  public static final double kDriveV = 0.6; // Velocity feedforward - critical for velocity control
   public static final double kDriveMinOutput = -1;
   public static final double kDriveMaxOutput = 1;
 
@@ -132,8 +124,8 @@ public class SwerveConstantsTalonFX {
   public static final double kAutonSpeedMultiplier = 0.5;
 
   public static final double kDriveMaxRPM = 5700;
-  public static final double kDriveStatorLimit = 70; // TEMP
-  public static final Current kDriveSupplyLimit = Units.Amps.of(40); // TEMP
+  public static final Current kDriveStatorLimit = Units.Amps.of(70); // TEMP
+  public static final Current kDriveSupplyLimit = Units.Amps.of(30); // TEMP
 
   // PID values for the turning
   public static final double kTurnP = 1.5 * 12;
@@ -170,9 +162,8 @@ public class SwerveConstantsTalonFX {
 
   // Motion Magic configuration for turn motors (position control with trapezoid
   // profiling)
-  public static final double kTurnMotionMagicCruiseVelocity = 100; // rotations/sec - max turn speed
-  public static final double kTurnMotionMagicAcceleration = 200; // rotations/sec² - turn acceleration
-  public static final double kTurnMotionMagicJerk = 2000; // rotations/sec³ - smoothness of turn acceleration changes
+  public static final AngularVelocity kTurnMotionMagicCruiseVelocity = Units.RotationsPerSecond.of(0);
+  public static final AngularAcceleration kTurnMotionMagicAcceleration = Units.RotationsPerSecondPerSecond.of(0);
 
   public static final int kPigeonCANId = 40;
 }

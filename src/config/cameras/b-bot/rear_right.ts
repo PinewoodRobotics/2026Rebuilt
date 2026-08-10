@@ -3,11 +3,12 @@ import {
   type CameraParameters,
 } from "generated/thrift/gen-nodejs/camera_types";
 import { MatrixUtil, VectorUtil } from "../../util/math";
+import { CameraConstants } from "../camera_constants";
 
 const rear_right: CameraParameters = {
   pi_to_run_on: "nathan-hale",
   name: "rear_right",
-  camera_path: "/dev/usb_cam1",
+  camera_path: "/dev/usb_cam4",
   flags: 0,
   width: 800,
   height: 600,
@@ -21,13 +22,13 @@ const rear_right: CameraParameters = {
     0.04841029488157198, -0.08174454831935413, 0.0001501040390929917,
     0.00011501008144279749, 0.021698542194869413,
   ]),
-  exposure_time: 10,
+  exposure_time: 8,
   camera_type: CameraType.OV2311,
   video_options: {
-    send_feed: false,
+    send_feed: CameraConstants.kSendFeed,
+    compression_quality: CameraConstants.kCompressionQuality,
     overlay_tags: true,
     publication_topic: "camera/rear_right/video",
-    compression_quality: 10,
     do_compression: true,
   },
   do_detection: true,

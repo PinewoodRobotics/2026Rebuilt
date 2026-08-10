@@ -1,0 +1,44 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "deadline",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Climber Right Middle"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ContinuousAimCommand"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ContinuousShooterCommand"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ClimberL1Command"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": false,
+  "folder": "Climber",
+  "choreoAuto": false
+}

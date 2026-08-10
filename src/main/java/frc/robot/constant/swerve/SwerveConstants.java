@@ -11,7 +11,6 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearAcceleration;
 import edu.wpi.first.units.measure.LinearVelocity;
-import edu.wpi.first.units.measure.Voltage;
 import frc.robot.constant.BotConstants;
 import frc.robot.constant.BotConstants.RobotVariant;
 
@@ -22,6 +21,15 @@ import frc.robot.constant.BotConstants.RobotVariant;
  * should consume the <b>active</b> set via {@link #INSTANCE}.
  */
 public final class SwerveConstants {
+  public static final AngularVelocity kRobotMaxTurnSpeed = Units.RadiansPerSecond.of(Math.PI); // 180 deg/s
+  public static final LinearVelocity kRobotMaxSpeed = Units.MetersPerSecond.of(3.5);
+  public static final AngularAcceleration kRobotMaxTurnAcceleration = Units.RadiansPerSecondPerSecond.of(Math.PI);
+  public static final LinearAcceleration kRobotMaxLinearAcceleration = Units.MetersPerSecondPerSecond.of(4.0);
+
+  public static final double kShootingSpeedMultiplier = 1.0;
+
+  //////////////////////////////////////
+
   public Translation2d rearLeftTranslation;
   public Translation2d rearRightTranslation;
   public Translation2d frontRightTranslation;
@@ -82,8 +90,8 @@ public final class SwerveConstants {
   public double kDriveI;
   public double kDriveD;
   public double kDriveIZ;
-  public Voltage kDriveV;
-  public double kDriveStatorLimit;
+  public double kDriveV;
+  public Current kDriveStatorLimit;
   public Current kDriveSupplyLimit;
   public double kDriveMinOutput;
   public double kDriveMaxOutput;
@@ -199,13 +207,13 @@ public final class SwerveConstants {
     c.frontRightTranslation = SwerveConstantsTalonFX.frontRightTranslation;
     c.frontLeftTranslation = SwerveConstantsTalonFX.frontLeftTranslation;
 
-    c.kMaxSpeed = Units.MetersPerSecond.of(SwerveConstantsTalonFX.tempMaxSpeed);
+    c.kMaxSpeed = SwerveConstantsTalonFX.kMaxSpeed;
     c.kMaxLinearAcceleration = SwerveConstantsTalonFX.kMaxLinearAcceleration;
     c.kMaxLinearJerk = SwerveConstantsTalonFX.kMaxLinearJerk;
 
-    c.kMaxTurnSpeed = SwerveConstantsTalonFX.kMaxTurnSpeed;
-    c.kMaxTurnAcceleration = SwerveConstantsTalonFX.kMaxTurnAcceleration;
-    c.kMaxTurnJerk = SwerveConstantsTalonFX.kMaxTurnJerk;
+    c.kMaxTurnSpeed = SwerveConstantsTalonFX.kTurnMotionMagicCruiseVelocity;
+    c.kMaxTurnAcceleration = SwerveConstantsTalonFX.kTurnMotionMagicAcceleration;
+    c.kMaxTurnJerk = 0;
 
     c.kTurnCurrentLimit = SwerveConstantsTalonFX.kTurnCurrentLimit;
     c.kDriveCurrentLimit = SwerveConstantsTalonFX.kDriveCurrentLimit;

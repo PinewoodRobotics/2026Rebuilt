@@ -3,11 +3,12 @@ import {
   CameraType,
 } from "generated/thrift/gen-nodejs/camera_types";
 import { MatrixUtil, VectorUtil } from "../../util/math";
+import { CameraConstants } from "../camera_constants";
 
 const front_right: CameraParameters = {
-  pi_to_run_on: "tynan",
+  pi_to_run_on: "agatha-king",
   name: "front_right",
-  camera_path: "/dev/usb_cam3",
+  camera_path: "/dev/usb_cam2",
   flags: 0,
   width: 800,
   height: 600,
@@ -21,14 +22,14 @@ const front_right: CameraParameters = {
     0.05147776259797679, -0.08376762888571426, -0.0005087791220038304,
     -5.9848176245483235e-5, 0.020125747371733234,
   ]),
-  exposure_time: 10,
+  exposure_time: 8,
   camera_type: CameraType.OV2311,
   video_options: {
-    send_feed: true,
+    send_feed: CameraConstants.kSendFeed,
+    compression_quality: CameraConstants.kCompressionQuality,
     do_compression: true,
     publication_topic: "camera/front_right/video",
     overlay_tags: true,
-    compression_quality: 20,
   },
   do_detection: true,
 };

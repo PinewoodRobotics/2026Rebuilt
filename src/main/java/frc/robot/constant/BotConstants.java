@@ -1,14 +1,26 @@
 package frc.robot.constant;
 
 import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.DriverStation;
 
 public class BotConstants {
+
+  public static final AprilTagFieldLayout kFieldLayout = AprilTagFieldLayout
+      .loadField(AprilTagFields.k2026RebuiltWelded);
+
+  // public static final Alliance alliance = Alliance.Red; //
+  // DriverStation.getAlliance().orElse(Alliance.Blue);
+
   public static enum RobotVariant {
     ABOT,
     BBOT
   }
 
-  public static final RobotVariant robotType = RobotVariant.BBOT;
+  public static final RobotVariant robotType = RobotVariant.ABOT;
+  public static Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
 
   public static enum Mode {
     /** Running on a real robot. */
@@ -19,4 +31,8 @@ public class BotConstants {
   }
 
   public static final Mode currentMode = Mode.REAL;
+
+  public static void SetAlliance() {
+    alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+  }
 }

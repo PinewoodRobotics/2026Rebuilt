@@ -11,7 +11,6 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearAcceleration;
 import edu.wpi.first.units.measure.LinearVelocity;
-import edu.wpi.first.units.measure.Voltage;
 
 /**
  * BBot (Spark) swerve constants.
@@ -20,19 +19,19 @@ import edu.wpi.first.units.measure.Voltage;
  */
 public final class SwerveConstantsSpark {
   public static final Translation2d rearLeftTranslation = new Translation2d(
-      0.38,
+      -0.38,
       0.38);
 
   public static final Translation2d rearRightTranslation = new Translation2d(
-      0.38,
+      -0.38,
       -0.38);
 
   public static final Translation2d frontRightTranslation = new Translation2d(
-      -0.38,
+      0.38,
       -0.38);
 
   public static final Translation2d frontLeftTranslation = new Translation2d(
-      -0.38,
+      0.38,
       0.38);
 
   public static final LinearVelocity kMaxSpeed = Units.MetersPerSecond.of(2);
@@ -101,12 +100,12 @@ public final class SwerveConstantsSpark {
   public static final double kDriveI = 0;
   public static final double kDriveD = 0;
   public static final double kDriveIZ = 0;
-  public static final Voltage kDriveV = Units.Volts.of(0.8); // Velocity feedforward - critical for velocity control
+  public static final double kDriveV = 0.8; // Velocity feedforward - critical for velocity control
   public static final double kDriveMinOutput = -1;
   public static final double kDriveMaxOutput = 1;
 
-  public static final double kDriveStatorLimit = 70; // TEMP
-  public static final Current kDriveSupplyLimit = Units.Amps.of(40); // TEMP
+  public static final Current kDriveStatorLimit = Units.Amps.of(70); // TEMP
+  public static final Current kDriveSupplyLimit = Units.Amps.of(30); // TEMP
 
   // PID values for the turning
   public static final double kTurnP = 1.5;

@@ -1,12 +1,12 @@
 package frc.robot.hardware;
 
-import org.littletonrobotics.junction.Logger;
-
 import com.kauailabs.navx.frc.AHRS;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.I2C;
-import frc.robot.util.CustomMath;
+import frc.robot.util.LocalMath;
 import frc4765.proto.sensor.GeneralSensorDataOuterClass.GeneralSensorData;
 import frc4765.proto.sensor.GeneralSensorDataOuterClass.SensorName;
 import frc4765.proto.sensor.Imu.ImuData;
@@ -24,11 +24,15 @@ public class AHRSGyro implements IGyroscopeLike, IDataClass {
   private double yOffset = 0;
   private double zOffset = 0;
   private double yawSoftOffsetDeg = 0.0;
+  private boolean hasYawRateSample = false;
+  private double lastYawRateSampleDeg = 0.0;
+  private long lastYawRateSampleNanos = 0L;
 
   public AHRSGyro(I2C.Port i2c_port_id) {
     this.m_gyro = new AHRS(i2c_port_id);
     m_gyro.reset();
     yawSoftOffsetDeg = 0.0;
+    resetYawRateState();
   }
 
   /**
@@ -50,146 +54,96 @@ public class AHRSGyro implements IGyroscopeLike, IDataClass {
     return m_gyro;
   }
 
-  @Override
-  public double[] getYPR() {
-    double yawAdj = CustomMath.wrapTo180(m_gyro.getYaw() + yawSoftOffsetDeg);
-    return new double[] {
-        yawAdj,
-        m_gyro.getPitch(),
-        m_gyro.getRoll(),
-    };
+  private void resetYawRateState() {
+    hasYawRateSample = false;
+    lastYawRateSampleDeg = 0.0;
+    lastYawRateSampleNanos = 0L;
   }
 
-  @Override
-  public void setPositionAdjustment(double x, double y, double z) {
-    xOffset = x;
-    yOffset = y;
-    zOffset = z;
-    m_gyro.resetDisplacement();
+  private double getRawYawDegrees() {
+    return m_gyro.getRotation2d().getDegrees();
   }
 
-  @Override
-  public double[] getLinearAccelerationXYZ() {
-    return new double[] {
-        m_gyro.getWorldLinearAccelX(),
-        m_gyro.getWorldLinearAccelY(),
-        m_gyro.getWorldLinearAccelZ(),
-    };
+  private double getAdjustedYawDegrees() {
+    return LocalMath.wrapTo180(getRawYawDegrees() + yawSoftOffsetDeg);
   }
 
-  @Override
-  public double[] getAngularVelocityXYZ() {
-    return new double[] { 0, 0, Math.toRadians(m_gyro.getRate()) };
+  private double getYawRateRadPerSec() {
+    final long nowNanos = System.nanoTime();
+    final double nowYawDeg = getAdjustedYawDegrees();
+
+    if (!hasYawRateSample) {
+      hasYawRateSample = true;
+      lastYawRateSampleDeg = nowYawDeg;
+      lastYawRateSampleNanos = nowNanos;
+      return 0.0;
+    }
+
+    final double dtS = (nowNanos - lastYawRateSampleNanos) * 1e-9;
+    final double deltaYawDeg = LocalMath.wrapTo180(nowYawDeg - lastYawRateSampleDeg);
+
+    lastYawRateSampleDeg = nowYawDeg;
+    lastYawRateSampleNanos = nowNanos;
+
+    if (dtS <= 1e-6) {
+      return 0.0;
+    }
+
+    return Math.toRadians(deltaYawDeg / dtS);
   }
 
-  @Override
-  public double[] getQuaternion() {
-    return new double[] {
-        m_gyro.getQuaternionW(),
-        m_gyro.getQuaternionX(),
-        m_gyro.getQuaternionY(),
-        m_gyro.getQuaternionZ(),
-    };
+  public void setYawDegrees(double yawDeg) {
+    yawSoftOffsetDeg = LocalMath.wrapTo180(yawDeg - getRawYawDegrees());
+    resetYawRateState();
   }
 
-  @Override
-  public double[] getLinearVelocityXYZ() {
-    return new double[] {
-        m_gyro.getVelocityX(),
-        m_gyro.getVelocityY(),
-        m_gyro.getVelocityZ(),
-    };
+  public double getYawDegrees() {
+    return getAdjustedYawDegrees();
   }
 
-  @Override
-  public double[] getPoseXYZ() {
-    return new double[] {
-        m_gyro.getDisplacementX() + xOffset,
-        m_gyro.getDisplacementY() + yOffset,
-        m_gyro.getDisplacementZ() + zOffset,
-    };
-  }
-
-  @Override
-  public void reset() {
-    m_gyro.reset();
-    yawSoftOffsetDeg = 0.0;
-  }
-
-  @Override
-  public void setAngleAdjustment(double angle) {
-    m_gyro.zeroYaw();
-    yawSoftOffsetDeg = -angle;
+  public double getYawRadians() {
+    return Math.toRadians(getYawDegrees());
   }
 
   public void setYawDeg(double targetDeg) {
-    setAngleAdjustment(targetDeg);
+    setYawDegrees(targetDeg);
   }
 
   public Rotation2d getNoncontinuousAngle() {
-    return Rotation2d.fromDegrees(CustomMath.wrapTo180(m_gyro.getAngle()));
+    return Rotation2d.fromDegrees(getYawDegrees());
   }
 
   @Override
   public byte[] getRawConstructedProtoData() {
-    var poseXYZ = getPoseXYZ();
-    var velocityXYZ = getLinearVelocityXYZ();
-    var accelerationXYZ = getLinearAccelerationXYZ();
-    var yaw = Rotation2d.fromDegrees(getYPR()[0]);
-    var angularVelocity = getAngularVelocityXYZ();
-
-    Logger.recordOutput("Imu/AngularVel", angularVelocity[2]);
-
-    Logger.recordOutput("Imu/yaw", yaw.getDegrees());
-
-    var position = Vector3.newBuilder()
-        .setX((float) poseXYZ[0])
-        .setY((float) poseXYZ[1])
-        .setZ((float) poseXYZ[2])
-        .build();
-
-    var direction = Vector3.newBuilder()
-        .setX((float) yaw.getCos())
-        .setY((float) -yaw.getSin())
-        .setZ(0)
-        .build();
-
-    var position2d = Position3d.newBuilder()
-        .setPosition(position)
-        .setDirection(direction)
-        .build();
-
-    var velocity = Vector3.newBuilder()
-        .setX((float) velocityXYZ[0])
-        .setY((float) velocityXYZ[1])
-        .setZ((float) velocityXYZ[2])
-        .build();
-
-    var acceleration = Vector3.newBuilder()
-        .setX((float) accelerationXYZ[0])
-        .setY((float) accelerationXYZ[1])
-        .setZ((float) accelerationXYZ[2])
-        .build();
-
-    var angularVel = Vector3.newBuilder().setX((float) angularVelocity[0]).setY((float) angularVelocity[1])
-        .setZ((float) angularVelocity[2])
-        .build();
-
-    var imuData = ImuData.newBuilder()
-        .setPosition(position2d)
-        .setVelocity(velocity)
-        .setAcceleration(acceleration)
-        .setAngularVelocityXYZ(angularVel)
-        .build();
-
-    var all = GeneralSensorData.newBuilder().setImu(imuData).setSensorName(SensorName.IMU).setSensorId("0")
-        .setTimestamp(System.currentTimeMillis()).setProcessingTimeMs(0);
-
-    return all.build().toByteArray();
+    return null;
   }
 
   @Override
   public String getPublishTopic() {
     return "imu/imu";
+  }
+
+  @Override
+  public ChassisSpeeds getVelocity() {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("Unimplemented method 'getVelocity'");
+  }
+
+  @Override
+  public ChassisSpeeds getAcceleration() {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("Unimplemented method 'getAcceleration'");
+  }
+
+  @Override
+  public Rotation3d getRotation() {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("Unimplemented method 'getRotation'");
+  }
+
+  @Override
+  public void resetRotation(Rotation3d newRotation) {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("Unimplemented method 'resetRotation'");
   }
 }

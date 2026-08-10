@@ -1,0 +1,70 @@
+---
+description: Rules for extending and using the robot lighting framework (LightsSubsystem, lighting effects, and polling-based multi-command orchestration)
+globs:
+  - src/main/java/frc/robot/subsystem/LightsSubsystem.java
+  - src/main/java/frc/robot/util/lighting/**
+  - src/main/java/frc/robot/command/lighting/**
+  - src/main/java/frc/robot/command/util/PollingCommand.java
+  - src/main/java/frc/robot/constant/LEDConstants.java
+  - src/main/java/frc/robot/RobotContainer.java
+alwaysApply: false
+---
+
+Use this rule when modifying robot lights code.
+
+## Core ownership model
+
+- `LightsSubsystem` is the only class that should write LED hardware frames.
+- `LightsEngine` owns effect composition, priorities, blend logic, diffing, and compression.
+- `PollingCommand` is the default command of `LightsSubsystem` and runs multiple lighting commands per loop.
+
+Do not add direct CANdle writes in lighting commands.
+
+## Multi-command model (important)
+
+The lights subsystem supports multiple independent lighting commands via polling:
+- Register commands with `LightsSubsystem.addLightsCommand(...)`.
+- Keep the default command as the internal `PollingCommand`.
+- Do not overwrite default command in `RobotContainer` for lights orchestration.
+
+If adding a new lighting behavior, make it a command in `src/main/java/frc/robot/command/lighting`.
+
+## Read-only command expectations
+
+Lighting commands should be read-only signal producers:
+- Read robot state (sensors, subsystem status, operator inputs).
+- Create effects in `initialize()`.
+- Update effect parameters in `execute()` (for example `setInput` / `setProgress`).
+- Cleanup with `removeEffect(...)` in `end(...)` when appropriate.
+
+They should not:
+- Mutate unrelated robot subsystem state.
+- Perform scheduling side effects.
+- Send raw hardware controls directly.
+
+## API conventions
+
+- Prefer named zones through `lights.rangeOf(LightZone.X)` over raw indices when possible.
+- Keep `EffectHandle<TInput>` references in command state; this is the stable id for updates/removal.
+- Prefer typed updates through `setInput(handle, value)` when an effect exposes a typed input.
+- For base layers: lower priority + `BlendMode.OVERWRITE`.
+- For overlays: higher priority + `BlendMode.ADD`.
+- Clamp-like behavior is already handled in effect/color classes; do not duplicate ad hoc clamp logic unless needed.
+
+## Render semantics to preserve
+
+- Effects are composited in ascending priority.
+- `OVERWRITE` replaces touched pixels only.
+- `ADD` channel-adds and clamps each channel to 255.
+- If frame diff is empty, no writes are emitted.
+- If segment count exceeds `LEDConstants.maxSolidWritesPerCycle`, adaptive compression must remain active.
+
+## Safe extension checklist
+
+When introducing a new effect type:
+1. Add effect class under `src/main/java/frc/robot/util/lighting/effects`.
+2. Extend `LightsSubsystem` with a typed `addX(...)` creation method.
+3. Choose an input type `T` for `LightEffect<T>` (`Void` if no runtime input), and wire `updateInput` if needed.
+4. Keep behavior deterministic with respect to `(ledIndex, nowSeconds)` inputs.
+5. Add/extend tests in `src/test/java/frc/robot/util/lighting`.
+6. Preserve existing priority/blend/segment invariants.

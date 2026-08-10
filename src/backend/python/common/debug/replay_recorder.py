@@ -4,6 +4,7 @@ import time as time_module
 from typing import Literal, Union
 import cv2
 import numpy as np
+import threading
 
 from backend.python.common.camera.image_utils import encode_image
 from backend.python.common.debug.logger import error, success, warning
@@ -90,9 +91,26 @@ class iPod:
         close_database()
 
 
-class Recorder(iPod):
+class Recorder(iPod, threading.Thread):
     def __init__(self, path: str):
-        super().__init__(path, "w")
+        iPod.__init__(self, path, "w")
+        threading.Thread.__init__(self, daemon=True)
+
+        self._buffer: list[dict[str, str | float | bytes]] = []
+        self._buffer_lock = threading.Lock()
+        self._last_flush_time = time_module.time()
+        self._batch_size = 128
+        self._flush_interval_s = 0.2
+        self._stop_event = threading.Event()
+        self._is_closed = False
+        self.start()
+
+    def run(self):
+        while not self._stop_event.is_set():
+            self.flush()
+            self._stop_event.wait(self._flush_interval_s)
+
+        self.flush()
 
     def record_output(self, key: str, data: T):
         if isinstance(data, np.ndarray):
@@ -129,9 +147,39 @@ class Recorder(iPod):
         self.write(key, "bytes", data)
 
     def write(self, key: str, data_type: str, data: bytes, time: float | None = None):
-        if time is None:
-            time = time_module.time()
-        ReplayDB.create(key=key, timestamp=time, data_type=data_type, data=data)
+        timestamp = time if time is not None else time_module.time()
+        with self._buffer_lock:
+            self._buffer.append(
+                {
+                    "key": key,
+                    "timestamp": timestamp,
+                    "data_type": data_type,
+                    "data": data,
+                }
+            )
+
+    def flush(self):
+        rows: list[dict[str, str | float | bytes]] = []
+        with self._buffer_lock:
+            if not self._buffer:
+                return
+            rows = self._buffer
+            self._buffer = []
+
+        db = ReplayDB._meta.database  # type: ignore
+        with db.atomic():
+            ReplayDB.insert_many(rows).execute()
+
+    def close(self):
+        if self._is_closed:
+            return
+
+        self._is_closed = True
+        self._stop_event.set()
+        if self.is_alive():
+            self.join()
+        self.flush()
+        super().close()
 
 
 class Player(iPod):
@@ -249,6 +297,10 @@ def get_next_key_replay(key: str) -> Replay | None:
 
 def record_output(key: str, data: T):
     global GLOBAL_INSTANCE
+
+    if isinstance(GLOBAL_INSTANCE, Player):
+        return
+
     if GLOBAL_INSTANCE is None:
         error("Replay recorder not initialized or in write mode")
         raise RuntimeError("Replay recorder not initialized or in write mode")

@@ -231,3 +231,10 @@ tasks.register("deployBackend") {
 tasks.jar.dependsOn(tasks.generateProto)
 tasks.compileJava.dependsOn(tasks.generateProto)
 tasks.compileJava.dependsOn(tasks.buildDynamicDeps)
+
+tasks.register("deployAll")
+tasks.deployAll.dependsOn(tasks.deploy)
+tasks.deployAll.dependsOn(tasks.deployBackend)
+
+tasks.register("generate")
+tasks.generate.dependsOn(tasks.generateProto)

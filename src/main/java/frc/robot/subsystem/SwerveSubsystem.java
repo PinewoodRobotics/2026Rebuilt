@@ -1,6 +1,7 @@
 package frc.robot.subsystem;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.littletonrobotics.junction.Logger;
 import org.pwrup.SwerveDrive;
@@ -9,28 +10,38 @@ import org.pwrup.util.Vec2;
 import org.pwrup.util.Wheel;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constant.BotConstants;
 import frc.robot.constant.BotConstants.RobotVariant;
 import frc.robot.constant.swerve.SwerveConstants;
-import frc.robot.hardware.AHRSGyro;
+import frc.robot.hardware.UnifiedGyro;
 import frc.robot.hardware.WheelMoverBase;
 import frc.robot.hardware.WheelMoverSpark;
 import frc.robot.hardware.WheelMoverTalonFX;
-import frc.robot.util.CustomMath;
+import frc.robot.util.AimPoint;
+import frc.robot.util.LocalMath;
+import lombok.Getter;
+import lombok.Setter;
 import pwrup.frc.core.hardware.sensor.IGyroscopeLike;
 
-/**
- * Minimal swerve subsystem: drives with joystick input through PWRUP
- * SwerveDrive.
- */
 public class SwerveSubsystem extends SubsystemBase {
   private static SwerveSubsystem self;
+
+  public enum DriveType {
+    FIELD_RELATIVE,
+    RAW,
+    DRIVER_RELATIVE,
+  }
+
+  private Rotation2d swerveRotationOffset;
+
   public final WheelMoverBase m_frontLeftSwerveModule;
   private final WheelMoverBase m_frontRightSwerveModule;
   private final WheelMoverBase m_rearLeftSwerveModule;
@@ -38,14 +49,20 @@ public class SwerveSubsystem extends SubsystemBase {
 
   private final SwerveDrive swerve;
   private final IGyroscopeLike m_gyro;
-  private double gyroOffset = 0;
-  private boolean shouldWork = true;
-
   private final SwerveDriveKinematics kinematics;
 
+  @Setter
+  private boolean shouldWork = true;
+  @Getter
+  private boolean isGpsAssist = false;
+
   public static SwerveSubsystem GetInstance() {
+    return GetInstance(UnifiedGyro.GetInstance());
+  }
+
+  public static SwerveSubsystem GetInstance(IGyroscopeLike gyro) {
     if (self == null) {
-      self = new SwerveSubsystem(AHRSGyro.GetInstance());
+      self = new SwerveSubsystem(gyro);
     }
 
     return self;
@@ -53,7 +70,9 @@ public class SwerveSubsystem extends SubsystemBase {
 
   public SwerveSubsystem(IGyroscopeLike gyro) {
     this.m_gyro = gyro;
+    this.swerveRotationOffset = new Rotation2d();
     final var c = SwerveConstants.INSTANCE;
+    this.isGpsAssist = true;
 
     if (BotConstants.robotType == RobotVariant.BBOT) {
       this.m_frontLeftSwerveModule = new WheelMoverSpark(
@@ -148,15 +167,6 @@ public class SwerveSubsystem extends SubsystemBase {
         c.rearRightTranslation);
   }
 
-  public void stop() {
-    driveRaw(new ChassisSpeeds(0, 0, 0));
-  }
-
-  public enum DriveType {
-    GYRO_RELATIVE,
-    RAW,
-  }
-
   public void drive(ChassisSpeeds speeds, DriveType driveType) {
     if (!shouldWork) {
       stop();
@@ -164,8 +174,11 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     switch (driveType) {
-      case GYRO_RELATIVE:
+      case FIELD_RELATIVE:
         driveFieldRelative(speeds);
+        break;
+      case DRIVER_RELATIVE:
+        driveDriverRelative(speeds);
         break;
       case RAW:
         driveRaw(speeds);
@@ -176,22 +189,28 @@ public class SwerveSubsystem extends SubsystemBase {
     }
   }
 
-  public void driveRaw(ChassisSpeeds speeds) {
-    var actualSpeeds = toSwerveOrientation(speeds);
-    swerve.driveNonRelative(actualSpeeds);
+  public void stop() {
+    driveRaw(new ChassisSpeeds(0, 0, 0));
   }
 
-  public void driveFieldRelative(ChassisSpeeds speeds) {
-    var actualSpeeds = toSwerveOrientation(speeds);
-    swerve.driveWithGyro(actualSpeeds, new Rotation2d(getSwerveGyroAngle()));
+  private void driveRaw(ChassisSpeeds speeds) {
+    swerve.driveNonRelative(speeds);
   }
 
-  public static ChassisSpeeds fromPercentToVelocity(Vec2 percentXY, double rotationPercent) {
-    final var c = SwerveConstants.INSTANCE;
-    double vx = clamp(percentXY.getX(), -1, 1) * c.kMaxSpeed.in(Units.MetersPerSecond);
-    double vy = clamp(percentXY.getY(), -1, 1) * c.kMaxSpeed.in(Units.MetersPerSecond);
-    double omega = clamp(rotationPercent, -1, 1) * c.kMaxTurnSpeed.in(Units.RadiansPerSecond);
-    return new ChassisSpeeds(vx, vy, omega);
+  private void driveFieldRelative(ChassisSpeeds speeds) {
+    swerve.driveWithGyro(speeds, getFieldRelativeRotation());
+  }
+
+  private void driveDriverRelative(ChassisSpeeds speeds) {
+    swerve.driveWithGyro(speeds, getSwerveRotationWithOffset());
+  }
+
+  private Rotation2d getFieldRelativeRotation() {
+    return m_gyro.getRotation().toRotation2d();
+  }
+
+  private Rotation2d getSwerveRotationWithOffset() {
+    return swerveRotationOffset.minus(getFieldRelativeRotation());
   }
 
   public SwerveModulePosition[] getSwerveModulePositions() {
@@ -201,10 +220,6 @@ public class SwerveSubsystem extends SubsystemBase {
         m_rearLeftSwerveModule.getPosition(),
         m_rearRightSwerveModule.getPosition(),
     };
-  }
-
-  public ChassisSpeeds getGlobalChassisSpeeds(Rotation2d heading) {
-    return ChassisSpeeds.fromRobotRelativeSpeeds(getChassisSpeeds(), heading);
   }
 
   public ChassisSpeeds getChassisSpeeds() {
@@ -224,38 +239,38 @@ public class SwerveSubsystem extends SubsystemBase {
     };
   }
 
-  public void resetGyro() {
-    resetGyro(0);
+  public void resetDriverRelative() {
+    resetDriverRelative(getFieldRelativeRotation());
   }
 
-  public void resetGyro(double offset) {
-    gyroOffset = -m_gyro.getYaw() + offset;
-  }
-
-  public double getSwerveGyroAngle() {
-    return Math.toRadians(CustomMath.wrapTo180(m_gyro.getYaw() + gyroOffset));
-  }
-
-  public void setShouldWork(boolean value) {
-    this.shouldWork = value;
-    if (!shouldWork) {
-      stop(); // make sure it applies immediately
-    }
-  }
-
-  private static double clamp(double v, double min, double max) {
-    return Math.max(min, Math.min(max, v));
-  }
-
-  private static ChassisSpeeds toSwerveOrientation(ChassisSpeeds target) {
-    return new ChassisSpeeds(
-        -target.vxMetersPerSecond,
-        target.vyMetersPerSecond,
-        target.omegaRadiansPerSecond);
+  public void resetDriverRelative(Rotation2d newCur) {
+    swerveRotationOffset = newCur;
   }
 
   @Override
   public void periodic() {
     Logger.recordOutput("SwerveSubsystem/swerve/states", getSwerveModuleStates());
+    Logger.recordOutput("SwerveSubsystem/swerve/velocity", getKinematics().toChassisSpeeds(getSwerveModuleStates()));
+    Logger.recordOutput("SwerveSubsystem/AdjustingVelocity", isGpsAssist);
+  }
+
+  public static ChassisSpeeds fromPercentToVelocity(Vec2 percentXY, double rotationPercent) {
+    return fromPercentToVelocity(
+        percentXY, rotationPercent,
+        SwerveConstants.kRobotMaxSpeed,
+        SwerveConstants.kRobotMaxTurnSpeed);
+  }
+
+  public static ChassisSpeeds fromPercentToVelocity(Vec2 percentXY, double rotationPercent, LinearVelocity maxSpeed,
+      AngularVelocity maxTurnSpeed) {
+    double vx = LocalMath.clamp(percentXY.getX(), -1, 1) * maxSpeed.in(Units.MetersPerSecond);
+    double vy = LocalMath.clamp(percentXY.getY(), -1, 1) * maxSpeed.in(Units.MetersPerSecond);
+    double omega = LocalMath.clamp(rotationPercent, -1, 1)
+        * maxTurnSpeed.in(Units.RadiansPerSecond);
+    return new ChassisSpeeds(vx, vy, omega);
+  }
+
+  public void setGpsAssist(boolean isGpsAssist) {
+    this.isGpsAssist = isGpsAssist;
   }
 }

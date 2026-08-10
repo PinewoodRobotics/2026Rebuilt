@@ -1,32 +1,10 @@
-import { MatrixUtil, VectorUtil } from "../../util/math";
+import { ImuConfig } from "generated/thrift/gen-nodejs/pos_extrapolator_types";
 
-export const nav_x_config = {
-  "0": {
-    use_position: false,
-    use_rotation_absolute: true,
-    use_rotation_velocity: true,
+export const nav_x_config: { [k: string]: ImuConfig } = {
+  "41": {
     use_velocity: false,
-    imu_robot_position: {
-      position: VectorUtil.fromArray([0.0, 0.0, 0.0]),
-      rotation: MatrixUtil.buildMatrix([
-        [1, 0, 0],
-        [0, 1, 0],
-        [0, 0, 1],
-      ]),
-    },
   },
-  "1": {
-    use_position: false,
-    use_rotation_absolute: true,
-    use_rotation_velocity: true,
+  "40": {
     use_velocity: false,
-    imu_robot_position: {
-      position: VectorUtil.fromArray([0.0, 0.0, 0.0]),
-      rotation: MatrixUtil.buildMatrix([
-        [1, 0, 0],
-        [0, 1, 0],
-        [0, 0, 1],
-      ]),
-    },
   },
 };

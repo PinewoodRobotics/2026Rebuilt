@@ -17,6 +17,7 @@ from backend.python.common.config import from_uncertainty_config
 from backend.generated.thrift.config.ttypes import Config
 import importlib
 import importlib.util
+import importlib.machinery
 
 self_name: None | str = None
 
@@ -58,8 +59,6 @@ class BasicSystemConfig(BaseModel):
 
 class SystemStatus(Enum):
     PRODUCTION = "production"
-    DEVELOPMENT_LOCAL = "development_local"
-    DEVELOPMENT = "development_remote"
     SIMULATION = "simulation"
 
 
@@ -111,8 +110,10 @@ def get_config_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def get_system_name(args: argparse.Namespace = get_config_parser().parse_args()) -> str:
+def get_system_name(args: argparse.Namespace | None = None) -> str:
     global self_name
+    if args is None:
+        args, _ = get_config_parser().parse_known_args()
     if self_name is None:
         with open(args.name_file_path, "r") as f:
             self_name = f.read().strip()
@@ -121,8 +122,10 @@ def get_system_name(args: argparse.Namespace = get_config_parser().parse_args())
 
 
 def load_basic_system_config(
-    args: argparse.Namespace = get_config_parser().parse_args(),
+    args: argparse.Namespace | None = None,
 ) -> BasicSystemConfig:
+    if args is None:
+        args, _ = get_config_parser().parse_known_args()
     system_name = get_system_name(args)
 
     with open(args.basic_system_config_file_path, "r") as f:
@@ -135,7 +138,7 @@ def load_basic_system_config(
 
 
 def load_configs() -> tuple[BasicSystemConfig, Config]:
-    args = get_config_parser().parse_args()
+    args, _ = get_config_parser().parse_known_args()
     basic_system_config = load_basic_system_config(args)
     config = from_uncertainty_config(args.config_file_path)
     if config is None or basic_system_config is None:
@@ -146,31 +149,68 @@ def load_configs() -> tuple[BasicSystemConfig, Config]:
 
 def get_glibc_version() -> str:
     """
-    Returns the system's glibc version as a string, e.g., "2.35".
+    Returns the system's glibc version string, e.g., "2.35-0ubuntu3.8"
+    Strips any extraneous parentheses or trailing characters such as ')'.
+    In the special case of ldd (Ubuntu GLIBC 2.35-0ubuntu3.8) 2.35,
+    will return just "2.35".
     """
+    import re
+
     try:
-        # Parse output from ldd --version (first line, after 'ldd (GNU libc) X.Y[.Z]')
         output = subprocess.check_output(
             ["ldd", "--version"], encoding="utf-8", errors="ignore"
         )
-        for line in output.splitlines():
-            if "GNU libc" in line or "GLIBC" in line or "GLIBC" in line:
-                parts = line.strip().split()
-                for part in parts:
-                    if part[0].isdigit():
-                        return part
-            if line.strip() and line.strip()[0].isdigit():
-                vers_part = line.strip().split()[0]
-                if vers_part[0].isdigit():
-                    return vers_part
-        # Fallback: try to find a digit group in first line
-        first_line = output.splitlines()[0]
-        for s in first_line.split():
-            if s[0].isdigit():
-                return s
+        lines = output.splitlines()
+
+        # Preferred pattern: match ldd (...) <version>
+        for line in lines:
+            # Pattern 1: ldd (Ubuntu GLIBC 2.35-0ubuntu3.8) 2.35
+            #             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^
+            m = re.match(r"^ldd\s+\((.*?)\)\s+([0-9\.]+)", line)
+            if m:
+                # group(2) is the version after the paren
+                return m.group(2)
+
+            # Pattern 2: 'GLIBC 2.35-0ubuntu3.8'
+            m2 = re.search(
+                r"(?:GLIBC|GNU libc)[^\d]*([0-9]+(?:\.[0-9]+)*(?:-[\w\.]+)?)", line
+            )
+            if m2:
+                # Only keep the pure version number:
+                # If m2.group(1) looks like '2.35-0ubuntu3.8', try to extract the major.minor part
+                version = m2.group(1)
+                # Extract first digit dot digit pattern
+                core = re.match(r"^([0-9]+\.[0-9]+)", version)
+                if core:
+                    return core.group(1)
+                return version
+
+            # Pattern 3: fallback paren group with version inside
+            m3 = re.search(r"\(([^)]*\d[^)]*)\)", line)
+            if m3:
+                inner = m3.group(1)
+                for piece in inner.split():
+                    # Find the first piece that looks like a version
+                    core = re.match(r"^([0-9]+\.[0-9]+)", piece)
+                    if core:
+                        return core.group(1)
+                    if any(ch.isdigit() for ch in piece):
+                        return piece.rstrip(")")
+                # If nothing else, just return the whole group
+                return inner.rstrip(")")
+
+        # Final fallback: scan all words in first line for digit-dot-digit pattern
+        if lines:
+            for word in lines[0].split():
+                core = re.match(r"^([0-9]+\.[0-9]+)", word)
+                if core:
+                    return core.group(1)
+                if any(ch.isdigit() for ch in word):
+                    return word.rstrip(")")
+
     except Exception:
         pass
-    # As a fallback, try to load from libc.so version string
+    # Try libc.so.6 version as last resort
     try:
         import ctypes
 
@@ -198,37 +238,107 @@ def setup_shared_library_python_extension(
     *,
     module_name: str,
     py_lib_searchpath: str,
-    module_basename: str | None = None,
+    module_basename: str,
 ) -> ModuleType:
     binary_path = get_local_binary_path()
+    print(f"[Loader] binary_path: {binary_path}")
 
-    module_basename = module_basename if module_basename else module_name
+    search_path = os.path.join(binary_path, str(py_lib_searchpath))
+    dir_path = search_path
+    explicit_extension_file: str | None = None
 
-    module_parent = str(
-        os.path.dirname(os.path.join(binary_path, str(py_lib_searchpath)))
-    )
-    if module_parent not in sys.path:
-        sys.path.insert(0, module_parent)
+    # `py_lib_searchpath` is typically a directory like "cpp/cuda-tags-lib/".
+    # Keep that directory, do not strip to parent.
+    if os.path.isfile(search_path):
+        explicit_extension_file = search_path
+        dir_path = os.path.dirname(search_path)
 
-    module_path = os.path.join(str(py_lib_searchpath), module_basename)
+    print(f"[Loader] module_parent: {dir_path}")
+
+    if dir_path not in sys.path:
+        sys.path.insert(0, dir_path)
+        print(f"[Loader] Added '{dir_path}' to sys.path")
+
+    # Ensure native dependency lookup includes the module folder.
+    current_ld_library_path = os.environ.get("LD_LIBRARY_PATH", "")
+    ld_entries = [p for p in current_ld_library_path.split(":") if p]
+    if dir_path not in ld_entries:
+        os.environ["LD_LIBRARY_PATH"] = ":".join([dir_path, *ld_entries])
+        print(f"[Loader] Prepended '{dir_path}' to LD_LIBRARY_PATH")
+
+    print(f"[Loader] module_search_path: {search_path}")
+
     extension_file: str | None = None
-    dir_path = os.path.dirname(module_path)
-    base_stem = os.path.basename(module_path)
-    if os.path.isdir(dir_path):
+
+    print(f"[Loader] dir_path: {dir_path}, base_stem: {module_basename}")
+
+    if explicit_extension_file is not None:
+        extension_file = explicit_extension_file
+        print(f"[Loader] Using explicit extension file: {extension_file}")
+    elif os.path.isdir(dir_path):
+        candidates: list[str] = []
+        valid_suffixes = tuple(importlib.machinery.EXTENSION_SUFFIXES)
         for fname in os.listdir(dir_path):
+            print(f"[Loader] Candidate extension file: {fname}")
             if (
-                fname.startswith(base_stem)
+                fname.startswith(module_basename)
                 and (fname.endswith(".so") or fname.endswith(".pyd"))
                 and os.path.isfile(os.path.join(dir_path, fname))
             ):
-                extension_file = os.path.join(dir_path, fname)
-                break
+                # Only accept extension suffixes compatible with the current interpreter ABI.
+                if fname.endswith(valid_suffixes):
+                    candidates.append(os.path.join(dir_path, fname))
+                else:
+                    print(
+                        f"[Loader] Skipping incompatible extension suffix for current Python: {fname}"
+                    )
 
+        def suffix_rank(path: str) -> int:
+            # Prefer the most specific suffix for the running Python (e.g. cpython-312...).
+            name = os.path.basename(path)
+            for idx, suffix in enumerate(importlib.machinery.EXTENSION_SUFFIXES):
+                if name.endswith(suffix):
+                    return idx
+            return len(importlib.machinery.EXTENSION_SUFFIXES)
+
+        if candidates:
+            candidates.sort(key=suffix_rank)
+            extension_file = candidates[0]
+            print(f"[Loader] Selected extension_file: {extension_file}")
+    else:
+        print(f"[Loader] WARNING: Directory '{dir_path}' does not exist")
+
+    print(f"[Loader] extension_file to import: {extension_file}")
+    if extension_file is None:
+        py_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
+        raise ImportError(
+            f"Could not find compatible extension module '{module_basename}' in '{dir_path}' "
+            f"for Python {py_ver}. Compatible suffixes: {importlib.machinery.EXTENSION_SUFFIXES}"
+        )
     spec = importlib.util.spec_from_file_location(module_name, extension_file)
     if spec is None or spec.loader is None:
         raise ImportError(
             f"Failed to create spec for {module_name} from {extension_file}"
         )
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    try:
+        spec.loader.exec_module(module)
+    except ImportError as e:
+        ldd_missing_lines: list[str] = []
+        try:
+            ldd_output = subprocess.check_output(
+                ["ldd", extension_file], encoding="utf-8", errors="ignore"
+            )
+            for line in ldd_output.splitlines():
+                if "not found" in line:
+                    ldd_missing_lines.append(line.strip())
+        except Exception:
+            pass
+
+        if ldd_missing_lines:
+            raise ImportError(
+                f"{e}. Missing shared library deps for {extension_file}: "
+                + "; ".join(ldd_missing_lines)
+            ) from e
+        raise
     return module

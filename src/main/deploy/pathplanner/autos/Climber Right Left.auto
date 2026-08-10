@@ -1,0 +1,75 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "deadline",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Climber Right Left"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ContinuousAimCommand"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ContinuousShooterCommand"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "IntakeBottomCommand"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "MoveClimberUp"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "IntakeTopCommand"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Climber Right Close"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "MoveClimberDown"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": false,
+  "folder": "Climber",
+  "choreoAuto": false
+}
