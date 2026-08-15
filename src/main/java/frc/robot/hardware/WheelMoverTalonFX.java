@@ -42,9 +42,11 @@ public class WheelMoverTalonFX extends WheelMoverBase {
   private BaseStatusSignal driveVoltsSignal;
   private BaseStatusSignal driveStatorSignal;
   private BaseStatusSignal driveSupplySignal;
+  private BaseStatusSignal driveVelocitySignal;
   private BaseStatusSignal turnVoltsSignal;
   private BaseStatusSignal turnStatorSignal;
   private BaseStatusSignal turnSupplySignal;
+  private BaseStatusSignal turnVelocitySignal;
 
   public WheelMoverTalonFX(
       int driveMotorChannel,
@@ -136,15 +138,18 @@ public class WheelMoverTalonFX extends WheelMoverBase {
       driveVoltsSignal = m_driveMotor.getMotorVoltage(false);
       driveStatorSignal = m_driveMotor.getStatorCurrent(false);
       driveSupplySignal = m_driveMotor.getSupplyCurrent(false);
+      driveVelocitySignal = m_driveMotor.getVelocity(false);
       turnVoltsSignal = m_turnMotor.getMotorVoltage(false);
       turnStatorSignal = m_turnMotor.getStatorCurrent(false);
       turnSupplySignal = m_turnMotor.getSupplyCurrent(false);
+      turnVelocitySignal = m_turnMotor.getVelocity(false);
 
-      // Stator and supply current share the SupplyAndTemp status frame, so raising the
-      // rate on stator raises it for both; passing supply too would be a no-op. Motor
-      // voltage is a separate frame (MotorOutput) already published at 100 Hz.
+      // Velocity is deliberately absent: it shares a frame with position, which odometry
+      // reads, and pinning it here would cap that frame at kMotorTelemetryHz.
       BaseStatusSignal.setUpdateFrequencyForAll(
-          SwerveConstants.kMotorTelemetryHz, driveStatorSignal, turnStatorSignal);
+          SwerveConstants.kMotorTelemetryHz,
+          driveVoltsSignal, driveStatorSignal, driveSupplySignal,
+          turnVoltsSignal, turnStatorSignal, turnSupplySignal);
     }
   }
 
@@ -263,23 +268,24 @@ public class WheelMoverTalonFX extends WheelMoverBase {
 
     if (SwerveConstants.kLogMotorTelemetry) {
       BaseStatusSignal.refreshAll(
-          driveVoltsSignal, driveStatorSignal, driveSupplySignal,
-          turnVoltsSignal, turnStatorSignal, turnSupplySignal);
+          driveVoltsSignal, driveStatorSignal, driveSupplySignal, driveVelocitySignal,
+          turnVoltsSignal, turnStatorSignal, turnSupplySignal, turnVelocitySignal);
 
-      // Volts and amps arrive on separate status frames at different rates, so within one
-      // loop the pair can be up to a frame apart -- significant against the 78 ms time
-      // constant being identified. Log each frame's timestamp so the fit can align them.
       Logger.recordOutput(base + "driveAppliedVolts", driveVoltsSignal.getValueAsDouble());
       Logger.recordOutput(base + "driveStatorAmps", driveStatorSignal.getValueAsDouble());
       Logger.recordOutput(base + "driveSupplyAmps", driveSupplySignal.getValueAsDouble());
-      Logger.recordOutput(base + "driveVoltsTimestamp", driveVoltsSignal.getTimestamp().getTime());
-      Logger.recordOutput(base + "driveAmpsTimestamp", driveStatorSignal.getTimestamp().getTime());
+      Logger.recordOutput(base + "driveVelocityRps", driveVelocitySignal.getValueAsDouble());
+      Logger.recordOutput(base + "driveVoltsFrameTimestamp", driveVoltsSignal.getTimestamp().getTime());
+      Logger.recordOutput(base + "driveAmpsFrameTimestamp", driveStatorSignal.getTimestamp().getTime());
+      Logger.recordOutput(base + "driveVelocityFrameTimestamp", driveVelocitySignal.getTimestamp().getTime());
 
       Logger.recordOutput(base + "turnAppliedVolts", turnVoltsSignal.getValueAsDouble());
       Logger.recordOutput(base + "turnStatorAmps", turnStatorSignal.getValueAsDouble());
       Logger.recordOutput(base + "turnSupplyAmps", turnSupplySignal.getValueAsDouble());
-      Logger.recordOutput(base + "turnVoltsTimestamp", turnVoltsSignal.getTimestamp().getTime());
-      Logger.recordOutput(base + "turnAmpsTimestamp", turnStatorSignal.getTimestamp().getTime());
+      Logger.recordOutput(base + "turnVelocityRps", turnVelocitySignal.getValueAsDouble());
+      Logger.recordOutput(base + "turnVoltsFrameTimestamp", turnVoltsSignal.getTimestamp().getTime());
+      Logger.recordOutput(base + "turnAmpsFrameTimestamp", turnStatorSignal.getTimestamp().getTime());
+      Logger.recordOutput(base + "turnVelocityFrameTimestamp", turnVelocitySignal.getTimestamp().getTime());
     }
   }
 

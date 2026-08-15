@@ -28,7 +28,7 @@ public final class SwerveConstants {
 
   public static final double kShootingSpeedMultiplier = 1.0;
 
-  /** Per-module volts/amps logging for offline motor-model identification; adds CAN load, so off for competition. */
+  /** Raises TalonFX status frame rates and costs CAN bandwidth; keep off at competition. */
   public static final boolean kLogMotorTelemetry = false;
   public static final double kMotorTelemetryHz = 50.0;
 
