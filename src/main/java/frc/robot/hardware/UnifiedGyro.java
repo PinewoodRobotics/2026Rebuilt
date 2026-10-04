@@ -10,8 +10,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constant.HardwareConstants;
 import frc.robot.subsystem.GlobalPosition;
 import pwrup.frc.core.hardware.sensor.IGyroscopeLike;
-import pwrup.frc.core.online.PublicationSubsystem;
-import pwrup.frc.core.proto.IDataClass;
 
 public class UnifiedGyro extends SubsystemBase implements IGyroscopeLike {
   private static UnifiedGyro instance;
@@ -73,19 +71,6 @@ public class UnifiedGyro extends SubsystemBase implements IGyroscopeLike {
       default:
         throw new IllegalArgumentException("Invalid robot main gyro: " + HardwareConstants.kRobotMainGyro);
     }
-  }
-
-  /**
-   * Registers all contained gyros that implement IDataClass with the publication
-   * subsystem, so each is published separately with its own sensor ID.
-   */
-  public static void Register() {
-    UnifiedGyro unified = GetInstance();
-    IDataClass[] dataClasses = unified.gyros.stream()
-        .filter(IDataClass.class::isInstance)
-        .map(IDataClass.class::cast)
-        .toArray(IDataClass[]::new);
-    PublicationSubsystem.addDataClasses(dataClasses);
   }
 
   @Override

@@ -1,4 +1,0 @@
----
-globs: src/backend/**
-alwaysApply: false
----

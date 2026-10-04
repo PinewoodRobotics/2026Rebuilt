@@ -7,15 +7,9 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.I2C;
 import frc.robot.util.LocalMath;
-import frc4765.proto.sensor.GeneralSensorDataOuterClass.GeneralSensorData;
-import frc4765.proto.sensor.GeneralSensorDataOuterClass.SensorName;
-import frc4765.proto.sensor.Imu.ImuData;
-import frc4765.proto.util.Position.Position3d;
-import frc4765.proto.util.Vector.Vector3;
 import pwrup.frc.core.hardware.sensor.IGyroscopeLike;
-import pwrup.frc.core.proto.IDataClass;
 
-public class AHRSGyro implements IGyroscopeLike, IDataClass {
+public class AHRSGyro implements IGyroscopeLike {
   private static AHRSGyro instance;
   private static I2C.Port defaultPort = I2C.Port.kMXP;
 
@@ -111,16 +105,6 @@ public class AHRSGyro implements IGyroscopeLike, IDataClass {
 
   public Rotation2d getNoncontinuousAngle() {
     return Rotation2d.fromDegrees(getYawDegrees());
-  }
-
-  @Override
-  public byte[] getRawConstructedProtoData() {
-    return null;
-  }
-
-  @Override
-  public String getPublishTopic() {
-    return "imu/imu";
   }
 
   @Override

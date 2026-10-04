@@ -15,7 +15,6 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.command.shooting.ContinuousShooter;
 import frc.robot.constant.BotConstants;
-import frc.robot.Robot;
 import frc.robot.RobotContainer;
 
 public class MatchStatusSubsystem extends SubsystemBase {
@@ -54,7 +53,6 @@ public class MatchStatusSubsystem extends SubsystemBase {
   private final BooleanPublisher autoAlignReadyPublisher;
   private final BooleanPublisher driverOverridePublisher;
   private final IntegerPublisher aimModePublisher;
-  private final StringPublisher cameraTopicPublisher;
 
   public static MatchStatusSubsystem GetInstance() {
     return instance;
@@ -96,7 +94,6 @@ public class MatchStatusSubsystem extends SubsystemBase {
     autoAlignReadyPublisher = stateTable.getBooleanTopic("auto_align_ready").publish();
     driverOverridePublisher = stateTable.getBooleanTopic("driver_override").publish();
     aimModePublisher = stateTable.getIntegerTopic("aim_mode").publish();
-    cameraTopicPublisher = stateTable.getStringTopic("camera_topic").publish();
   }
 
   @Override
@@ -105,7 +102,6 @@ public class MatchStatusSubsystem extends SubsystemBase {
         RobotController.getTime(),
         System.currentTimeMillis(),
         DriverStation.isDSAttached(),
-        Robot.getCommunicationClient().isConnected(),
         DriverStation.isEnabled(),
         DriverStation.isAutonomousEnabled(),
         DriverStation.isTeleopEnabled(),
@@ -144,7 +140,6 @@ public class MatchStatusSubsystem extends SubsystemBase {
     autoAlignReadyPublisher.set(state.autoAlignReady());
     driverOverridePublisher.set(state.driverOverride());
     aimModePublisher.set(state.aimMode().ntValue());
-    cameraTopicPublisher.set(state.cameraTopic());
 
     Logger.recordOutput("MatchStatus/seq", (double) state.seq());
     Logger.recordOutput("MatchStatus/robotTimeUs", (double) state.robotTimeUs());
@@ -173,6 +168,5 @@ public class MatchStatusSubsystem extends SubsystemBase {
     Logger.recordOutput("MatchStatus/autoAlignReady", state.autoAlignReady());
     Logger.recordOutput("MatchStatus/driverOverride", state.driverOverride());
     Logger.recordOutput("MatchStatus/aimMode", (int) state.aimMode().ntValue());
-    Logger.recordOutput("MatchStatus/cameraTopic", state.cameraTopic());
   }
 }
