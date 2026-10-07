@@ -71,7 +71,7 @@ public class IntakeCommand extends Command {
       } else if (shouldPulseExtake && IntakeConstants.kShouldWeAreWeGoingToPulseTheIntakeConstantVariable) {
         m_intakeSubsystem.runIntakeMotor(0);
       } else {
-        m_intakeSubsystem.runIntakeMotor(IntakeConstants.intakeMotorSpeed);
+        m_intakeSubsystem.runIntakeMotor(m_intakeSubsystem.getIntakeSpeed());
       }
 
       // m_indexSubsystem.runMotor(isExtake ? -IndexConstants.kIndexMotorSpeed :
