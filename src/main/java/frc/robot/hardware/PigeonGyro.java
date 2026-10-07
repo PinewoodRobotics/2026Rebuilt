@@ -14,15 +14,9 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constant.BotConstants;
 import frc.robot.constant.HardwareConstants;
 import frc.robot.constant.HardwareConstants.PigeonConfig;
-import frc4765.proto.sensor.GeneralSensorDataOuterClass.GeneralSensorData;
-import frc4765.proto.sensor.GeneralSensorDataOuterClass.SensorName;
-import frc4765.proto.sensor.Imu.ImuData;
-import frc4765.proto.util.Position.Position3d;
-import frc4765.proto.util.Vector.Vector3;
 import pwrup.frc.core.hardware.sensor.IGyroscopeLike;
-import pwrup.frc.core.proto.IDataClass;
 
-public class PigeonGyro extends SubsystemBase implements IGyroscopeLike, IDataClass {
+public class PigeonGyro extends SubsystemBase implements IGyroscopeLike {
   private static PigeonGyro instance;
 
   private final Pigeon2 pigeon;
@@ -82,67 +76,6 @@ public class PigeonGyro extends SubsystemBase implements IGyroscopeLike, IDataCl
     if (!status.isOK()) {
       DriverStation.reportWarning("Failed to apply Pigeon mount pose: " + status, false);
     }
-  }
-
-  @Override
-  public byte[] getRawConstructedProtoData() {
-    Rotation2d rotation = getRotation().toRotation2d();
-    ChassisSpeeds velocity = getVelocity();
-    ChassisSpeeds acceleration = getAcceleration();
-
-    var position = Vector3.newBuilder()
-        .setX(0.0f)
-        .setY(0.0f)
-        .setZ(0.0f)
-        .build();
-
-    var direction = Vector3.newBuilder()
-        .setX((float) rotation.getCos())
-        .setY((float) rotation.getSin())
-        .setZ(0)
-        .build();
-
-    var position2d = Position3d.newBuilder()
-        .setPosition(position)
-        .setDirection(direction)
-        .build();
-
-    var vel = Vector3.newBuilder()
-        .setX((float) velocity.vxMetersPerSecond)
-        .setY((float) velocity.vyMetersPerSecond)
-        .setZ(0.0f)
-        .build();
-
-    var acc = Vector3.newBuilder()
-        .setX((float) acceleration.vxMetersPerSecond)
-        .setY((float) acceleration.vyMetersPerSecond)
-        .setZ(0.0f)
-        .build();
-
-    var angularVel = Vector3.newBuilder().setX((float) 0.0).setY((float) 0.0)
-        .setZ((float) velocity.omegaRadiansPerSecond)
-        .build();
-
-    var imuData = ImuData.newBuilder()
-        .setPosition(position2d)
-        .setVelocity(vel)
-        .setAcceleration(acc)
-        .setAngularVelocityXYZ(angularVel)
-        .build();
-
-    var all = GeneralSensorData.newBuilder()
-        .setImu(imuData)
-        .setSensorName(SensorName.IMU)
-        .setSensorId(String.valueOf(hardwareConfig.canId()))
-        .setTimestamp(System.currentTimeMillis())
-        .setProcessingTimeMs(0);
-
-    return all.build().toByteArray();
-  }
-
-  @Override
-  public String getPublishTopic() {
-    return "imu/imu";
   }
 
   @Override

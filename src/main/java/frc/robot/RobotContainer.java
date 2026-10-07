@@ -44,7 +44,6 @@ import frc.robot.util.AimPoint;
 import pwrup.frc.core.controller.FlightModule;
 import pwrup.frc.core.controller.FlightStick;
 import pwrup.frc.core.controller.OperatorPanel;
-import pwrup.frc.core.online.PublicationSubsystem;
 
 public class RobotContainer {
   private static BooleanSupplier shooterArmedSupplierForHud = () -> false;
@@ -58,8 +57,6 @@ public class RobotContainer {
 
   public RobotContainer() {
     shooterArmedSupplierForHud = () -> m_operatorPanel.metalSwitchDown().getAsBoolean();
-    PublicationSubsystem.GetInstance(Robot.getCommunicationClient());
-
     GlobalPosition.GetInstance();
 
     UnifiedGyro.GetInstance();
@@ -71,7 +68,6 @@ public class RobotContainer {
     IndexSubsystem.GetInstance();
     IntakeSubsystem.GetInstance();
 
-    // Initialize publication subsystem for sending data to Pi
     MatchStatusSubsystem.GetInstance();
 
     var lights = LightsSubsystem.GetInstance();
@@ -87,9 +83,6 @@ public class RobotContainer {
     setClimberCommands();
 
     BotConstants.SetAlliance();
-
-    PublicationSubsystem.ClearAll();
-    PublicationSubsystem.addDataClass(OdometrySubsystem.GetInstance());
   }
 
   private void setSwerveCommands() {
@@ -120,7 +113,7 @@ public class RobotContainer {
           swerveSubsystem.resetDriverRelative(new Rotation2d());
         }));
 
-    // Reset gyro rotation everywhere (including backend with button)
+    // Reset gyro rotation everywhere
     m_operatorPanel.blackButton().whileTrue(Commands.run(() -> {
       var position = GlobalPosition.Get();
       if (position != null) {

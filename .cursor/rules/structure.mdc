@@ -1,48 +1,15 @@
 ---
-description: Figuring out the structure of the overall project: how the project pieces together the "front end" and the "backend" and how they can interact together
+description: Figuring out the structure of the overall project: how the Java robot code and the dynamically built vendor libraries fit together
 alwaysApply: false
 ---
 
-This repository is a **command-based FRC robot base** that stitches together Java robot code, TypeScript configuration, Python/Rust/CPP backend tooling, and dynamic vendor libraries.
+This repository is a **command-based FRC robot base**: Java robot code plus dynamically built vendor libraries.
 
-- **Java robot (on‑robot "frontend")**
+- **Java robot**
 
   - Lives under `src/main/java/frc/robot/**`.
   - Uses WPILib’s Command-Based framework plus AdvantageKit logging.
-  - At deploy time, it loads:
-    - A **Thrift‑encoded config blob** from `src/main/deploy/config`.
-    - **Protobuf‑generated Java classes** from `src/proto/**` (compiled during Gradle build).
-
-- **TypeScript config (authoring "frontend")**
-
-  - Authoring happens in `src/config/**` using TypeScript and generated Thrift types from `ThriftTsConfig/generated/thrift`.
-  - `src/config/index.ts` builds a `Config` object that describes cameras, LiDAR, AprilTags, pose extrapolator, pathfinding, replay, etc.
-  - During `./gradlew build` (or any deploy task), Gradle runs `npm run config -- --dir src/config`, which:
-    - Uses the **ThriftTsConfig** workspace to type‑check and serialize `Config`.
-    - Emits a **binary Thrift payload** into `src/main/deploy/config` that the Java robot reads at runtime.
-
-- **Backend build/deployment tooling**
-
-  - The `src/backend/**` tree is Python‑centric glue for:
-    - Declaring buildable modules (protobuf, Thrift, CPP, Rust, Python daemons) in `src/backend/deploy.py` via `get_modules()`.
-    - Using `backend.deployment` helpers (`ModuleTypes`, `_Module`, `DeploymentOptions`) to discover targets and orchestrate builds/packaging.
-  - Today, `get_modules()` wires:
-    - A **Protobuf module** pointing at `src/proto`.
-    - A **Thrift module** pointing at `ThriftTsConfig/schema`.
-  - Additional backends (e.g., Python/Rust processes that talk over network tables or other IPC) would:
-    - Live under `src/backend/python/**`, `src/backend/rust/**`, or `src/backend/cpp/**`.
-    - Be registered as `ModuleTypes.*` entries in `get_modules()` so the deployment system knows how to build and publish them.
-
-- **ThriftTsConfig workspace**
-
-  - Resides in `ThriftTsConfig/` as a standalone Node workspace.
-  - Owns:
-    - Thrift schemas in `ThriftTsConfig/schema/**`.
-    - Generated TS types in `ThriftTsConfig/generated/thrift/**`.
-    - Conversion scripts in `ThriftTsConfig/scripts/**`.
-  - Robot projects **do not** author config here directly; instead:
-    - You author robot‑specific config in `src/config/**`.
-    - The Gradle build invokes the ThriftTsConfig CLI (`npm run config`) to compile that TS config into the binary loaded by Java.
+  - Static deploy files (field layout, PathPlanner paths) live in `src/main/deploy/**`.
 
 - **Dynamic vendor libraries**
 
@@ -52,23 +19,8 @@ This repository is a **command-based FRC robot base** that stitches together Jav
   - `build.gradle` then adds `lib/build/*.jar` to the Java classpath, so robot code can use those vendors as if they were normal Gradle dependencies.
 
 - **How the pieces interact (end‑to‑end flow)**
-  1. **Author config** in `src/config/**` using Thrift‑generated TS types.
-  2. **Generate binary config** during `./gradlew build`:
-     - Gradle calls `npm run config -- --dir src/config`.
-     - ThriftTsConfig reads `src/config/index.ts`, validates it against `config.thrift`, and writes a binary Thrift blob to `src/main/deploy/config`.
-  3. **Compile protocol layers**:
-     - Python deploy tooling in `src/backend/deploy.py` describes protobuf/Thrift modules.
-     - Protobuf definitions in `src/proto/**` are compiled to Java (lite) classes.
-  4. **Build vendors**:
-     - `scripts/clone_and_build_repos.py` reads `config.ini`, clones vendor repos to `lib/vendor/**`, builds them, and collects JARs into `lib/build/**`.
-  5. **Deploy robot**:
-     - `./gradlew deploy` bundles:
-       - Java robot code.
-       - Generated Protobuf classes.
-       - The binary Thrift config in `deploy/config`.
-       - Vendor JARs from `lib/build/**`.
-     - On the roboRIO, the Java robot:
-       - Deserializes the config blob into a `Config` object.
-       - Uses that to configure subsystems (cameras, LiDAR, pathfinding, logging, etc.).
+  1. **Build vendors**: `./gradlew build` runs `scripts/clone_and_build_repos.py`, which reads `config.ini`, clones vendor repos to `lib/vendor/**`, builds them, and collects JARs into `lib/build/**`.
+  2. **Compile robot code** against WPILib, vendordeps, and the `lib/build/**` JARs.
+  3. **Deploy robot**: `./gradlew deploy` bundles the Java robot code, vendor JARs, and `src/main/deploy/**`.
 
-Use this rule when you need to understand **how a change in one layer propagates** (e.g., editing `src/config/**`, touching Thrift schemas, adding a backend module, or changing vendor setup) all the way to what the Java robot sees at runtime.
+Use this rule when you need to understand **how a change in one layer propagates** (e.g., changing vendor setup in `config.ini`) all the way to what the Java robot sees at runtime.

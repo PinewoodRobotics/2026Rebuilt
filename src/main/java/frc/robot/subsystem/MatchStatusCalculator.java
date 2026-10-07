@@ -5,7 +5,6 @@ import java.util.Optional;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import frc.robot.constant.CommunicationConstants;
 
 public class MatchStatusCalculator {
   static final double kAutoDurationS = 20.0;
@@ -100,7 +99,6 @@ public class MatchStatusCalculator {
       long robotTimeUs,
       long wallClockMs,
       boolean dsAttached,
-      boolean autobahnConnected,
       boolean enabled,
       boolean autonomousEnabled,
       boolean teleopEnabled,
@@ -142,8 +140,7 @@ public class MatchStatusCalculator {
       double autoAlignDistanceM,
       boolean autoAlignReady,
       boolean driverOverride,
-      AimMode aimMode,
-      String cameraTopic) {
+      AimMode aimMode) {
   }
 
   private long seq;
@@ -194,7 +191,8 @@ public class MatchStatusCalculator {
     State state = new State(
         seq++,
         robotTimeUs,
-        inputs.dsAttached() && inputs.autobahnConnected(),
+        // TODO(localization): add a localization health check to readiness
+        inputs.dsAttached(),
         isRedAlliance,
         inputs.enabled(),
         inputs.autonomousEnabled(),
@@ -217,8 +215,7 @@ public class MatchStatusCalculator {
         0.0,
         false,
         driverOverride,
-        aimMode,
-        CommunicationConstants.kMatchStatusCameraTopic);
+        aimMode);
 
     if (phase == MatchPhase.POST_MATCH && !inputs.enabled()) {
       sessionArmedForReset = true;
