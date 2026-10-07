@@ -20,6 +20,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constant.IntakeConstants;
 import frc.robot.constant.IntakeConstants.WristRaiseLocation;
+import frc.robot.util.SharedDoubleTopic;
 
 public class IntakeSubsystem extends SubsystemBase {
   private static IntakeSubsystem instance;
@@ -28,6 +29,7 @@ public class IntakeSubsystem extends SubsystemBase {
   private final SparkFlex m_intakeWristMotor;
 
   private Rotation2d m_wristSetpoint = IntakeConstants.WristRaiseLocation.BOTTOM.position;
+  private final SharedDoubleTopic m_intakeSpeedTopic = new SharedDoubleTopic(IntakeConstants.kIntakeSpeedTopic, -1.0);
 
   public static IntakeSubsystem GetInstance() {
     if (instance == null) {
@@ -91,6 +93,13 @@ public class IntakeSubsystem extends SubsystemBase {
     setWristPosition(location.position);
   }
 
+  /** Intake duty cycle: the dashboard override when one is in range, otherwise the compiled constant. */
+  public double getIntakeSpeed() {
+    double requested = m_intakeSpeedTopic.getRequest();
+    boolean inRange = Double.isFinite(requested) && requested >= 0.0 && requested <= 1.0;
+    return inRange ? requested : IntakeConstants.intakeMotorSpeed;
+  }
+
   public void runIntakeMotor(double speed) {
     m_intakeIntakerMotor.set(MathUtil.clamp(speed, -1.0, 1.0));
   }
@@ -114,6 +123,9 @@ public class IntakeSubsystem extends SubsystemBase {
           calculateFeedForward());
     }
 
+    double intakeSpeed = getIntakeSpeed();
+    m_intakeSpeedTopic.setState(intakeSpeed);
+    Logger.recordOutput("IntakeSubsystem/IntakeSpeed", intakeSpeed);
     Logger.recordOutput("IntakeSubsystem/WristPosition", getWristPosition().getRotations());
     Logger.recordOutput("IntakeSubsystem/WristSetpoint", m_wristSetpoint.getRotations());
     Logger.recordOutput("IntakeSubsystem/FeedForward", calculateFeedForward());

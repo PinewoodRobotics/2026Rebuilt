@@ -6,6 +6,7 @@ import java.util.List;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
 import autobahn.client.Address;
 import autobahn.client.AutobahnClient;
@@ -38,6 +39,9 @@ public class Robot extends LoggedRobot {
   private Command m_autonomousCommand;
 
   public Robot() {
+    // Persist the full AdvantageKit stream to disk: "/U/logs" on a USB stick
+    // when running on the RIO, "logs" folder in simulation.
+    Logger.addDataReceiver(new WPILOGWriter());
     Logger.addDataReceiver(new NT4Publisher());
     Logger.start();
     this.networkAttemptInProgress = false;
