@@ -5,6 +5,7 @@ import com.pathplanner.lib.commands.PathfindingCommand;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.pathfinding.LocalADStar;
 import com.pathplanner.lib.pathfinding.Pathfinding;
+import com.pathplanner.lib.util.FlippingUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -17,6 +18,7 @@ import frc.robot.constant.BotConstants;
 import frc.robot.constant.PathPlannerConstants;
 import frc.robot.constant.PathPlannerConstants.SelectedAuto;
 import frc.robot.subsystem.GlobalPosition.GMFrame;
+import frc.robot.util.PathedAuto;
 import org.littletonrobotics.junction.Logger;
 
 public final class PathPlannerSubsystem extends SubsystemBase {
@@ -68,8 +70,8 @@ public final class PathPlannerSubsystem extends SubsystemBase {
         SwerveSubsystem.GetInstance());
   }
 
-  private static void resetOdom(Pose2d e) {
-    // intentionally do nothing here!
+  private static void resetOdom(Pose2d pose) {
+    OdometrySubsystem.GetInstance().resetPose(pose);
   }
 
   public Command getAutoCommand() {
@@ -89,7 +91,14 @@ public final class PathPlannerSubsystem extends SubsystemBase {
       return Commands.none();
     }
 
-    currentAutoCommand = selectedAuto.getCurrentAuto().get();
+    PathedAuto auto = selectedAuto.getCurrentAuto().get();
+    currentAutoCommand = auto;
+
+    Pose2d startingPose = auto.getStartingPose();
+    if (!pathfindIfNotAtStart && startingPose != null) {
+      resetOdom(shouldFlipForAlliance() ? FlippingUtil.flipFieldPose(startingPose) : startingPose);
+    }
+
     Pose2d[] pathPoses = selectedAuto.getPathPoses(0);
     if (pathfindIfNotAtStart && pathPoses.length > 0 && pathPoses[0].getTranslation()
         .getDistance(GlobalPosition.Get().getTranslation()) > PathPlannerConstants.distanceConsideredOffTarget
