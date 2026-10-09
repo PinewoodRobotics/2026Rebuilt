@@ -13,12 +13,6 @@ import frc.robot.util.AimPoint;
 public class GlobalPosition extends SubsystemBase {
   private static GlobalPosition self;
 
-  // TODO(localization): stub after Autobahn removal
-  private static final Pose2d kFieldCenterPose = new Pose2d(
-      BotConstants.kFieldLayout.getFieldLength() / 2.0,
-      BotConstants.kFieldLayout.getFieldWidth() / 2.0,
-      new Rotation2d());
-
   public static enum GMFrame {
     kFieldRelative,
     kRobotRelative,
@@ -31,19 +25,16 @@ public class GlobalPosition extends SubsystemBase {
     return self;
   }
 
-  // TODO(localization): stub after Autobahn removal
   public static Pose2d Get() {
-    return kFieldCenterPose;
+    return OdometrySubsystem.GetInstance().getPose();
   }
 
-  // TODO(localization): stub after Autobahn removal
   public static boolean isValid() {
-    return false;
+    return OdometrySubsystem.GetInstance().isAnchoredToField();
   }
 
-  // TODO(localization): stub after Autobahn removal
   public static long getLastUpdateTimeMs() {
-    return 0;
+    return OdometrySubsystem.GetInstance().getLastUpdateTimeMs();
   }
 
   // TODO(localization): stub after Autobahn removal
@@ -61,9 +52,12 @@ public class GlobalPosition extends SubsystemBase {
     return new Translation2d(velocity.vxMetersPerSecond, velocity.vyMetersPerSecond);
   }
 
-  // TODO(localization): stub after Autobahn removal
   public static ChassisSpeeds Velocity(GMFrame velocityType) {
-    return new ChassisSpeeds();
+    ChassisSpeeds robotRelative = SwerveSubsystem.GetInstance().getChassisSpeeds();
+    if (velocityType == GMFrame.kRobotRelative) {
+      return robotRelative;
+    }
+    return ChassisSpeeds.fromRobotRelativeSpeeds(robotRelative, Get().getRotation());
   }
 
   /**

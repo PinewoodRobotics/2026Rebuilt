@@ -4,8 +4,10 @@ import org.littletonrobotics.junction.Logger;
 
 import com.pathplanner.lib.auto.NamedCommands;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -39,6 +41,7 @@ import frc.robot.subsystem.PathPlannerSubsystem;
 import frc.robot.subsystem.ShooterSubsystem;
 import frc.robot.subsystem.SwerveSubsystem;
 import frc.robot.subsystem.TurretSubsystem;
+import frc.robot.subsystem.VisionSubsystem;
 import frc.robot.subsystem.ClimberSubsystem;
 import frc.robot.util.AimPoint;
 import pwrup.frc.core.controller.FlightModule;
@@ -62,6 +65,7 @@ public class RobotContainer {
     UnifiedGyro.GetInstance();
     OdometrySubsystem.GetInstance(UnifiedGyro.GetInstance());
     SwerveSubsystem.GetInstance(UnifiedGyro.GetInstance());
+    VisionSubsystem.GetInstance();
 
     TurretSubsystem.GetInstance();
     ShooterSubsystem.GetInstance();
@@ -114,17 +118,12 @@ public class RobotContainer {
         }));
 
     // Reset gyro rotation everywhere
-    m_operatorPanel.blackButton().whileTrue(Commands.run(() -> {
-      var position = GlobalPosition.Get();
-      if (position != null) {
-        UnifiedGyro.GetInstance().resetRotation(position.getRotation());
-      }
-    })).onTrue(new InstantCommand(() -> {
-      Logger.recordOutput("UnifiedGyro/ResettingRotation", false);
-    })).onFalse(new InstantCommand(() -> {
-      Logger.recordOutput("UnifiedGyro/ResettingRotation", true);
+    m_operatorPanel.blackButton().onTrue(new InstantCommand(() -> {
+      var odometry = OdometrySubsystem.GetInstance();
+      boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+      Rotation2d awayFromDriverStation = isRed ? Rotation2d.k180deg : Rotation2d.kZero;
+      odometry.resetPose(new Pose2d(odometry.getPose().getTranslation(), awayFromDriverStation));
     }));
-    Logger.recordOutput("UnifiedGyro/ResettingRotation", false);
   }
 
   private void setTurretCommands() {
@@ -250,11 +249,6 @@ public class RobotContainer {
   }
 
   public void onAnyModeStart() {
-    var globalPosition = GlobalPosition.Get();
-    if (globalPosition != null) {
-      UnifiedGyro.GetInstance().resetRotation(globalPosition.getRotation());
-      OdometrySubsystem.GetInstance().setOdometryPosition(globalPosition);
-    }
     BotConstants.SetAlliance();
   }
 }
