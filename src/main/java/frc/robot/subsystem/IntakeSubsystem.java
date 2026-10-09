@@ -93,7 +93,10 @@ public class IntakeSubsystem extends SubsystemBase {
     setWristPosition(location.position);
   }
 
-  /** Intake duty cycle: the dashboard override when one is in range, otherwise the compiled constant. */
+  /**
+   * Intake duty cycle: the dashboard override when one is in range, otherwise the
+   * compiled constant.
+   */
   public double getIntakeSpeed() {
     double requested = m_intakeSpeedTopic.getRequest();
     boolean inRange = Double.isFinite(requested) && requested >= 0.0 && requested <= 1.0;
@@ -101,7 +104,10 @@ public class IntakeSubsystem extends SubsystemBase {
   }
 
   public void runIntakeMotor(double speed) {
-    m_intakeIntakerMotor.set(MathUtil.clamp(speed, -1.0, 1.0));
+    double scale = (IntakeConstants.intakeType == "BELT") ? 5.0 : 1.0;
+    m_intakeIntakerMotor.set(MathUtil.clamp(speed * scale, -1.0, 1.0));
+    // m_intakeIntakerMotor.set(MathUtil.clamp(speed, -1.0, 1.0) *
+    // ((IntakeConstants.intakeType == "BELT") ? 5 : 1));
   }
 
   public void stopIntakeMotor() {
@@ -109,8 +115,7 @@ public class IntakeSubsystem extends SubsystemBase {
   }
 
   public boolean wristAtSetpoint() {
-    return Math.abs(getWristPosition().minus(m_wristSetpoint).getRadians())
-        < IntakeConstants.kTolerance.getRadians();
+    return Math.abs(getWristPosition().minus(m_wristSetpoint).getRadians()) < IntakeConstants.kTolerance.getRadians();
   }
 
   @Override
