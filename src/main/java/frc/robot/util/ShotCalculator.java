@@ -20,7 +20,12 @@ public final class ShotCalculator {
       AngularVelocity shooterVelocity,
       double turretAngle,
       Translation2d turretFieldVelocity,
-      boolean distanceClamped) {
+      boolean distanceClamped,
+      boolean reachable) {
+    public boolean isValid() {
+      return isFinite() && reachable;
+    }
+
     public boolean isFinite() {
       return Double.isFinite(turretAngle)
           && Double.isFinite(compensatedDistance)
@@ -57,6 +62,7 @@ public final class ShotCalculator {
     Translation2d targetFromTurret = targetFromTurretField.rotateBy(fieldToRobot);
     Translation2d compensatedTargetFromTurret = aimFromTurretField.rotateBy(fieldToRobot);
     double compensatedDistance = compensatedTargetFromTurret.getNorm();
+    double flightTime = ShooterConstants.DistanceFromTargetToTime(compensatedDistance);
 
     return new ShotSolution(
         targetFromTurret,
@@ -64,11 +70,29 @@ public final class ShotCalculator {
         compensatedTargetFromTurret,
         compensatedTargetFromTurret.minus(targetFromTurret),
         compensatedDistance,
-        ShooterConstants.DistanceFromTargetToTime(compensatedDistance),
+        flightTime,
         ShooterConstants.DistanceFromTargetToVelocity(compensatedDistance),
         Math.atan2(compensatedTargetFromTurret.getY(), compensatedTargetFromTurret.getX()),
         turretFieldVelocity,
-        !ShooterConstants.IsWithinCalibratedDistance(compensatedDistance));
+        !ShooterConstants.IsWithinCalibratedDistance(compensatedDistance),
+        IsBallClosingOnTarget(targetFromTurretField, aimFromTurretField, turretFieldVelocity, flightTime));
+  }
+
+  // The shooter can only throw as far as the calibrated range in the fit's flight time, so a
+  // turret receding faster than that average ball speed launches a ball that never closes on
+  // the target. A slow or stationary robot beyond the range still closes and stays valid.
+  private static boolean IsBallClosingOnTarget(
+      Translation2d targetFromTurretField,
+      Translation2d aimFromTurretField,
+      Translation2d turretFieldVelocity,
+      double flightTime) {
+    double aimDistance = aimFromTurretField.getNorm();
+    Translation2d ballVelocityFromTurret = Translation2d.kZero;
+    if (aimDistance > 0.0) {
+      double ballSpeed = ShooterConstants.ClampToCalibratedDistance(aimDistance) / flightTime;
+      ballVelocityFromTurret = aimFromTurretField.times(ballSpeed / aimDistance);
+    }
+    return ballVelocityFromTurret.plus(turretFieldVelocity).dot(targetFromTurretField) > 0.0;
   }
 
   // Solves t = flightTime(|target - v * t|) by bisection. Fixed-point iteration on that

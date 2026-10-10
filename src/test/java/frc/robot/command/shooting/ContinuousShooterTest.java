@@ -46,4 +46,19 @@ public class ContinuousShooterTest {
 
     assertFalse(ContinuousShooter.CanFeed(solution, kAimReadyMs, true));
   }
+
+  @Test
+  void DoesNotFeedWhenBallCannotReachTarget() {
+    ShotSolution solution = Solve(new Translation2d(3.0, 0.0), new ChassisSpeeds(-3.5, 0.0, 0.0));
+
+    assertFalse(ContinuousShooter.CanFeed(solution, kAimReadyMs, true));
+  }
+
+  @Test
+  void FeedsWhenStationaryBeyondCalibratedRange() {
+    ShotSolution solution = Solve(new Translation2d(5.0, 0.0), new ChassisSpeeds());
+
+    assertTrue(solution.distanceClamped());
+    assertTrue(ContinuousShooter.CanFeed(solution, kAimReadyMs, true));
+  }
 }

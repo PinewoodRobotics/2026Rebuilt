@@ -57,6 +57,7 @@ public class ContinuousAimCommand extends Command {
     Logger.recordOutput("Turret/CompensatedDistanceToTarget", shotSolution.compensatedDistance());
     Logger.recordOutput("Turret/FlyTime", shotSolution.flightTime());
     Logger.recordOutput("Turret/DistanceClamped", shotSolution.distanceClamped());
+    Logger.recordOutput("Turret/ShotValid", shotSolution.isValid());
     Logger.recordOutput("Turret/TurretFieldVelocity", shotSolution.turretFieldVelocity());
 
     Logger.recordOutput("Turret/LeadCompensation", shotSolution.leadCompensation());

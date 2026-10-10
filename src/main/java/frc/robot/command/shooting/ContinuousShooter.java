@@ -85,6 +85,7 @@ public class ContinuousShooter extends Command {
     Logger.recordOutput("ContinuousShooter/FlightTime", shotSolution.flightTime());
     Logger.recordOutput("ContinuousShooter/TargetVelocityRPM", shotSolution.shooterVelocity().in(Units.RPM));
     Logger.recordOutput("ContinuousShooter/DistanceClamped", shotSolution.distanceClamped());
+    Logger.recordOutput("ContinuousShooter/ShotValid", shotSolution.isValid());
 
     if (indexExtakeOverrideSupplier.getAsBoolean()) {
       isShooting = false;
@@ -103,7 +104,7 @@ public class ContinuousShooter extends Command {
   }
 
   public static boolean CanFeed(ShotSolution shotSolution, int aimTimeLeftMs, boolean isShooterSpunUp) {
-    return shotSolution.isFinite()
+    return shotSolution.isValid()
         && aimTimeLeftMs <= TurretConstants.kTurretOffByMs
         && isShooterSpunUp;
   }

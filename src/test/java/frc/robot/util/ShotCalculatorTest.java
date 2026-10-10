@@ -90,6 +90,7 @@ public class ShotCalculatorTest {
     assertFalse(solution.distanceClamped());
     assertTrue(solution.compensatedDistance() > solution.rawDistance());
     assertTrue(solution.flightTime() > ShooterConstants.DistanceFromTargetToTime(3.0));
+    assertTrue(solution.isValid());
     assertSelfConsistent(solution, selfPose.getRotation());
   }
 
@@ -128,6 +129,7 @@ public class ShotCalculatorTest {
 
     ShotSolution solution = ShotCalculator.Calculate(selfPose, targetGlobal, robotFieldSpeeds, kNoOffset);
 
+    assertTrue(solution.isValid());
     assertSelfConsistent(solution, selfPose.getRotation());
   }
 
@@ -142,7 +144,71 @@ public class ShotCalculatorTest {
     assertTrue(solution.distanceClamped());
     assertEquals(ShooterConstants.DistanceFromTargetToTime(ShooterConstants.kMaxCalibratedDistanceMeters),
         solution.flightTime(), kEpsilon);
+    assertFalse(solution.isValid());
     assertSelfConsistent(solution, selfPose.getRotation());
+  }
+
+  @Test
+  void RetreatFasterThanBallIsUnreachable() {
+    Pose2d selfPose = new Pose2d(new Translation2d(), new Rotation2d());
+    ChassisSpeeds robotFieldSpeeds = new ChassisSpeeds(-3.5, 0.0, 0.0);
+
+    ShotSolution solution = ShotCalculator.Calculate(selfPose, new Translation2d(3.0, 0.0), robotFieldSpeeds,
+        kNoOffset);
+
+    assertTrue(solution.isFinite());
+    assertTrue(solution.distanceClamped());
+    assertFalse(solution.reachable());
+    assertFalse(solution.isValid());
+    assertEquals(9.1, solution.compensatedDistance(), 0.01);
+    assertEquals(1.7428, solution.flightTime(), 1e-4);
+    assertEquals(2527.4, solution.shooterVelocity().in(Units.RPM), 1e-6);
+  }
+
+  @Test
+  void RetreatSlowerThanBallStaysValid() {
+    Pose2d selfPose = new Pose2d(new Translation2d(), new Rotation2d());
+    ChassisSpeeds robotFieldSpeeds = new ChassisSpeeds(-2.0, 0.0, 0.0);
+
+    ShotSolution solution = ShotCalculator.Calculate(selfPose, new Translation2d(3.0, 0.0), robotFieldSpeeds,
+        kNoOffset);
+
+    assertTrue(solution.distanceClamped());
+    assertTrue(solution.isValid());
+  }
+
+  @Test
+  void StationaryBeyondCalibratedRangeStaysValid() {
+    Pose2d selfPose = new Pose2d(new Translation2d(), new Rotation2d());
+
+    ShotSolution solution = ShotCalculator.Calculate(selfPose, new Translation2d(5.0, 0.0), new ChassisSpeeds(),
+        kNoOffset);
+
+    assertTrue(solution.distanceClamped());
+    assertTrue(solution.isValid());
+  }
+
+  @Test
+  void SlowRetreatBeyondCalibratedRangeStaysValid() {
+    Pose2d selfPose = new Pose2d(new Translation2d(), new Rotation2d());
+    ChassisSpeeds robotFieldSpeeds = new ChassisSpeeds(-0.5, 0.3, 0.0);
+
+    ShotSolution solution = ShotCalculator.Calculate(selfPose, new Translation2d(5.0, 0.0), robotFieldSpeeds,
+        kNoOffset);
+
+    assertTrue(solution.distanceClamped());
+    assertTrue(solution.isValid());
+  }
+
+  @Test
+  void StationaryBelowCalibratedRangeStaysValid() {
+    Pose2d selfPose = new Pose2d(new Translation2d(), new Rotation2d());
+
+    ShotSolution solution = ShotCalculator.Calculate(selfPose, new Translation2d(0.5, 0.0), new ChassisSpeeds(),
+        kNoOffset);
+
+    assertTrue(solution.distanceClamped());
+    assertTrue(solution.isValid());
   }
 
   @Test
@@ -233,6 +299,7 @@ public class ShotCalculatorTest {
     ShotSolution solution = ShotCalculator.Calculate(selfPose, new Translation2d(3.0, 0.0), robotFieldSpeeds);
 
     assertFalse(solution.isFinite());
+    assertFalse(solution.isValid());
   }
 
   @Test
