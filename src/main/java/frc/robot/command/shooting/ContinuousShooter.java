@@ -8,26 +8,19 @@ import org.littletonrobotics.junction.Logger;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.command.scoring.ContinuousAimCommand;
-import frc.robot.constant.ShooterConstants;
 import frc.robot.constant.TurretConstants;
 import frc.robot.subsystem.GlobalPosition;
 import frc.robot.subsystem.GlobalPosition.GMFrame;
 import frc.robot.subsystem.IndexSubsystem;
 import frc.robot.subsystem.ShooterSubsystem;
 import frc.robot.subsystem.TurretSubsystem;
-import frc.robot.util.LocalMath;
+import frc.robot.util.ShotCalculator;
+import frc.robot.util.ShotCalculator.ShotSolution;
 import lombok.Getter;
 
 public class ContinuousShooter extends Command {
-  public record ShotSolution(
-      Translation2d targetRelative,
-      Translation2d compensatedTargetRelative,
-      double rawDistance,
-      double compensatedDistance) {
-  }
-
   private final Supplier<Translation2d> targetGlobalPoseSupplier;
   private final Supplier<Translation2d> selfGlobalPoseSupplier;
   private final BooleanSupplier indexExtakeOverrideSupplier;
@@ -71,22 +64,6 @@ public class ContinuousShooter extends Command {
     this(() -> new Translation2d());
   }
 
-  public static ShotSolution CalculateShotSolution(
-      Pose2d selfPose,
-      Translation2d targetGlobal,
-      ChassisSpeeds robotFieldSpeeds) {
-    Translation2d targetRelative = LocalMath.fromGlobalToRelative(selfPose.getTranslation(), targetGlobal);
-    Translation2d compensatedTargetRelative = ContinuousAimCommand.GetCompensatedSpeed(
-        selfPose,
-        targetGlobal,
-        robotFieldSpeeds);
-
-    double rawDistance = targetRelative.getNorm();
-    double compensatedDistance = compensatedTargetRelative.getNorm();
-
-    return new ShotSolution(targetRelative, compensatedTargetRelative, rawDistance, compensatedDistance);
-  }
-
   @Override
   public void execute() {
     Logger.recordOutput("ContinuousShooter/Time", System.currentTimeMillis());
@@ -94,19 +71,16 @@ public class ContinuousShooter extends Command {
     Translation2d self = selfGlobalPoseSupplier.get();
     Pose2d selfPose = new Pose2d(self, GlobalPosition.Get().getRotation());
     ChassisSpeeds robotFieldSpeeds = GlobalPosition.Velocity(GMFrame.kFieldRelative);
-    ShotSolution shotSolution = CalculateShotSolution(
-        selfPose,
-        target,
-        robotFieldSpeeds);
-    shooterSubsystem.setShooterVelocity(
-        ShooterConstants.DistanceFromTargetToVelocity(shotSolution.compensatedDistance()));
+    ShotSolution shotSolution = ShotCalculator.Calculate(selfPose, target, robotFieldSpeeds);
+    shooterSubsystem.setShooterVelocity(shotSolution.shooterVelocity());
 
-    Logger.recordOutput("ContinuousShooter/TargetRelative", shotSolution.targetRelative());
-    Logger.recordOutput("ContinuousShooter/CompensatedTargetRelative", shotSolution.compensatedTargetRelative());
+    Logger.recordOutput("ContinuousShooter/TargetRelative", shotSolution.targetFromTurret());
+    Logger.recordOutput("ContinuousShooter/CompensatedTargetRelative", shotSolution.compensatedTargetFromTurret());
     Logger.recordOutput("ContinuousShooter/RawDistanceToTarget", shotSolution.rawDistance());
     Logger.recordOutput("ContinuousShooter/CompensatedDistanceToTarget", shotSolution.compensatedDistance());
-    Logger.recordOutput("ContinuousShooter/DistanceClamped",
-        !ShooterConstants.IsWithinCalibratedDistance(shotSolution.compensatedDistance()));
+    Logger.recordOutput("ContinuousShooter/FlightTime", shotSolution.flightTime());
+    Logger.recordOutput("ContinuousShooter/TargetVelocityRPM", shotSolution.shooterVelocity().in(Units.RPM));
+    Logger.recordOutput("ContinuousShooter/DistanceClamped", shotSolution.distanceClamped());
 
     if (indexExtakeOverrideSupplier.getAsBoolean()) {
       isShooting = false;

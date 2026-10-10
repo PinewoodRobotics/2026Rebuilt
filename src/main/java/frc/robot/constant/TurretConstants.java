@@ -33,4 +33,8 @@ public class TurretConstants {
   public static final boolean kMotorInverted = true;
 
   public static final Angle kTurretOffset = Units.Rotations.of(0.8507);
+
+  // CAD (Robot-Full.glb, TurretRControl vs FrameControl) puts the turret pivot on
+  // the chassis center to within ~1 mm. Not yet measured on the real robot.
+  public static final Translation2d kTurretPositionInRobot = new Translation2d(0.0, 0.0);
 }

@@ -44,6 +44,8 @@ public class ShooterConstants {
   public static final double kOutMultTime = 1.0;
   public static final double kOutAddTime = 0.0;
 
+  public static final double kLeadFlightTimeToleranceSeconds = 0.001;
+
   // The time and RPM fits were regressed on shots from 1.047 m to 4.436 m.
   public static final double kMinCalibratedDistanceMeters = 1.05;
   public static final double kMaxCalibratedDistanceMeters = 4.44;
