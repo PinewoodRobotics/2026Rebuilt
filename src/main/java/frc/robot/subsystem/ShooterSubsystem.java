@@ -14,6 +14,7 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -103,12 +104,8 @@ public class ShooterSubsystem extends SubsystemBase {
    * @param velocity The velocity to set the shooter to.
    **/
   public void setShooterVelocity(AngularVelocity velocity) {
-    lastShooterVelocitySetpoint = velocity;
-    if (velocity.in(Units.RotationsPerSecond) > ShooterConstants.kShooterMaxVelocity.in(Units.RotationsPerSecond)) {
-      lastShooterVelocitySetpoint = ShooterConstants.kShooterMaxVelocity;
-    }
-
-    double targetRpm = velocity.in(Units.RPM);
+    double targetRpm = ClampCommandedRpm(velocity.in(Units.RPM));
+    lastShooterVelocitySetpoint = Units.RPM.of(targetRpm);
 
     if (Math.abs(targetRpm) <= kStopVelocityThresholdRpm) {
       stopShooter();
@@ -122,6 +119,18 @@ public class ShooterSubsystem extends SubsystemBase {
     double feedForwardFollower = ShooterConstants.kFFFollower * targetRpm;
     followerClosedLoopController.setSetpoint(targetRpm, ControlType.kVelocity,
         ClosedLoopSlot.kSlot0, feedForwardFollower);
+  }
+
+  public static double ClampCommandedRpm(double requestedRpm) {
+    if (Math.abs(requestedRpm) <= kStopVelocityThresholdRpm) {
+      return 0.0;
+    }
+
+    double clampedMagnitude = MathUtil.clamp(
+        Math.abs(requestedRpm),
+        ShooterConstants.kShooterMinVelocity.in(Units.RPM),
+        ShooterConstants.kShooterMaxVelocity.in(Units.RPM));
+    return Math.copySign(clampedMagnitude, requestedRpm);
   }
 
   public void stopShooter() {
