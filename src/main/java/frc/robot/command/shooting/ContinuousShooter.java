@@ -16,6 +16,7 @@ import frc.robot.subsystem.GlobalPosition.GMFrame;
 import frc.robot.subsystem.IndexSubsystem;
 import frc.robot.subsystem.ShooterSubsystem;
 import frc.robot.subsystem.TurretSubsystem;
+import frc.robot.util.LocalMath;
 import frc.robot.util.ShotCalculator;
 import frc.robot.util.ShotCalculator.ShotSolution;
 import lombok.Getter;
@@ -78,7 +79,8 @@ public class ContinuousShooter extends Command {
       shooterSubsystem.setShooterVelocity();
     }
 
-    Logger.recordOutput("ContinuousShooter/TargetRelative", shotSolution.targetFromTurret());
+    Logger.recordOutput("ContinuousShooter/TargetRelative", LocalMath.fromGlobalToRelative(self, target));
+    Logger.recordOutput("ContinuousShooter/TargetFromTurretRobotRelative", shotSolution.targetFromTurret());
     Logger.recordOutput("ContinuousShooter/CompensatedTargetRelative", shotSolution.compensatedTargetFromTurret());
     Logger.recordOutput("ContinuousShooter/RawDistanceToTarget", shotSolution.rawDistance());
     Logger.recordOutput("ContinuousShooter/CompensatedDistanceToTarget", shotSolution.compensatedDistance());
