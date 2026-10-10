@@ -4,6 +4,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.AngularVelocity;
 import frc.robot.constant.ShooterConstants;
 import frc.robot.constant.TurretConstants;
@@ -20,6 +21,12 @@ public final class ShotCalculator {
       double turretAngle,
       Translation2d turretFieldVelocity,
       boolean distanceClamped) {
+    public boolean isFinite() {
+      return Double.isFinite(turretAngle)
+          && Double.isFinite(compensatedDistance)
+          && Double.isFinite(flightTime)
+          && Double.isFinite(shooterVelocity.in(Units.RPM));
+    }
   }
 
   private ShotCalculator() {

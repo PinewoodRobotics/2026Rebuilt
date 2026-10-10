@@ -122,7 +122,7 @@ public class ShooterSubsystem extends SubsystemBase {
   }
 
   public static double ClampCommandedRpm(double requestedRpm) {
-    if (Math.abs(requestedRpm) <= kStopVelocityThresholdRpm) {
+    if (!Double.isFinite(requestedRpm) || Math.abs(requestedRpm) <= kStopVelocityThresholdRpm) {
       return 0.0;
     }
 

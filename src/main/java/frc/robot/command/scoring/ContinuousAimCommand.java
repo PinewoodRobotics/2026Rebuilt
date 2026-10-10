@@ -45,7 +45,9 @@ public class ContinuousAimCommand extends Command {
     double yawRateRadPerSec = robotFieldSpeeds.omegaRadiansPerSecond;
     double ff = yawRateRadPerSec * TurretConstants.kFFCommand;
 
-    turretSubsystem.setTurretPosition(Units.Radians.of(shotSolution.turretAngle()), Units.Volts.of(ff));
+    if (shotSolution.isFinite() && Double.isFinite(ff)) {
+      turretSubsystem.setTurretPosition(Units.Radians.of(shotSolution.turretAngle()), Units.Volts.of(ff));
+    }
 
     Logger.recordOutput("Turret/TargetGlobalTranslation", targetGlobal);
 

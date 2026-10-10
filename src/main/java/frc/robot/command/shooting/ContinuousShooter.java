@@ -72,7 +72,11 @@ public class ContinuousShooter extends Command {
     Pose2d selfPose = new Pose2d(self, GlobalPosition.Get().getRotation());
     ChassisSpeeds robotFieldSpeeds = GlobalPosition.Velocity(GMFrame.kFieldRelative);
     ShotSolution shotSolution = ShotCalculator.Calculate(selfPose, target, robotFieldSpeeds);
-    shooterSubsystem.setShooterVelocity(shotSolution.shooterVelocity());
+    if (shotSolution.isFinite()) {
+      shooterSubsystem.setShooterVelocity(shotSolution.shooterVelocity());
+    } else {
+      shooterSubsystem.setShooterVelocity();
+    }
 
     Logger.recordOutput("ContinuousShooter/TargetRelative", shotSolution.targetFromTurret());
     Logger.recordOutput("ContinuousShooter/CompensatedTargetRelative", shotSolution.compensatedTargetFromTurret());
@@ -88,8 +92,7 @@ public class ContinuousShooter extends Command {
       return;
     }
 
-    if (turretSubsystem.getAimTimeLeftMs() > TurretConstants.kTurretOffByMs
-        || !shooterSubsystem.isShooterSpunUp()) {
+    if (!CanFeed(shotSolution, turretSubsystem.getAimTimeLeftMs(), shooterSubsystem.isShooterSpunUp())) {
       isShooting = false;
       indexSubsystem.stopMotor();
       return;
@@ -97,6 +100,12 @@ public class ContinuousShooter extends Command {
 
     isShooting = true;
     indexSubsystem.runMotor();
+  }
+
+  public static boolean CanFeed(ShotSolution shotSolution, int aimTimeLeftMs, boolean isShooterSpunUp) {
+    return shotSolution.isFinite()
+        && aimTimeLeftMs <= TurretConstants.kTurretOffByMs
+        && isShooterSpunUp;
   }
 
   @Override

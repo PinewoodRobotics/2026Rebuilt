@@ -216,4 +216,52 @@ public class ShotCalculatorTest {
     assertTrue(solution.leadCompensation().getY() < -0.5);
     assertSelfConsistent(solution, selfPose.getRotation());
   }
+
+  @Test
+  void FiniteInputsGiveFiniteSolution() {
+    Pose2d selfPose = new Pose2d(new Translation2d(1.0, -2.0), Rotation2d.fromDegrees(30.0));
+    ChassisSpeeds robotFieldSpeeds = new ChassisSpeeds(0.8, -1.2, 0.5);
+
+    assertTrue(ShotCalculator.Calculate(selfPose, new Translation2d(3.0, 0.0), robotFieldSpeeds).isFinite());
+  }
+
+  @Test
+  void NanVelocityGivesNonfiniteSolution() {
+    Pose2d selfPose = new Pose2d(new Translation2d(), new Rotation2d());
+    ChassisSpeeds robotFieldSpeeds = new ChassisSpeeds(Double.NaN, 0.0, 0.0);
+
+    ShotSolution solution = ShotCalculator.Calculate(selfPose, new Translation2d(3.0, 0.0), robotFieldSpeeds);
+
+    assertFalse(solution.isFinite());
+  }
+
+  @Test
+  void InfiniteVelocityGivesNonfiniteSolution() {
+    Pose2d selfPose = new Pose2d(new Translation2d(), new Rotation2d());
+    ChassisSpeeds robotFieldSpeeds = new ChassisSpeeds(Double.POSITIVE_INFINITY, 0.0, 0.0);
+
+    ShotSolution solution = ShotCalculator.Calculate(selfPose, new Translation2d(3.0, 0.0), robotFieldSpeeds);
+
+    assertFalse(solution.isFinite());
+  }
+
+  @Test
+  void NanPoseGivesNonfiniteSolution() {
+    Pose2d selfPose = new Pose2d(new Translation2d(Double.NaN, 0.0), new Rotation2d());
+
+    ShotSolution solution = ShotCalculator.Calculate(selfPose, new Translation2d(3.0, 0.0), new ChassisSpeeds());
+
+    assertFalse(solution.isFinite());
+  }
+
+  @Test
+  void InfiniteYawRateGivesNonfiniteSolutionWithTurretOffset() {
+    Pose2d selfPose = new Pose2d(new Translation2d(), new Rotation2d());
+    ChassisSpeeds robotFieldSpeeds = new ChassisSpeeds(0.0, 0.0, Double.POSITIVE_INFINITY);
+
+    ShotSolution solution = ShotCalculator.Calculate(selfPose, new Translation2d(3.0, 0.0), robotFieldSpeeds,
+        new Translation2d(0.5, 0.0));
+
+    assertFalse(solution.isFinite());
+  }
 }

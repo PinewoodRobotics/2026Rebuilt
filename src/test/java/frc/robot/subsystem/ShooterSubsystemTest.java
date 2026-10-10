@@ -37,4 +37,11 @@ public class ShooterSubsystemTest {
   void ClampCommandedRpmPreservesDirection() {
     assertEquals(-kMaxRpm, ShooterSubsystem.ClampCommandedRpm(-(kMaxRpm + 500.0)), kEpsilon);
   }
+
+  @Test
+  void ClampCommandedRpmStopsOnNonfiniteRequests() {
+    assertEquals(0.0, ShooterSubsystem.ClampCommandedRpm(Double.NaN), kEpsilon);
+    assertEquals(0.0, ShooterSubsystem.ClampCommandedRpm(Double.POSITIVE_INFINITY), kEpsilon);
+    assertEquals(0.0, ShooterSubsystem.ClampCommandedRpm(Double.NEGATIVE_INFINITY), kEpsilon);
+  }
 }
