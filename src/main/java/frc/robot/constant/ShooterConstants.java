@@ -2,6 +2,7 @@ package frc.robot.constant;
 
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.AngularVelocity;
 
@@ -43,12 +44,26 @@ public class ShooterConstants {
   public static final double kOutMultTime = 1.0;
   public static final double kOutAddTime = 0.0;
 
+  // The time and RPM fits were regressed on shots from 1.047 m to 4.436 m.
+  public static final double kMinCalibratedDistanceMeters = 1.05;
+  public static final double kMaxCalibratedDistanceMeters = 4.44;
+
+  public static double ClampToCalibratedDistance(double distance) {
+    return MathUtil.clamp(distance, kMinCalibratedDistanceMeters, kMaxCalibratedDistanceMeters);
+  }
+
+  public static boolean IsWithinCalibratedDistance(double distance) {
+    return distance >= kMinCalibratedDistanceMeters && distance <= kMaxCalibratedDistanceMeters;
+  }
+
   public static double DistanceFromTargetToTime(double distance) {
-    return kOutMultTime * (kTimeVsDistanceSlope * distance + kTimeVsDistanceIntercept) + kOutAddTime;
+    double fitDistance = ClampToCalibratedDistance(distance);
+    return kOutMultTime * (kTimeVsDistanceSlope * fitDistance + kTimeVsDistanceIntercept) + kOutAddTime;
   }
 
   public static AngularVelocity DistanceFromTargetToVelocity(double distance) {
-    double rpm = kRPMVsDistanceSlope * distance + kRPMVsDistanceIntercept;
+    double fitDistance = ClampToCalibratedDistance(distance);
+    double rpm = kRPMVsDistanceSlope * fitDistance + kRPMVsDistanceIntercept;
     return Units.RotationsPerSecond.of((rpm * kOutMult / 60));
   }
 }

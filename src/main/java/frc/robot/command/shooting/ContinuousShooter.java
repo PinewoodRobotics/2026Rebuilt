@@ -105,6 +105,8 @@ public class ContinuousShooter extends Command {
     Logger.recordOutput("ContinuousShooter/CompensatedTargetRelative", shotSolution.compensatedTargetRelative());
     Logger.recordOutput("ContinuousShooter/RawDistanceToTarget", shotSolution.rawDistance());
     Logger.recordOutput("ContinuousShooter/CompensatedDistanceToTarget", shotSolution.compensatedDistance());
+    Logger.recordOutput("ContinuousShooter/DistanceClamped",
+        !ShooterConstants.IsWithinCalibratedDistance(shotSolution.compensatedDistance()));
 
     if (indexExtakeOverrideSupplier.getAsBoolean()) {
       isShooting = false;
