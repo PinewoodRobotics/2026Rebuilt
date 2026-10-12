@@ -147,11 +147,6 @@ public class RobotContainer {
         current.cancel();
       }
 
-      var currentShooterCommand = ShooterSubsystem.GetInstance().getCurrentCommand();
-      if (currentShooterCommand != null) {
-        currentShooterCommand.cancel();
-      }
-
       Logger.recordOutput("TurretSubsystem/GPSAssistFeaturesEnabled", TurretSubsystem.getIsGpsAssistEnabled());
       Logger.recordOutput("ShooterSubsystem/GPSAssistFeaturesEnabled", ShooterSubsystem.getIsGpsAssistEnabled());
     }));
@@ -226,11 +221,11 @@ public class RobotContainer {
 
     // Enable shooter with metal switch down. While up, run motor base speed.
     // When enabled, run indexer only when shooter up to speed.
+    // Gating on the mode flag (not selecting once on the rising edge) lets the
+    // green button swap modes while the switch stays down.
+    shooterEnabled.and(ShooterSubsystem::getIsGpsAssistEnabled).whileTrue(continuousShooter);
+    shooterEnabled.and(() -> !ShooterSubsystem.getIsGpsAssistEnabled()).whileTrue(continuousManualShooter);
     shooterEnabled
-        .whileTrue(Commands.either(
-            continuousShooter,
-            continuousManualShooter,
-            ShooterSubsystem::getIsGpsAssistEnabled))
         .negate()
         .and(DriverStation::isTeleopEnabled)
         .onTrue(new InstantCommand(() -> {
