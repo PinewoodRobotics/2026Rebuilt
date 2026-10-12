@@ -3,7 +3,7 @@ package frc.robot.constant;
 import edu.wpi.first.math.geometry.Rotation2d;
 
 public class IntakeConstants {
-  public final static String intakeType = "BELT";
+  public final static String intakeType = "VINYL";
   public static final int intakeIntakerMotorID = (intakeType == "BELT" ? 24 : 33);
   public static final int intakeWristMotorID = (intakeType == "BELT" ? 26 : 34);
 
