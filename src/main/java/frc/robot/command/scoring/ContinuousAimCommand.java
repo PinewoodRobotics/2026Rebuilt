@@ -4,6 +4,7 @@ import java.util.function.Supplier;
 
 import org.ejml.simple.SimpleMatrix;
 import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Vector;
@@ -26,13 +27,22 @@ import frc.robot.util.ShotCalculator;
 import frc.robot.util.ShotCalculator.ShotSolution;
 
 public class ContinuousAimCommand extends Command {
+  private static LoggedNetworkNumber aimTrimDeg;
+
   private final TurretSubsystem turretSubsystem;
   private final Supplier<Translation2d> targetGlobalPoseSupplier;
 
   public ContinuousAimCommand(Supplier<Translation2d> targetGlobalPoseSupplier) {
     this.turretSubsystem = TurretSubsystem.GetInstance();
     this.targetGlobalPoseSupplier = targetGlobalPoseSupplier;
+    if (aimTrimDeg == null) {
+      aimTrimDeg = new LoggedNetworkNumber("/Tuning/Turret/AimTrimDeg", TurretConstants.kTurretAimTrimDeg);
+    }
     addRequirements(this.turretSubsystem);
+  }
+
+  public static double ApplyAimTrim(double turretAngleRad, double trimDeg) {
+    return turretAngleRad + Math.toRadians(trimDeg);
   }
 
   @Override
@@ -45,8 +55,11 @@ public class ContinuousAimCommand extends Command {
     double yawRateRadPerSec = robotFieldSpeeds.omegaRadiansPerSecond;
     double ff = yawRateRadPerSec * TurretConstants.kFFCommand;
 
-    if (shotSolution.isFinite() && Double.isFinite(ff)) {
-      turretSubsystem.setTurretPosition(Units.Radians.of(shotSolution.turretAngle()), Units.Volts.of(ff));
+    double trimDeg = aimTrimDeg.get();
+    double trimmedTurretAngle = ApplyAimTrim(shotSolution.turretAngle(), trimDeg);
+
+    if (shotSolution.isFinite() && Double.isFinite(ff) && Double.isFinite(trimmedTurretAngle)) {
+      turretSubsystem.setTurretPosition(Units.Radians.of(trimmedTurretAngle), Units.Volts.of(ff));
     }
 
     Logger.recordOutput("Turret/TargetGlobalTranslation", targetGlobal);
@@ -64,6 +77,8 @@ public class ContinuousAimCommand extends Command {
     Logger.recordOutput("Turret/CompensatedTargetRobotRelative", shotSolution.compensatedTargetFromTurret());
     Logger.recordOutput("Turret/YawRateRadPerSec", yawRateRadPerSec);
     Logger.recordOutput("Turret/Angle", shotSolution.turretAngle());
+    Logger.recordOutput("Turret/AimTrimDeg", trimDeg);
+    Logger.recordOutput("Turret/TrimmedAngle", trimmedTurretAngle);
     Logger.recordOutput("Turret/FF", ff);
   }
 

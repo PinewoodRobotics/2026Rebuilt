@@ -30,6 +30,9 @@ public class TurretConstants {
 
   public static final int kTurretOffByMs = 20;
 
+  // Positive = CCW (left). Live-tunable at NT /Tuning/Turret/AimTrimDeg.
+  public static final double kTurretAimTrimDeg = 0.0;
+
   public static final boolean kMotorInverted = true;
 
   public static final Angle kTurretOffset = Units.Rotations.of(0.8507);
