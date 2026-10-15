@@ -15,7 +15,7 @@ public class VisionConstants {
 
   public static final CameraConfig[] kCameras = {
       camera("front_left", true, 0.0836, 0.3073, 0.4795, 0.0, 45.0),
-      camera("front_right", false, 0.136, -0.324, 0.0, 0.0, -52.904),
+      camera("front_right", true, 0.136, -0.324, 0.0, 0.0, -52.904),
       camera("rear_left", true, -0.0836, 0.3073, 0.4795, 0.0, 135.0),
       camera("rear_right", true, -0.297, -0.297, 0.3067, 0.0, 225.0),
   };
