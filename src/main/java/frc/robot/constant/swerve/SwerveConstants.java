@@ -28,7 +28,12 @@ public final class SwerveConstants {
 
   public static final double kShootingSpeedMultiplier = 1.0;
 
-  /** Raises TalonFX status frame rates and costs CAN bandwidth; keep off at competition. */
+  public static final double kLawnMowerSpeedMultiplier = 0.1;
+
+  /*
+   * Raises TalonFX status frame rates and costs CAN bandwidth; keep off at
+   * competition.
+   */
   public static final boolean kLogMotorTelemetry = false;
   public static final double kMotorTelemetryHz = 50.0;
 
