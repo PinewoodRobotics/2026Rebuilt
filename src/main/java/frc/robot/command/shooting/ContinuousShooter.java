@@ -34,6 +34,7 @@ public class ContinuousShooter extends Command {
   private final ShooterSubsystem shooterSubsystem;
   private final TurretSubsystem turretSubsystem;
   private final IndexSubsystem indexSubsystem;
+  private boolean hasSpunUp = false;
 
   @Getter
   private static boolean isShooting = false;
@@ -88,6 +89,11 @@ public class ContinuousShooter extends Command {
   }
 
   @Override
+  public void initialize() {
+    hasSpunUp = false;
+  }
+
+  @Override
   public void execute() {
     Logger.recordOutput("ContinuousShooter/Time", System.currentTimeMillis());
     Translation2d target = targetGlobalPoseSupplier.get();
@@ -111,9 +117,23 @@ public class ContinuousShooter extends Command {
       indexSubsystem.reverseRunMotor();
       return;
     }
+    /*
+     * if (turretSubsystem.getAimTimeLeftMs() > TurretConstants.kTurretOffByMs
+     * || !shooterSubsystem.isShooterSpunUp()) {
+     * isShooting = false;
+     * indexSubsystem.stopMotor();
+     * return;
+     * }
+     */
 
-    if (turretSubsystem.getAimTimeLeftMs() > TurretConstants.kTurretOffByMs
-        || !shooterSubsystem.isShooterSpunUp()) {
+    boolean turretNotReady = turretSubsystem.getAimTimeLeftMs() > TurretConstants.kTurretOffByMs;
+    boolean spunUp = shooterSubsystem.isShooterSpunUp();
+
+    if (spunUp) {
+      hasSpunUp = true;
+    }
+
+    if (turretNotReady || !hasSpunUp) {
       isShooting = false;
       indexSubsystem.stopMotor();
       return;
@@ -125,6 +145,7 @@ public class ContinuousShooter extends Command {
 
   @Override
   public void end(boolean interrupted) {
+    hasSpunUp = false;
     isShooting = false;
     indexSubsystem.stopMotor();
   }
