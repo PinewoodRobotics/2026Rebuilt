@@ -205,6 +205,10 @@ public class RobotContainer {
     NamedCommands.registerCommand("IntakeTopCommand",
         new IntakeCommand(intakeSubsystem, () -> false,
             () -> false, WristRaiseLocation.TOP, true));
+
+    NamedCommands.registerCommand("IntakeCommand",
+        new IntakeCommand(intakeSubsystem, () -> true,
+            () -> false, WristRaiseLocation.BOTTOM, false));
   }
 
   private void setShooterCommands() {
