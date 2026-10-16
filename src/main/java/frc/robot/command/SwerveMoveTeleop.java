@@ -41,13 +41,16 @@ public class SwerveMoveTeleop extends Command {
   private final SwerveSubsystem m_swerveSubsystem;
   private final FlightModule controller;
   private final Optional<BooleanSupplier> isShootingSupplier;
+  private final Optional<BooleanSupplier> isLawnMowerSupplier;
 
   public SwerveMoveTeleop(
       SwerveSubsystem swerveSubsystem,
-      FlightModule controller, Optional<BooleanSupplier> isShootingSupplier) {
+      FlightModule controller, Optional<BooleanSupplier> isShootingSupplier,
+      Optional<BooleanSupplier> isLawnMowerSupplier) {
     this.m_swerveSubsystem = swerveSubsystem;
     this.controller = controller;
     this.isShootingSupplier = isShootingSupplier;
+    this.isLawnMowerSupplier = isLawnMowerSupplier;
     addRequirements(m_swerveSubsystem);
   }
 
@@ -73,18 +76,21 @@ public class SwerveMoveTeleop extends Command {
         ControllerConstants.kYSpeedDeadband,
         ControllerConstants.kYSpeedMinValue);
 
-    var velocity = SwerveSubsystem.fromPercentToVelocity(
-        new Vec2(rawX, rawY),
-        rawR);
+    double speedScale = 1.0;
+    if (isLawnMowerSupplier.isPresent() && isLawnMowerSupplier.get().getAsBoolean()) {
+      speedScale *= SwerveConstants.kLawnMowerSpeedMultiplier;
+    }
 
     if (m_swerveSubsystem.isGpsAssist() && AimPoint.getZone(GlobalPosition.Get()) == AimPoint.ZoneName.FRONT_OF_HUB
         && isShootingSupplier.isPresent() && isShootingSupplier.get().getAsBoolean()) {
-      velocity = SwerveSubsystem.fromPercentToVelocity(
-          new Vec2(rawX, rawY),
-          rawR,
-          SwerveConstants.kRobotMaxSpeed.times(SwerveConstants.kShootingSpeedMultiplier),
-          SwerveConstants.kRobotMaxTurnSpeed.times(SwerveConstants.kShootingSpeedMultiplier));
+      speedScale *= SwerveConstants.kShootingSpeedMultiplier;
     }
+
+    var velocity = SwerveSubsystem.fromPercentToVelocity(
+        new Vec2(rawX, rawY),
+        rawR,
+        SwerveConstants.kRobotMaxSpeed.times(speedScale),
+        SwerveConstants.kRobotMaxTurnSpeed.times(speedScale));
 
     m_swerveSubsystem.drive(velocity, SwerveSubsystem.DriveType.FIELD_RELATIVE);
   }
