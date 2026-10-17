@@ -12,10 +12,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import frc.robot.command.ClimbAuto;
 import frc.robot.command.SwerveMoveTeleop;
-import frc.robot.command.climber.CalibrateClimberCommand;
-import frc.robot.command.climber.ManualClimberControlCommand;
 import frc.robot.command.intake.IntakeCommand;
 import frc.robot.command.lighting.ShootingLighting;
 import frc.robot.command.scoring.ContinuousAimCommand;
@@ -27,7 +24,6 @@ import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
 import frc.robot.constant.BotConstants;
-import frc.robot.constant.ClimberConstants;
 import frc.robot.constant.IntakeConstants.WristRaiseLocation;
 import frc.robot.constant.ShooterConstants;
 import frc.robot.hardware.UnifiedGyro;
@@ -42,7 +38,6 @@ import frc.robot.subsystem.ShooterSubsystem;
 import frc.robot.subsystem.SwerveSubsystem;
 import frc.robot.subsystem.TurretSubsystem;
 import frc.robot.subsystem.VisionSubsystem;
-import frc.robot.subsystem.ClimberSubsystem;
 import frc.robot.util.AimPoint;
 import pwrup.frc.core.controller.FlightModule;
 import pwrup.frc.core.controller.FlightStick;
@@ -84,7 +79,6 @@ public class RobotContainer {
     setTurretCommands();
     setShooterCommands();
     setIntakeCommands();
-    setClimberCommands();
 
     BotConstants.SetAlliance();
   }
@@ -154,29 +148,6 @@ public class RobotContainer {
     NamedCommands.registerCommand("ContinuousAimCommand", new ContinuousAimCommand(() -> AimPoint.getTarget()));
   }
 
-  private void setClimberCommands() {
-    ClimberSubsystem climberSubsystem = ClimberSubsystem.GetInstance();
-    climberSubsystem.setDefaultCommand(new ManualClimberControlCommand(
-        climberSubsystem,
-        m_leftFlightStick::getLeftSlider, false, true));
-
-    m_operatorPanel.redButton().whileTrue(Commands.startEnd(
-        () -> climberSubsystem.setVelocity(ClimberConstants.kManualDownVelocity),
-        climberSubsystem::stopHeightMotor,
-        climberSubsystem));
-
-    m_leftFlightStick.B7().onTrue(new CalibrateClimberCommand(climberSubsystem));
-
-    NamedCommands.registerCommand("MoveClimberUp",
-        new ManualClimberControlCommand(climberSubsystem, () -> 1.0, true, false));
-
-    NamedCommands.registerCommand("MoveClimberDown",
-        new ManualClimberControlCommand(climberSubsystem, () -> 0.6, false, false));
-
-    m_leftFlightStick.B17().whileTrue(new ClimbAuto(ClimbAuto.ClosePath.LEFT));
-    m_leftFlightStick.B16().whileTrue(new ClimbAuto(ClimbAuto.ClosePath.RIGHT));
-  }
-
   private void setIntakeCommands() {
     IntakeSubsystem intakeSubsystem = IntakeSubsystem.GetInstance();
     IntakeCommand intakeCommand = new IntakeCommand(intakeSubsystem,
@@ -205,6 +176,10 @@ public class RobotContainer {
     NamedCommands.registerCommand("IntakeTopCommand",
         new IntakeCommand(intakeSubsystem, () -> false,
             () -> false, WristRaiseLocation.TOP, true));
+
+    NamedCommands.registerCommand("IntakeCommand",
+        new IntakeCommand(intakeSubsystem, () -> true,
+            () -> false, WristRaiseLocation.BOTTOM, false));
   }
 
   private void setShooterCommands() {
