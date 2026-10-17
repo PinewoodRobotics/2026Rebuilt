@@ -106,7 +106,14 @@ public class IntakeSubsystem extends SubsystemBase {
   }
 
   private void updateWristDrop() {
-    if (m_wristDropDone || !DriverStation.isEnabled()) {
+    if (DriverStation.isDisabled()) {
+      m_wristDropDone = false;
+      m_wristDropTimer.stop();
+      m_wristDropTimer.reset();
+      return;
+    }
+
+    if (m_wristDropDone) {
       return;
     }
 
