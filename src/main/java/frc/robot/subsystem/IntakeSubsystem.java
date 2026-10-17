@@ -15,6 +15,8 @@ import com.revrobotics.spark.config.SparkFlexConfig;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constant.IntakeConstants;
 import frc.robot.constant.IntakeConstants.WristRaiseLocation;
@@ -25,6 +27,10 @@ public class IntakeSubsystem extends SubsystemBase {
 
   private final SparkFlex m_intakeIntakerMotor;
   private final SparkFlex m_intakeWristMotor;
+  private final SparkFlex m_intakeWristFollowerMotor;
+
+  private final Timer m_wristDropTimer = new Timer();
+  private boolean m_wristDropDone = false;
 
   private Rotation2d m_wristSetpoint = IntakeConstants.WristRaiseLocation.BOTTOM.position;
   private final SharedDoubleTopic m_intakeSpeedTopic = new SharedDoubleTopic(IntakeConstants.kIntakeSpeedTopic, -1.0);
@@ -40,8 +46,10 @@ public class IntakeSubsystem extends SubsystemBase {
   private IntakeSubsystem(int intakeMotorID, int wristMotorID) {
     m_intakeIntakerMotor = new SparkFlex(intakeMotorID, MotorType.kBrushless);
     m_intakeWristMotor = new SparkFlex(wristMotorID, MotorType.kBrushless);
+    m_intakeWristFollowerMotor = new SparkFlex(IntakeConstants.intakeWristFollowerMotorID, MotorType.kBrushless);
     configureIntaker();
     configureWrist();
+    configureWristFollower();
   }
 
   private void configureIntaker() {
@@ -58,20 +66,48 @@ public class IntakeSubsystem extends SubsystemBase {
     wristConfig.inverted(IntakeConstants.intakeWristInverted);
     wristConfig.closedLoop.feedbackSensor(FeedbackSensor.kAbsoluteEncoder);
     wristConfig.absoluteEncoder.inverted(IntakeConstants.intakeWristEncoderInverted);
-    wristConfig.idleMode(IdleMode.kBrake);
-    wristConfig.closedLoop.pid(
-        IntakeConstants.intakeWristP,
-        IntakeConstants.intakeWristI,
-        IntakeConstants.intakeWristD)
-        .iZone(IntakeConstants.intakeWristIZone)
-        .positionWrappingEnabled(true)
-        .positionWrappingMinInput(0)
-        .positionWrappingMinInput(1);
+    wristConfig.idleMode(IdleMode.kCoast);
+    // wristConfig.closedLoop.pid(
+    //     IntakeConstants.intakeWristP,
+    //     IntakeConstants.intakeWristI,
+    //     IntakeConstants.intakeWristD)
+    //     .iZone(IntakeConstants.intakeWristIZone)
+    //     .positionWrappingEnabled(true)
+    //     .positionWrappingMinInput(0)
+    //     .positionWrappingMinInput(1);
 
     wristConfig.absoluteEncoder.zeroOffset(IntakeConstants.intakeWristOffset.getRotations());
 
     m_intakeWristMotor.configure(wristConfig, ResetMode.kResetSafeParameters,
         PersistMode.kPersistParameters);
+  }
+
+  private void configureWristFollower() {
+    SparkFlexConfig followerConfig = new SparkFlexConfig();
+    followerConfig.smartCurrentLimit(IntakeConstants.intakeWristCurrentLimit);
+    followerConfig.idleMode(IdleMode.kCoast);
+    followerConfig.follow(m_intakeWristMotor, true);
+
+    m_intakeWristFollowerMotor.configure(followerConfig, ResetMode.kResetSafeParameters,
+        PersistMode.kPersistParameters);
+  }
+
+  private void updateWristDrop() {
+    if (m_wristDropDone || !DriverStation.isEnabled()) {
+      return;
+    }
+
+    m_wristDropTimer.start();
+    double position = getWristPosition().getRotations();
+    boolean released = position >= IntakeConstants.kWristDropReleaseWindowMin
+        && position <= IntakeConstants.kWristDropReleasePosition;
+    if (released || m_wristDropTimer.hasElapsed(IntakeConstants.kWristDropTimeoutS)) {
+      m_intakeWristMotor.stopMotor();
+      m_wristDropDone = true;
+      return;
+    }
+
+    m_intakeWristMotor.set(IntakeConstants.kWristDropSpeed);
   }
 
   private double calculateFeedForward() {
@@ -110,18 +146,20 @@ public class IntakeSubsystem extends SubsystemBase {
   }
 
   public boolean wristAtSetpoint() {
-    return Math.abs(getWristPosition().minus(m_wristSetpoint).getRadians()) < IntakeConstants.kTolerance.getRadians();
+    // return Math.abs(getWristPosition().minus(m_wristSetpoint).getRadians()) < IntakeConstants.kTolerance.getRadians();
+    return true;
   }
 
   @Override
   public void periodic() {
-    if (m_wristSetpoint != null) {
-      m_intakeWristMotor.getClosedLoopController().setSetpoint(
-          m_wristSetpoint.getRotations(),
-          ControlType.kPosition,
-          ClosedLoopSlot.kSlot0,
-          calculateFeedForward());
-    }
+    // if (m_wristSetpoint != null) {
+    //   m_intakeWristMotor.getClosedLoopController().setSetpoint(
+    //       m_wristSetpoint.getRotations(),
+    //       ControlType.kPosition,
+    //       ClosedLoopSlot.kSlot0,
+    //       calculateFeedForward());
+    // }
+    updateWristDrop();
 
     double intakeSpeed = getIntakeSpeed();
     m_intakeSpeedTopic.setState(intakeSpeed);
@@ -129,5 +167,6 @@ public class IntakeSubsystem extends SubsystemBase {
     Logger.recordOutput("IntakeSubsystem/WristPosition", getWristPosition().getRotations());
     Logger.recordOutput("IntakeSubsystem/WristSetpoint", m_wristSetpoint.getRotations());
     Logger.recordOutput("IntakeSubsystem/FeedForward", calculateFeedForward());
+    Logger.recordOutput("IntakeSubsystem/WristDropDone", m_wristDropDone);
   }
 }
