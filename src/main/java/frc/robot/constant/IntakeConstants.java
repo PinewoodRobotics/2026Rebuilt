@@ -51,10 +51,11 @@ public class IntakeConstants {
 
   public final static double kWristDropSpeed = -0.2;
   /**
-   * Stowed reads near 1.0 but can wrap to just above 0, so only readings inside
-   * this window count as having passed the release point.
+   * Stowed reads ~0.548 and the reading rises through the release point toward
+   * the ground at 1.0, where it wraps to 0. Readings below the wrap threshold
+   * mean the wrist already passed the ground.
    */
   public final static double kWristDropReleasePosition = 0.667;
-  public final static double kWristDropReleaseWindowMin = 0.4;
+  public final static double kWristDropWrapThreshold = 0.3;
   public final static double kWristDropTimeoutS = 2.0;
 }

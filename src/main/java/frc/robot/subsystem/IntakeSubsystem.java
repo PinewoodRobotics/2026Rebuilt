@@ -61,6 +61,17 @@ public class IntakeSubsystem extends SubsystemBase {
   }
 
   private void configureWrist() {
+    if (IntakeConstants.intakeType == "BELT") {
+      // Inversion and zero offset were tuned and persisted in the REV client;
+      // resetting safe parameters would wipe them.
+      SparkFlexConfig beltWristConfig = new SparkFlexConfig();
+      beltWristConfig.smartCurrentLimit(IntakeConstants.intakeWristCurrentLimit);
+      beltWristConfig.idleMode(IdleMode.kCoast);
+      m_intakeWristMotor.configure(beltWristConfig, ResetMode.kNoResetSafeParameters,
+          PersistMode.kPersistParameters);
+      return;
+    }
+
     SparkFlexConfig wristConfig = new SparkFlexConfig();
     wristConfig.smartCurrentLimit(IntakeConstants.intakeWristCurrentLimit);
     wristConfig.inverted(IntakeConstants.intakeWristInverted);
@@ -99,8 +110,8 @@ public class IntakeSubsystem extends SubsystemBase {
 
     m_wristDropTimer.start();
     double position = getWristPosition().getRotations();
-    boolean released = position >= IntakeConstants.kWristDropReleaseWindowMin
-        && position <= IntakeConstants.kWristDropReleasePosition;
+    boolean released = position >= IntakeConstants.kWristDropReleasePosition
+        || position < IntakeConstants.kWristDropWrapThreshold;
     if (released || m_wristDropTimer.hasElapsed(IntakeConstants.kWristDropTimeoutS)) {
       m_intakeWristMotor.stopMotor();
       m_wristDropDone = true;
