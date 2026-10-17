@@ -62,11 +62,13 @@ public class IntakeSubsystem extends SubsystemBase {
 
   private void configureWrist() {
     if (IntakeConstants.intakeType == "BELT") {
-      // Inversion and zero offset were tuned and persisted in the REV client;
-      // resetting safe parameters would wipe them.
+      // Zero offset was set and persisted in the REV client; resetting safe
+      // parameters would wipe it.
       SparkFlexConfig beltWristConfig = new SparkFlexConfig();
       beltWristConfig.smartCurrentLimit(IntakeConstants.intakeWristCurrentLimit);
       beltWristConfig.idleMode(IdleMode.kCoast);
+      beltWristConfig.inverted(IntakeConstants.intakeWristInverted);
+      beltWristConfig.absoluteEncoder.inverted(IntakeConstants.intakeWristEncoderInverted);
       m_intakeWristMotor.configure(beltWristConfig, ResetMode.kNoResetSafeParameters,
           PersistMode.kPersistParameters);
       return;
