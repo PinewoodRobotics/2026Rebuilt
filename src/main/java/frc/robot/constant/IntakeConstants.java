@@ -17,7 +17,7 @@ public class IntakeConstants {
   public static final String kIntakeSpeedTopic = "Intake/Speed";
   public static final double extakeMotorSpeed = (intakeType == "BELT" ? -0.5 : -0.2);
 
-  public static final boolean intakeWristInverted = false;
+  public static final boolean intakeWristInverted = (intakeType == "BELT" ? true : false);
 
   public static final double intakeWristP = 3;
   public static final double intakeWristI = 0.0;
