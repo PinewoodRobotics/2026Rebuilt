@@ -8,8 +8,7 @@ public class IntakeConstants {
   public static final int intakeWristMotorID = (intakeType == "BELT" ? 26 : 34);
 
   public static final boolean intakeIntakerInverted = true;
-  public final static double intakeIntakerGearingRatio = 1.0 / 5.0;
-  public static final double intakeMotorSpeed = 0.15;
+  public static final double intakeMotorSpeed = (intakeType == "BELT" ? 0.5 : 0.15);
   /**
    * Dashboard override topic under the shared table; a request outside [0, 1]
    * means "use intakeMotorSpeed".
@@ -34,7 +33,7 @@ public class IntakeConstants {
 
   public static enum WristRaiseLocation {
     BOTTOM(Rotation2d.fromRotations(0)),
-    MIDDLE(Rotation2d.fromRotations(0.1)),
+    MIDDLE(Rotation2d.fromRotations(intakeType == "BELT" ? 0.338 : 0.1)),
     TOP(Rotation2d.fromRotations(0.338));
 
     public final Rotation2d position;

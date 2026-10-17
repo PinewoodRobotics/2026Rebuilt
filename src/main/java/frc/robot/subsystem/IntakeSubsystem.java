@@ -48,9 +48,6 @@ public class IntakeSubsystem extends SubsystemBase {
     SparkFlexConfig config = new SparkFlexConfig();
     config.idleMode(IdleMode.kBrake);
     config.inverted(IntakeConstants.intakeIntakerInverted);
-    config.encoder
-        .positionConversionFactor(IntakeConstants.intakeIntakerGearingRatio)
-        .velocityConversionFactor(IntakeConstants.intakeIntakerGearingRatio);
 
     m_intakeIntakerMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
   }
@@ -105,10 +102,7 @@ public class IntakeSubsystem extends SubsystemBase {
   }
 
   public void runIntakeMotor(double speed) {
-    double scale = (IntakeConstants.intakeType == "BELT") ? 5.0 : 1.0;
-    m_intakeIntakerMotor.set(MathUtil.clamp(speed * scale, -1.0, 1.0));
-    // m_intakeIntakerMotor.set(MathUtil.clamp(speed, -1.0, 1.0) *
-    // ((IntakeConstants.intakeType == "BELT") ? 5 : 1));
+    m_intakeIntakerMotor.set(MathUtil.clamp(speed, -1.0, 1.0));
   }
 
   public void stopIntakeMotor() {
