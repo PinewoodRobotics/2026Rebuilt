@@ -8,6 +8,7 @@ public class IntakeConstants {
   public static final int intakeWristMotorID = (intakeType == "BELT" ? 26 : 34);
 
   public static final boolean intakeIntakerInverted = true;
+  public final static double intakeIntakerGearingRatio = 1.0 / 5.0;
   public static final double intakeMotorSpeed = 0.15;
   /**
    * Dashboard override topic under the shared table; a request outside [0, 1]

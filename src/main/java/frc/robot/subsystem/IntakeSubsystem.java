@@ -9,10 +9,8 @@ import com.revrobotics.spark.FeedbackSensor;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.config.SparkFlexConfig;
 
 import edu.wpi.first.math.MathUtil;
@@ -47,15 +45,18 @@ public class IntakeSubsystem extends SubsystemBase {
   }
 
   private void configureIntaker() {
-    SparkMaxConfig config = new SparkMaxConfig();
+    SparkFlexConfig config = new SparkFlexConfig();
     config.idleMode(IdleMode.kBrake);
     config.inverted(IntakeConstants.intakeIntakerInverted);
+    config.encoder
+        .positionConversionFactor(IntakeConstants.intakeIntakerGearingRatio)
+        .velocityConversionFactor(IntakeConstants.intakeIntakerGearingRatio);
 
     m_intakeIntakerMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
   }
 
   private void configureWrist() {
-    SparkMaxConfig wristConfig = new SparkMaxConfig();
+    SparkFlexConfig wristConfig = new SparkFlexConfig();
     wristConfig.smartCurrentLimit(IntakeConstants.intakeWristCurrentLimit);
     wristConfig.inverted(IntakeConstants.intakeWristInverted);
     wristConfig.closedLoop.feedbackSensor(FeedbackSensor.kAbsoluteEncoder);
