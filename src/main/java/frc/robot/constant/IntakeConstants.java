@@ -26,7 +26,7 @@ public class IntakeConstants {
   public final static double intakeWristFeedForwardK = 0.2;
   public final static Rotation2d intakeWristFFOffset = Rotation2d.fromRotations(0); // TODO
 
-  public final static int intakeWristCurrentLimit = 20;
+  public final static int intakeWristCurrentLimit = 80;
   public final static double intakeWristGearingRatio = 1.0 / 80.0;
   public final static Rotation2d intakeWristOffset = Rotation2d.fromRotations(intakeType == "BELT" ? 0.84 : 0.113);
   public final static boolean intakeWristEncoderInverted = (intakeType == "BELT" ? false : true);
@@ -49,7 +49,7 @@ public class IntakeConstants {
 
   public final static Rotation2d kTolerance = Rotation2d.fromDegrees(5);
 
-  public final static double kWristDropSpeed = -0.2;
+  public final static double kWristDropSpeed = -0.12;
   /**
    * Stowed reads ~0.548 and the reading rises through the release point toward
    * the ground at 1.0, where it wraps to 0. Readings below the wrap threshold
