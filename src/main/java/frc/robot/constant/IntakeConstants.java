@@ -49,7 +49,7 @@ public class IntakeConstants {
 
   public final static Rotation2d kTolerance = Rotation2d.fromDegrees(5);
 
-  public final static double kWristDropSpeed = -0.12;
+  public final static double kWristDropSpeed = 0.12;
   /**
    * Stowed reads ~0.524 and the reading rises through the release point toward
    * the ground at 1.0, where it wraps to 0. Readings below the wrap threshold
