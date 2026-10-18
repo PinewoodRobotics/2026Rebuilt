@@ -28,8 +28,8 @@ public class IntakeConstants {
 
   public final static int intakeWristCurrentLimit = 80;
   public final static double intakeWristGearingRatio = 1.0 / 80.0;
-  public final static Rotation2d intakeWristOffset = Rotation2d.fromRotations(intakeType == "BELT" ? 0.84 : 0.113);
-  public final static boolean intakeWristEncoderInverted = (intakeType == "BELT" ? false : true);
+  public final static Rotation2d intakeWristOffset = Rotation2d.fromRotations(intakeType == "BELT" ? 0.1765 : 0.113);
+  public final static boolean intakeWristEncoderInverted = (intakeType == "BELT" ? true : true);
   public final static boolean kShouldWeAreWeGoingToPulseTheIntakeConstantVariable = false;
 
   public static enum WristRaiseLocation {
@@ -51,11 +51,11 @@ public class IntakeConstants {
 
   public final static double kWristDropSpeed = -0.12;
   /**
-   * Stowed reads ~0.548 and the reading rises through the release point toward
+   * Stowed reads ~0.524 and the reading rises through the release point toward
    * the ground at 1.0, where it wraps to 0. Readings below the wrap threshold
    * mean the wrist already passed the ground.
    */
-  public final static double kWristDropReleasePosition = 0.667;
+  public final static double kWristDropReleasePosition = 0.700;
   public final static double kWristDropWrapThreshold = 0.3;
   public final static double kWristDropTimeoutS = 2.0;
 }
