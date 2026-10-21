@@ -92,10 +92,12 @@ public class RobotContainer {
   private void setSwerveCommands() {
     SwerveSubsystem swerveSubsystem = SwerveSubsystem.GetInstance();
     BooleanSupplier isShootingSupplier = () -> m_operatorPanel.metalSwitchDown().getAsBoolean();
+    BooleanSupplier isLawnMowerSupplier = () -> m_rightFlightStick.trigger().getAsBoolean();
 
     swerveSubsystem
         .setDefaultCommand(
-            new SwerveMoveTeleop(swerveSubsystem, m_flightModule, Optional.of(isShootingSupplier)));
+            new SwerveMoveTeleop(swerveSubsystem, m_flightModule, Optional.of(isShootingSupplier),
+                Optional.of(isLawnMowerSupplier)));
 
     // Toggle gps-based driving assist features
     m_leftFlightStick.B5().onTrue(new InstantCommand(() -> {
@@ -180,7 +182,7 @@ public class RobotContainer {
   private void setIntakeCommands() {
     IntakeSubsystem intakeSubsystem = IntakeSubsystem.GetInstance();
     IntakeCommand intakeCommand = new IntakeCommand(intakeSubsystem,
-        () -> m_operatorPanel.metalSwitchDown().getAsBoolean() || m_rightFlightStick.trigger().getAsBoolean(),
+        () -> m_operatorPanel.metalSwitchDown().getAsBoolean() || m_leftFlightStick.trigger().getAsBoolean(),
         () -> m_rightFlightStick.B17().getAsBoolean());
     Trigger teleopEnabled = new Trigger(DriverStation::isTeleopEnabled);
 
