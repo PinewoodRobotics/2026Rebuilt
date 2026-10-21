@@ -50,7 +50,7 @@ public class SwerveConstantsTalonFX {
 
   // whether the driving encoders are flipped
   public static final InvertedValue kFrontLeftDriveMotorReversed = InvertedValue.CounterClockwise_Positive;
-  public static final InvertedValue kRearLeftDriveMotorReversed = InvertedValue.CounterClockwise_Positive;
+  public static final InvertedValue kRearLeftDriveMotorReversed = InvertedValue.Clockwise_Positive;
   public static final InvertedValue kFrontRightDriveMotorReversed = InvertedValue.CounterClockwise_Positive;
   public static final InvertedValue kRearRightDriveMotorReversed = InvertedValue.Clockwise_Positive;
 
@@ -88,7 +88,7 @@ public class SwerveConstantsTalonFX {
   // units: rotations
   public static final double kFrontLeftCANcoderMagnetOffset = -0.184;
   public static final double kFrontRightCANcoderMagnetOffset = -0.285;
-  public static final double kRearLeftCANcoderMagnetOffset = 0.317;
+  public static final double kRearLeftCANcoderMagnetOffset = 0.412;
   public static final double kRearRightCANcoderMagnetOffset = 0.062;
 
   // stats used by SwerveSubsystem for deadbanding

@@ -131,8 +131,10 @@ public class WheelMoverTalonFX extends WheelMoverBase {
 
     m_turnMotor.getConfigurator().apply(turnConfig);
 
+    // Wait for a fresh frame so the seed reflects the magnet offset just applied,
+    // not a cached pre-config (or not-yet-received) value.
     m_turnMotor.setPosition(
-        turnCANcoder.getAbsolutePosition().getValueAsDouble());
+        turnCANcoder.getAbsolutePosition().waitForUpdate(0.25).getValueAsDouble());
 
     if (SwerveConstants.kLogMotorTelemetry) {
       driveVoltsSignal = m_driveMotor.getMotorVoltage(false);
