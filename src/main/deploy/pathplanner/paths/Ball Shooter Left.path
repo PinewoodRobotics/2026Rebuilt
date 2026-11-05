@@ -88,11 +88,11 @@
   ],
   "constraintZones": [
     {
-      "name": "Constraints Zone",
-      "minWaypointRelativePos": 3.157096354166668,
+      "name": "Intake Sweep",
+      "minWaypointRelativePos": 2.9,
       "maxWaypointRelativePos": 4.0,
       "constraints": {
-        "maxVelocity": 0.5,
+        "maxVelocity": 0.7,
         "maxAcceleration": 2.0,
         "maxAngularVelocity": 540.0,
         "maxAngularAcceleration": 720.0,
@@ -105,7 +105,7 @@
   "eventMarkers": [
     {
       "name": "IntakeCommand",
-      "waypointRelativePos": 3.131281146179404,
+      "waypointRelativePos": 2.9,
       "endWaypointRelativePos": 4.0,
       "command": null
     }
@@ -120,7 +120,7 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 89.09650867272647
+    "rotation": 90.0
   },
   "reversed": false,
   "folder": "Other",
