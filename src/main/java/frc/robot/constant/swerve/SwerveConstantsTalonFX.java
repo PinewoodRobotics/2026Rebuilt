@@ -86,7 +86,7 @@ public class SwerveConstantsTalonFX {
   // opening the Phoenix Tuner app, and taking snapshots of
   // the rotational values of the CANCoders while in they are in the forward state
   // units: rotations
-  public static final double kFrontLeftCANcoderMagnetOffset = -0.184;
+  public static final double kFrontLeftCANcoderMagnetOffset = -0.313;
   public static final double kFrontRightCANcoderMagnetOffset = -0.285;
   public static final double kRearLeftCANcoderMagnetOffset = 0.317;
   public static final double kRearRightCANcoderMagnetOffset = 0.062;
