@@ -1,25 +1,19 @@
 plugins {
     id "java"
-    id "edu.wpi.first.GradleRIO" version "2026.2.1"
+    id "application"
+    id "org.wpilib.GradleRIO" version "2027.0.0-alpha-8"
     id "groovy"
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
-    toolchain {
-      languageVersion = JavaLanguageVersion.of(17)
-    }
-}
-
-ext {
-    alreadyAdded = []
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 }
 
 repositories {
     mavenCentral()
     maven {
-        url 'https://jitpack.io'
+        url = 'https://jitpack.io'
     }
 }
 
@@ -27,28 +21,31 @@ def ROBOT_MAIN_CLASS = "frc.robot.Main"
 
 def dynamicLibDir = layout.projectDirectory.dir("lib/build")
 
-// Define deploy target and artifacts
 deploy {
     targets {
-        roborio(getTargetTypeClass('RoboRIO')) {
-            team = project.frc.getTeamNumber()
-            debug = project.frc.getDebugOrDefault(false)
+        systemcore(getTargetTypeClass('SystemCore')) {
+            team = project.wpilib.getTeamNumber()
+            useDefaultSystemcoreHostName()
+            debug = project.wpilib.getDebugOrDefault(false)
 
             artifacts {
-                frcJava(getArtifactTypeClass('FRCJavaArtifact')) {}
+                wpilibJava(getArtifactTypeClass('WPILibJavaArtifact')) {
+                    debugJni = false
+                }
 
-                frcStaticFileDeploy(getArtifactTypeClass('FileTreeArtifact')) {
-                    files = project.fileTree("src/main/deploy")
-                    directory = '/home/lvuser/deploy'
+                wpilibStaticFileDeploy(getArtifactTypeClass('FileTreeArtifact')) {
+                    files = project.fileTree('src/main/deploy')
+                    directory = '/home/systemcore/deploy'
+                    deleteOldFiles = false
                 }
             }
         }
     }
 }
 
-def deployArtifact = deploy.targets.roborio.artifacts.frcJava
+def deployArtifact = deploy.targets.systemcore.artifacts.wpilibJava
 
-wpi.java.debugJni = false
+wpi.java.runSimWithDebugJni = false
 
 def includeDesktopSupport = false
 
@@ -60,56 +57,48 @@ def buildDynamicDepsTask = tasks.register("buildDynamicDeps") {
     outputs.dir(dynamicLibDir)
     outputs.upToDateWhen { false }  // run every build cycle so deps are always refreshed
 
+    def javaHome =
+            System.getenv("JAVA_HOME")
+            ?: (project.findProperty("org.gradle.java.home") as String)
+            ?: System.getProperty("java.home")
+    def projectDir = layout.projectDirectory.asFile
+    def execProvider = providers.exec {
+        workingDir = projectDir
+        environment "JAVA_HOME", javaHome
+        environment "PATH", "${javaHome}/bin:${System.getenv("PATH")}"
+        commandLine "python3", "scripts/clone_and_build_repos.py",
+                "--config-file-path", "config.ini"
+        ignoreExitValue = true
+    }
+
     doLast {
-        def stdout = new ByteArrayOutputStream()
-        def stderr = new ByteArrayOutputStream()
-
-        try {
-            exec {
-                def javaHome =
-                        System.getenv("JAVA_HOME")
-                        ?: (project.findProperty("org.gradle.java.home") as String)
-                        ?: System.getProperty("java.home")
-
-                environment "JAVA_HOME", javaHome
-                environment "PATH", "${javaHome}/bin:${System.getenv("PATH")}"
-
-                commandLine "python3", "scripts/clone_and_build_repos.py",
-                        "--config-file-path", "config.ini"
-
-                standardOutput = stdout
-                errorOutput = stderr
-            }
-        } catch (Exception e) {
-            // print error output, then rethrow
-            def err = stderr.toString().trim()
-            if (err) println err
-            println "Exception during exec: $e"
-            throw e
-        }
-
-        println stdout.toString().trim()
-        def err = stderr.toString().trim()
+        def out = execProvider.standardOutput.asText.get().trim()
+        def err = execProvider.standardError.asText.get().trim()
+        if (out) println out
         if (err) println err
+        def exitValue = execProvider.result.get().exitValue
+        if (exitValue != 0) {
+            throw new GradleException("clone_and_build_repos.py failed with exit code ${exitValue}")
+        }
     }
 }
 
 // Create a provider that forces lazy evaluation of the directory
 // This ensures VSCode picks up new JARs when it refreshes the classpath
-def dynamicJarsProvider = buildDynamicDepsTask.map { 
-    dynamicLibDir 
+def dynamicJarsProvider = buildDynamicDepsTask.map {
+    dynamicLibDir
 }
 
-// Define project dependencies
 dependencies {
+    annotationProcessor wpi.java.deps.wpilibAnnotations()
     implementation wpi.java.deps.wpilib()
     implementation wpi.java.vendor.java()
 
-    roborioDebug wpi.java.deps.wpilibJniDebug(wpi.platforms.roborio)
-    roborioDebug wpi.java.vendor.jniDebug(wpi.platforms.roborio)
+    systemcoreDebug wpi.java.deps.wpilibJniDebug(wpi.platforms.systemcore)
+    systemcoreDebug wpi.java.vendor.jniDebug(wpi.platforms.systemcore)
 
-    roborioRelease wpi.java.deps.wpilibJniRelease(wpi.platforms.roborio)
-    roborioRelease wpi.java.vendor.jniRelease(wpi.platforms.roborio)
+    systemcoreRelease wpi.java.deps.wpilibJniRelease(wpi.platforms.systemcore)
+    systemcoreRelease wpi.java.vendor.jniRelease(wpi.platforms.systemcore)
 
     nativeDebug wpi.java.deps.wpilibJniDebug(wpi.platforms.desktop)
     nativeDebug wpi.java.vendor.jniDebug(wpi.platforms.desktop)
@@ -118,16 +107,18 @@ dependencies {
     nativeRelease wpi.java.deps.wpilibJniRelease(wpi.platforms.desktop)
     nativeRelease wpi.java.vendor.jniRelease(wpi.platforms.desktop)
     simulationRelease wpi.sim.enableRelease()
-    
-    compileOnly 'org.projectlombok:lombok:1.18.30'
-    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+    compileOnly 'org.projectlombok:lombok:1.18.48'
+    annotationProcessor 'org.projectlombok:lombok:1.18.48'
+    testCompileOnly 'org.projectlombok:lombok:1.18.48'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.48'
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     // Use provider with fileTree to force lazy evaluation so VSCode picks up new JARs
-    implementation(files(dynamicJarsProvider.map { dir -> 
-        fileTree(dir: dir, include: "*.jar") 
+    implementation(files(dynamicJarsProvider.map { dir ->
+        fileTree(dir: dir, include: "*.jar")
     }).builtBy(buildDynamicDepsTask))
 }
 
@@ -136,21 +127,23 @@ test {
     systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
 }
 
-// Simulation settings
 wpi.sim.addGui().defaultEnabled = true
 wpi.sim.addDriverstation()
 
-// Create a fat jar (including all dependencies) and set the manifest for WPILib
+application.mainClass = ROBOT_MAIN_CLASS
+
+deployArtifact.configureApplication(application)
+wpi.java.configureApplication(application)
+wpi.java.configureTestTasks(test)
+
 jar {
-    from sourceSets.main.output
-    from({ configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } })
-    manifest edu.wpi.first.gradlerio.GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from('src') { into 'backup/src' }
+    from('vendordeps') { into 'backup/vendordeps' }
+    from('build.gradle') { into 'backup' }
 }
 
-// Set the jar task for deployment
-deployArtifact.jarTask = jar
-wpi.java.configureExecutableTasks(jar)
-wpi.java.configureTestTasks(test)
+tasks.withType(JavaCompile) {
+    options.compilerArgs.add '-XDstringConcat=inline'
+}
 
 tasks.compileJava.dependsOn(tasks.buildDynamicDeps)

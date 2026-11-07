@@ -22,7 +22,7 @@ The intent is simple: clone this once per robot, drop in your subsystems/command
 
 ## Prerequisites
 
-- **Java 17** (required by WPILib 2026)
+- **Java 25** (required by WPILib 2027; bundled with the WPILib installer)
 - **Python 3.9+** (runs the dynamic vendor build script)
 
 ---
@@ -63,7 +63,7 @@ On `./gradlew build`, any section with `build_dynamically = true` is:
 # WPILib simulator GUI
 ./gradlew simulateJava
 
-# Deploy to your RoboRIO
+# Deploy to your Systemcore
 ./gradlew deploy -PteamNumber=<TEAM_NUMBER>
 ```
 
@@ -83,11 +83,11 @@ If you want more detail on the dynamic source-building system, see `docs/SourceB
 
 `BotConstants` controls how AdvantageKit runs:
 
-- **REAL** – logs written on the roboRIO
+- **REAL** – logs written on the Systemcore
 - **SIM** – NT4 publisher plus GUI
 - **REPLAY** – reads a `.wplog` file and writes a new `_sim` log
 
-Switch between REAL and SIM in `BotConstants` when running off-roboRIO.
+Switch between REAL and SIM in `BotConstants` when running off-robot.
 
 ---
 
