@@ -1,6 +1,6 @@
 package frc.robot.command.testing;
 
-import edu.wpi.first.wpilibj2.command.Command;
+import org.wpilib.command2.Command;
 import frc.robot.subsystem.IndexSubsystem;
 
 public class IndexCommand extends Command {

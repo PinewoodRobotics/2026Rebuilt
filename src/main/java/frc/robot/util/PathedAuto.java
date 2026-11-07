@@ -14,7 +14,7 @@ import org.json.simple.parser.ParseException;
 import com.pathplanner.lib.commands.PathPlannerAuto;
 import com.pathplanner.lib.path.PathPlannerPath;
 
-import edu.wpi.first.wpilibj.Filesystem;
+import org.wpilib.system.Filesystem;
 
 public class PathedAuto extends PathPlannerAuto {
   private final List<PathPlannerPath> paths = new ArrayList<>();

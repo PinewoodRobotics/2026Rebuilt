@@ -1,10 +1,11 @@
 package frc.robot.subsystem;
 
+import frc.robot.constant.BotConstants;
 import com.ctre.phoenix6.hardware.CANdle;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import org.wpilib.system.Timer;
+import org.wpilib.command2.SubsystemBase;
 import frc.robot.command.util.PollingCommand;
-import edu.wpi.first.wpilibj2.command.Command;
+import org.wpilib.command2.Command;
 import frc.robot.constant.LEDConstants;
 import frc.robot.util.lighting.effects.BlinkEffect;
 import frc.robot.util.lighting.effects.BreatheEffect;
@@ -49,7 +50,7 @@ public final class LightsSubsystem extends SubsystemBase implements LightsApi {
   public LightsSubsystem() {
 
     this(
-        new CANdle(LEDConstants.candleCANId),
+        new CANdle(LEDConstants.candleCANId, BotConstants.kCanBus),
         new LightsEngine(LEDConstants.ledCount, LEDConstants.maxSolidWritesPerCycle));
   }
 
@@ -222,7 +223,7 @@ public final class LightsSubsystem extends SubsystemBase implements LightsApi {
 
   @Override
   public void periodic() {
-    LightsEngine.RenderResult result = engine.render(Timer.getFPGATimestamp());
+    LightsEngine.RenderResult result = engine.render(Timer.getTimestamp());
 
     if (result.hasWrites()) {
       transport.writeSegments(result.segments());

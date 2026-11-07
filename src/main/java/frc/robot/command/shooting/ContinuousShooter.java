@@ -5,10 +5,10 @@ import java.util.function.Supplier;
 
 import org.littletonrobotics.junction.Logger;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.wpilibj2.command.Command;
+import org.wpilib.math.geometry.Pose2d;
+import org.wpilib.math.geometry.Translation2d;
+import org.wpilib.math.kinematics.ChassisVelocities;
+import org.wpilib.command2.Command;
 import frc.robot.command.scoring.ContinuousAimCommand;
 import frc.robot.constant.ShooterConstants;
 import frc.robot.constant.TurretConstants;
@@ -75,7 +75,7 @@ public class ContinuousShooter extends Command {
   public static ShotSolution CalculateShotSolution(
       Pose2d selfPose,
       Translation2d targetGlobal,
-      ChassisSpeeds robotFieldSpeeds) {
+      ChassisVelocities robotFieldSpeeds) {
     Translation2d targetRelative = LocalMath.fromGlobalToRelative(selfPose.getTranslation(), targetGlobal);
     Translation2d compensatedTargetRelative = ContinuousAimCommand.GetCompensatedSpeed(
         selfPose,
@@ -99,7 +99,7 @@ public class ContinuousShooter extends Command {
     Translation2d target = targetGlobalPoseSupplier.get();
     Translation2d self = selfGlobalPoseSupplier.get();
     Pose2d selfPose = new Pose2d(self, GlobalPosition.Get().getRotation());
-    ChassisSpeeds robotFieldSpeeds = GlobalPosition.Velocity(GMFrame.kFieldRelative);
+    ChassisVelocities robotFieldSpeeds = GlobalPosition.Velocity(GMFrame.kFieldRelative);
     ShotSolution shotSolution = CalculateShotSolution(
         selfPose,
         target,

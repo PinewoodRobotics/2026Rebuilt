@@ -2,11 +2,11 @@ package frc.robot.subsystem;
 
 import org.littletonrobotics.junction.Logger;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import org.wpilib.math.geometry.Pose2d;
+import org.wpilib.math.geometry.Rotation2d;
+import org.wpilib.math.geometry.Translation2d;
+import org.wpilib.math.kinematics.ChassisVelocities;
+import org.wpilib.command2.SubsystemBase;
 import frc.robot.constant.BotConstants;
 import frc.robot.util.AimPoint;
 
@@ -49,15 +49,15 @@ public class GlobalPosition extends SubsystemBase {
 
   public static Translation2d Velocity2d(GMFrame velocityType) {
     var velocity = Velocity(velocityType);
-    return new Translation2d(velocity.vxMetersPerSecond, velocity.vyMetersPerSecond);
+    return new Translation2d(velocity.vx, velocity.vy);
   }
 
-  public static ChassisSpeeds Velocity(GMFrame velocityType) {
-    ChassisSpeeds robotRelative = SwerveSubsystem.GetInstance().getChassisSpeeds();
+  public static ChassisVelocities Velocity(GMFrame velocityType) {
+    ChassisVelocities robotRelative = SwerveSubsystem.GetInstance().getChassisVelocities();
     if (velocityType == GMFrame.kRobotRelative) {
       return robotRelative;
     }
-    return ChassisSpeeds.fromRobotRelativeSpeeds(robotRelative, Get().getRotation());
+    return robotRelative.toFieldRelative(Get().getRotation());
   }
 
   /**
@@ -67,8 +67,8 @@ public class GlobalPosition extends SubsystemBase {
    *                        the angle of the robot in the field frame.
    * @return The velocity in the robot frame.
    */
-  public static ChassisSpeeds VelocityInFrame(Rotation2d rotationOfRobot) {
-    return ChassisSpeeds.fromFieldRelativeSpeeds(Velocity(GMFrame.kFieldRelative), rotationOfRobot);
+  public static ChassisVelocities VelocityInFrame(Rotation2d rotationOfRobot) {
+    return Velocity(GMFrame.kFieldRelative).toRobotRelative(rotationOfRobot);
   }
 
   public static Pose2d ToRobotRelative(Pose2d pose) {

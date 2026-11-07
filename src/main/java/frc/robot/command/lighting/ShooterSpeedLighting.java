@@ -1,8 +1,8 @@
 package frc.robot.command.lighting;
 
-import edu.wpi.first.units.Units;
-import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.wpilibj2.command.Command;
+import org.wpilib.units.Units;
+import org.wpilib.units.measure.AngularVelocity;
+import org.wpilib.command2.Command;
 import frc.robot.constant.ShooterConstants;
 import frc.robot.subsystem.LightsSubsystem;
 import frc.robot.subsystem.ShooterSubsystem;

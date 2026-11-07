@@ -7,11 +7,10 @@ import java.util.Map;
 import org.ejml.simple.SimpleMatrix;
 import org.pwrup.util.Vec2;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.spline.Spline.ControlVector;
-import edu.wpi.first.math.trajectory.TrajectoryGenerator.ControlVectorList;
+import org.wpilib.math.geometry.Pose2d;
+import org.wpilib.math.geometry.Rotation2d;
+import org.wpilib.math.geometry.Translation2d;
+import org.wpilib.math.spline.Spline.ControlVector;
 
 /**
  * @note MathFun = Math Functions

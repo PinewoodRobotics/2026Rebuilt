@@ -10,16 +10,15 @@ import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 import org.pwrup.util.Vec2;
 
-import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.units.Units;
-import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj2.command.Command;
+import org.wpilib.math.util.MathUtil;
+import org.wpilib.math.controller.PIDController;
+import org.wpilib.math.geometry.Pose2d;
+import org.wpilib.math.geometry.Translation2d;
+import org.wpilib.math.kinematics.ChassisVelocities;
+import org.wpilib.units.Units;
+import org.wpilib.units.measure.Distance;
+import org.wpilib.driverstation.Alliance;
+import org.wpilib.command2.Command;
 import frc.robot.constant.BotConstants;
 import frc.robot.constant.ControllerConstants;
 import frc.robot.constant.swerve.SwerveConstants;
@@ -57,7 +56,7 @@ public class SwerveMoveTeleop extends Command {
 
   @Override
   public void execute() {
-    double multi = (BotConstants.alliance == Alliance.Red ? -1 : 1);
+    double multi = (BotConstants.alliance == Alliance.RED ? -1 : 1);
     double rawR = LocalMath.deadband(
         controller.leftFlightStick.getJoystickRotation(),
         ControllerConstants.kRotDeadband,

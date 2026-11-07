@@ -1,18 +1,23 @@
 package frc.robot.constant;
 
-import edu.wpi.first.wpilibj.RobotBase;
-import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.DriverStation;
+import com.ctre.phoenix6.CANBus;
+
+import org.wpilib.framework.RobotBase;
+import org.wpilib.hardware.bus.CANPort;
+import org.wpilib.fields.Field;
+import org.wpilib.fields.Fields;
+import org.wpilib.driverstation.Alliance;
+import org.wpilib.driverstation.MatchState;
 
 public class BotConstants {
 
-  public static final AprilTagFieldLayout kFieldLayout = AprilTagFieldLayout
-      .loadField(AprilTagFields.k2026RebuiltWelded);
+  public static final CANPort kCanPort = CANPort.CAN_S0;
+  public static final CANBus kCanBus = new CANBus(kCanPort);
 
-  // public static final Alliance alliance = Alliance.Red; //
-  // DriverStation.getAlliance().orElse(Alliance.Blue);
+  public static final Field kFieldLayout = Fields.FRC_2026_REBUILT_WELDED.loadField();
+
+  // public static final Alliance alliance = Alliance.RED; //
+  // MatchState.getAlliance().orElse(Alliance.BLUE);
 
   public static enum RobotVariant {
     ABOT,
@@ -20,7 +25,7 @@ public class BotConstants {
   }
 
   public static final RobotVariant robotType = RobotVariant.ABOT;
-  public static Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+  public static Alliance alliance = MatchState.getAlliance().orElse(Alliance.BLUE);
 
   public static enum Mode {
     /** Running on a real robot. */
@@ -33,6 +38,6 @@ public class BotConstants {
   public static final Mode currentMode = Mode.REAL;
 
   public static void SetAlliance() {
-    alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+    alliance = MatchState.getAlliance().orElse(Alliance.BLUE);
   }
 }

@@ -1,19 +1,16 @@
 package frc.robot.hardware;
 
-import com.kauailabs.navx.frc.AHRS;
+import com.studica.frc.Navx;
 
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.wpilibj.I2C;
+import org.wpilib.math.geometry.Rotation2d;
+import org.wpilib.math.geometry.Rotation3d;
+import org.wpilib.math.kinematics.ChassisVelocities;
 import frc.robot.util.LocalMath;
 import pwrup.frc.core.hardware.sensor.IGyroscopeLike;
 
 public class AHRSGyro implements IGyroscopeLike {
   private static AHRSGyro instance;
-  private static I2C.Port defaultPort = I2C.Port.kMXP;
-
-  private final AHRS m_gyro;
+  private final Navx m_gyro;
   private double xOffset = 0;
   private double yOffset = 0;
   private double zOffset = 0;
@@ -22,29 +19,21 @@ public class AHRSGyro implements IGyroscopeLike {
   private double lastYawRateSampleDeg = 0.0;
   private long lastYawRateSampleNanos = 0L;
 
-  public AHRSGyro(I2C.Port i2c_port_id) {
-    this.m_gyro = new AHRS(i2c_port_id);
-    m_gyro.reset();
+  public AHRSGyro(Navx navx) {
+    this.m_gyro = navx;
+    m_gyro.resetYaw();
     yawSoftOffsetDeg = 0.0;
     resetYawRateState();
   }
 
-  /**
-   * Set the default I2C port used by GetInstance().
-   * Call this before the first call to GetInstance().
-   */
-  public static void setDefaultPort(I2C.Port port) {
-    defaultPort = port;
-  }
-
   public static AHRSGyro GetInstance() {
     if (instance == null) {
-      instance = new AHRSGyro(defaultPort);
+      instance = new AHRSGyro(Navx.usb());
     }
     return instance;
   }
 
-  public AHRS getGyro() {
+  public Navx getGyro() {
     return m_gyro;
   }
 
@@ -55,7 +44,7 @@ public class AHRSGyro implements IGyroscopeLike {
   }
 
   private double getRawYawDegrees() {
-    return m_gyro.getRotation2d().getDegrees();
+    return m_gyro.getRotation2d().map(Rotation2d::getDegrees).orElse(0.0);
   }
 
   private double getAdjustedYawDegrees() {
@@ -108,13 +97,13 @@ public class AHRSGyro implements IGyroscopeLike {
   }
 
   @Override
-  public ChassisSpeeds getVelocity() {
+  public ChassisVelocities getVelocity() {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("Unimplemented method 'getVelocity'");
   }
 
   @Override
-  public ChassisSpeeds getAcceleration() {
+  public ChassisVelocities getAcceleration() {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("Unimplemented method 'getAcceleration'");
   }

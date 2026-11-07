@@ -3,10 +3,10 @@ package frc.robot.hardware;
 import java.util.Arrays;
 import java.util.List;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import org.wpilib.math.geometry.Pose2d;
+import org.wpilib.math.geometry.Rotation3d;
+import org.wpilib.math.kinematics.ChassisVelocities;
+import org.wpilib.command2.SubsystemBase;
 import frc.robot.constant.HardwareConstants;
 import frc.robot.subsystem.GlobalPosition;
 import pwrup.frc.core.hardware.sensor.IGyroscopeLike;
@@ -74,12 +74,12 @@ public class UnifiedGyro extends SubsystemBase implements IGyroscopeLike {
   }
 
   @Override
-  public ChassisSpeeds getVelocity() {
+  public ChassisVelocities getVelocity() {
     return getMainGyro().getVelocity();
   }
 
   @Override
-  public ChassisSpeeds getAcceleration() {
+  public ChassisVelocities getAcceleration() {
     return getMainGyro().getAcceleration();
   }
 

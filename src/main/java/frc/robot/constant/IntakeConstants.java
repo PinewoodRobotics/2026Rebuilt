@@ -1,6 +1,6 @@
 package frc.robot.constant;
 
-import edu.wpi.first.math.geometry.Rotation2d;
+import org.wpilib.math.geometry.Rotation2d;
 
 public class IntakeConstants {
   public final static String intakeType = "BELT";

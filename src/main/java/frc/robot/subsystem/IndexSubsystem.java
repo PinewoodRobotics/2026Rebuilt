@@ -1,5 +1,6 @@
 package frc.robot.subsystem;
 
+import frc.robot.constant.BotConstants;
 import com.revrobotics.PersistMode;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.SparkFlex;
@@ -7,8 +8,8 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkFlexConfig;
 
-import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import org.wpilib.math.util.MathUtil;
+import org.wpilib.command2.SubsystemBase;
 import frc.robot.constant.IndexConstants;
 
 public class IndexSubsystem extends SubsystemBase {
@@ -24,7 +25,7 @@ public class IndexSubsystem extends SubsystemBase {
   }
 
   private IndexSubsystem() {
-    m_indexMotor = new SparkFlex(IndexConstants.kIndexMotorID, MotorType.kBrushless);
+    m_indexMotor = new SparkFlex(BotConstants.kCanPort, IndexConstants.kIndexMotorID, MotorType.kBrushless);
     configureMotor();
   }
 
@@ -37,7 +38,7 @@ public class IndexSubsystem extends SubsystemBase {
   }
 
   public void runMotor(double speed) {
-    m_indexMotor.set(MathUtil.clamp(speed, -1.0, 1.0));
+    m_indexMotor.setThrottle(Math.clamp(speed, -1.0, 1.0));
   }
 
   public void runMotor() {
@@ -49,6 +50,6 @@ public class IndexSubsystem extends SubsystemBase {
   }
 
   public void stopMotor() {
-    m_indexMotor.set(0.0);
+    m_indexMotor.setThrottle(0.0);
   }
 }

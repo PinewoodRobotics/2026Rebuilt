@@ -9,15 +9,15 @@ import org.pwrup.util.Config;
 import org.pwrup.util.Vec2;
 import org.pwrup.util.Wheel;
 
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.units.Units;
-import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.units.measure.LinearVelocity;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-import edu.wpi.first.math.kinematics.SwerveModulePosition;
-import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import org.wpilib.math.geometry.Rotation2d;
+import org.wpilib.units.Units;
+import org.wpilib.units.measure.AngularVelocity;
+import org.wpilib.units.measure.LinearVelocity;
+import org.wpilib.math.kinematics.ChassisVelocities;
+import org.wpilib.math.kinematics.SwerveDriveKinematics;
+import org.wpilib.math.kinematics.SwerveModulePosition;
+import org.wpilib.math.kinematics.SwerveModuleVelocity;
+import org.wpilib.command2.SubsystemBase;
 import frc.robot.constant.BotConstants;
 import frc.robot.constant.BotConstants.RobotVariant;
 import frc.robot.constant.swerve.SwerveConstants;
@@ -167,7 +167,7 @@ public class SwerveSubsystem extends SubsystemBase {
         c.rearRightTranslation);
   }
 
-  public void drive(ChassisSpeeds speeds, DriveType driveType) {
+  public void drive(ChassisVelocities speeds, DriveType driveType) {
     if (!shouldWork) {
       stop();
       return;
@@ -190,18 +190,18 @@ public class SwerveSubsystem extends SubsystemBase {
   }
 
   public void stop() {
-    driveRaw(new ChassisSpeeds(0, 0, 0));
+    driveRaw(new ChassisVelocities(0, 0, 0));
   }
 
-  private void driveRaw(ChassisSpeeds speeds) {
+  private void driveRaw(ChassisVelocities speeds) {
     swerve.driveNonRelative(speeds);
   }
 
-  private void driveFieldRelative(ChassisSpeeds speeds) {
+  private void driveFieldRelative(ChassisVelocities speeds) {
     swerve.driveWithGyro(speeds, getFieldRelativeRotation());
   }
 
-  private void driveDriverRelative(ChassisSpeeds speeds) {
+  private void driveDriverRelative(ChassisVelocities speeds) {
     swerve.driveWithGyro(speeds, getSwerveRotationWithOffset());
   }
 
@@ -222,16 +222,16 @@ public class SwerveSubsystem extends SubsystemBase {
     };
   }
 
-  public ChassisSpeeds getChassisSpeeds() {
-    return kinematics.toChassisSpeeds(getSwerveModuleStates());
+  public ChassisVelocities getChassisVelocities() {
+    return kinematics.toChassisVelocities(getSwerveModuleStates());
   }
 
   public SwerveDriveKinematics getKinematics() {
     return this.kinematics;
   }
 
-  public SwerveModuleState[] getSwerveModuleStates() {
-    return new SwerveModuleState[] {
+  public SwerveModuleVelocity[] getSwerveModuleStates() {
+    return new SwerveModuleVelocity[] {
         m_frontLeftSwerveModule.getState(),
         m_frontRightSwerveModule.getState(),
         m_rearLeftSwerveModule.getState(),
@@ -250,24 +250,24 @@ public class SwerveSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     Logger.recordOutput("SwerveSubsystem/swerve/states", getSwerveModuleStates());
-    Logger.recordOutput("SwerveSubsystem/swerve/velocity", getKinematics().toChassisSpeeds(getSwerveModuleStates()));
+    Logger.recordOutput("SwerveSubsystem/swerve/velocity", getKinematics().toChassisVelocities(getSwerveModuleStates()));
     Logger.recordOutput("SwerveSubsystem/AdjustingVelocity", isGpsAssist);
   }
 
-  public static ChassisSpeeds fromPercentToVelocity(Vec2 percentXY, double rotationPercent) {
+  public static ChassisVelocities fromPercentToVelocity(Vec2 percentXY, double rotationPercent) {
     return fromPercentToVelocity(
         percentXY, rotationPercent,
         SwerveConstants.kRobotMaxSpeed,
         SwerveConstants.kRobotMaxTurnSpeed);
   }
 
-  public static ChassisSpeeds fromPercentToVelocity(Vec2 percentXY, double rotationPercent, LinearVelocity maxSpeed,
+  public static ChassisVelocities fromPercentToVelocity(Vec2 percentXY, double rotationPercent, LinearVelocity maxSpeed,
       AngularVelocity maxTurnSpeed) {
     double vx = LocalMath.clamp(percentXY.getX(), -1, 1) * maxSpeed.in(Units.MetersPerSecond);
     double vy = LocalMath.clamp(percentXY.getY(), -1, 1) * maxSpeed.in(Units.MetersPerSecond);
     double omega = LocalMath.clamp(rotationPercent, -1, 1)
         * maxTurnSpeed.in(Units.RadiansPerSecond);
-    return new ChassisSpeeds(vx, vy, omega);
+    return new ChassisVelocities(vx, vy, omega);
   }
 
   public void setGpsAssist(boolean isGpsAssist) {

@@ -3,8 +3,8 @@ package frc.robot.subsystem;
 import java.util.Objects;
 import java.util.Optional;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import org.wpilib.math.geometry.Pose2d;
+import org.wpilib.driverstation.Alliance;
 
 public class MatchStatusCalculator {
   static final double kAutoDurationS = 20.0;
@@ -170,7 +170,7 @@ public class MatchStatusCalculator {
       lastActivePhase = phase;
     }
 
-    boolean isRedAlliance = inputs.alliance().orElse(Alliance.Blue) == Alliance.Red;
+    boolean isRedAlliance = inputs.alliance().orElse(Alliance.BLUE) == Alliance.RED;
     String gameSpecificMessage = resolveGameSpecificMessage(inputs.gameSpecificMessage(), isRedAlliance);
     boolean ourHubInactiveInShift1 = doesGameDataDeactivateUsInShift1(gameSpecificMessage, isRedAlliance);
 

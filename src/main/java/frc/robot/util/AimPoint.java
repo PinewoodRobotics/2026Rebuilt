@@ -5,11 +5,10 @@ import java.util.Optional;
 
 import org.littletonrobotics.junction.Logger;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import org.wpilib.math.geometry.Pose2d;
+import org.wpilib.math.geometry.Rotation2d;
+import org.wpilib.math.geometry.Translation2d;
+import org.wpilib.driverstation.Alliance;
 import frc.robot.constant.BotConstants;
 import frc.robot.subsystem.GlobalPosition;
 
@@ -144,7 +143,7 @@ public final class AimPoint {
    * red, not blue).
    */
   private static Pose2d toBluePerspective(Pose2d fieldPose, Alliance alliance) {
-    if (alliance == Alliance.Blue) {
+    if (alliance == Alliance.BLUE) {
       return fieldPose;
     }
     return new Pose2d(
@@ -154,7 +153,7 @@ public final class AimPoint {
   }
 
   private static Translation2d fromBluePerspective(Translation2d bluePoint, Alliance alliance) {
-    if (alliance == Alliance.Blue) {
+    if (alliance == Alliance.BLUE) {
       return bluePoint;
     }
     return new Translation2d(flipX(bluePoint.getX()), bluePoint.getY());

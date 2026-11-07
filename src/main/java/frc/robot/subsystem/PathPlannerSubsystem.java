@@ -6,14 +6,13 @@ import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.pathfinding.LocalADStar;
 import com.pathplanner.lib.pathfinding.Pathfinding;
 import com.pathplanner.lib.util.FlippingUtil;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.units.Units;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import org.wpilib.math.geometry.Pose2d;
+import org.wpilib.driverstation.Alliance;
+import org.wpilib.units.Units;
+import org.wpilib.command2.Command;
+import org.wpilib.command2.CommandScheduler;
+import org.wpilib.command2.Commands;
+import org.wpilib.command2.SubsystemBase;
 import frc.robot.constant.BotConstants;
 import frc.robot.constant.PathPlannerConstants;
 import frc.robot.constant.PathPlannerConstants.SelectedAuto;
@@ -111,7 +110,7 @@ public final class PathPlannerSubsystem extends SubsystemBase {
   }
 
   private static boolean shouldFlipForAlliance() {
-    return BotConstants.alliance != Alliance.Red;
+    return BotConstants.alliance != Alliance.RED;
   }
 
   @Override

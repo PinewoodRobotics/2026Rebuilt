@@ -1,23 +1,24 @@
 package frc.robot.subsystem;
 
+import frc.robot.constant.BotConstants;
 import org.littletonrobotics.junction.Logger;
 
 import com.revrobotics.PersistMode;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.FeedbackSensor;
-import com.revrobotics.spark.SparkBase.ControlType;
+import com.revrobotics.spark.SparkLowLevel.ControlType;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkFlexConfig;
 
-import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import org.wpilib.math.util.MathUtil;
+import org.wpilib.math.geometry.Rotation2d;
+import org.wpilib.driverstation.RobotState;
+import org.wpilib.system.Timer;
+import org.wpilib.command2.SubsystemBase;
 import frc.robot.constant.IntakeConstants;
 import frc.robot.constant.IntakeConstants.WristRaiseLocation;
 import frc.robot.util.SharedDoubleTopic;
@@ -44,9 +45,9 @@ public class IntakeSubsystem extends SubsystemBase {
   }
 
   private IntakeSubsystem(int intakeMotorID, int wristMotorID) {
-    m_intakeIntakerMotor = new SparkFlex(intakeMotorID, MotorType.kBrushless);
-    m_intakeWristMotor = new SparkFlex(wristMotorID, MotorType.kBrushless);
-    m_intakeWristFollowerMotor = new SparkFlex(IntakeConstants.intakeWristFollowerMotorID, MotorType.kBrushless);
+    m_intakeIntakerMotor = new SparkFlex(BotConstants.kCanPort, intakeMotorID, MotorType.kBrushless);
+    m_intakeWristMotor = new SparkFlex(BotConstants.kCanPort, wristMotorID, MotorType.kBrushless);
+    m_intakeWristFollowerMotor = new SparkFlex(BotConstants.kCanPort, IntakeConstants.intakeWristFollowerMotorID, MotorType.kBrushless);
     configureIntaker();
     configureWrist();
     configureWristFollower();
@@ -106,7 +107,7 @@ public class IntakeSubsystem extends SubsystemBase {
   }
 
   private void updateWristDrop() {
-    if (m_wristDropDone || !DriverStation.isEnabled()) {
+    if (m_wristDropDone || !RobotState.isEnabled()) {
       return;
     }
 
@@ -120,7 +121,7 @@ public class IntakeSubsystem extends SubsystemBase {
       return;
     }
 
-    m_intakeWristMotor.set(IntakeConstants.kWristDropSpeed);
+    m_intakeWristMotor.setThrottle(IntakeConstants.kWristDropSpeed);
   }
 
   private double calculateFeedForward() {
@@ -129,7 +130,7 @@ public class IntakeSubsystem extends SubsystemBase {
   }
 
   public Rotation2d getWristPosition() {
-    return Rotation2d.fromRotations(m_intakeWristMotor.getAbsoluteEncoder().getPosition());
+    return Rotation2d.fromRotations(m_intakeWristMotor.getAbsoluteEncoder().getPosition().get());
   }
 
   private void setWristPosition(Rotation2d position) {
@@ -151,11 +152,11 @@ public class IntakeSubsystem extends SubsystemBase {
   }
 
   public void runIntakeMotor(double speed) {
-    m_intakeIntakerMotor.set(MathUtil.clamp(speed, -1.0, 1.0));
+    m_intakeIntakerMotor.setThrottle(Math.clamp(speed, -1.0, 1.0));
   }
 
   public void stopIntakeMotor() {
-    m_intakeIntakerMotor.set(0.0);
+    m_intakeIntakerMotor.setThrottle(0.0);
   }
 
   public boolean wristAtSetpoint() {

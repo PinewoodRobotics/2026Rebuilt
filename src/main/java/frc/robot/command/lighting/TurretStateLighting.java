@@ -1,6 +1,6 @@
 package frc.robot.command.lighting;
 
-import edu.wpi.first.wpilibj2.command.Command;
+import org.wpilib.command2.Command;
 import frc.robot.command.shooting.ContinuousShooter;
 import frc.robot.subsystem.LightsSubsystem;
 import frc.robot.subsystem.TurretSubsystem;

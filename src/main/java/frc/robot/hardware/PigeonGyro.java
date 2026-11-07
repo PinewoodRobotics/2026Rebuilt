@@ -5,12 +5,12 @@ import org.littletonrobotics.junction.Logger;
 import com.ctre.phoenix6.configs.Pigeon2Configuration;
 import com.ctre.phoenix6.hardware.Pigeon2;
 
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.units.Units;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import org.wpilib.math.geometry.Rotation2d;
+import org.wpilib.math.geometry.Rotation3d;
+import org.wpilib.math.kinematics.ChassisVelocities;
+import org.wpilib.units.Units;
+import org.wpilib.driverstation.DriverStationErrors;
+import org.wpilib.command2.SubsystemBase;
 import frc.robot.constant.BotConstants;
 import frc.robot.constant.HardwareConstants;
 import frc.robot.constant.HardwareConstants.PigeonConfig;
@@ -25,7 +25,7 @@ public class PigeonGyro extends SubsystemBase implements IGyroscopeLike {
 
   public PigeonGyro(PigeonConfig config) {
     this.hardwareConfig = config;
-    this.pigeon = new Pigeon2(config.canId());
+    this.pigeon = new Pigeon2(config.canId(), BotConstants.kCanBus);
     applyMountPose();
     pigeon.reset();
     yawAdjustment = new Rotation2d();
@@ -39,13 +39,13 @@ public class PigeonGyro extends SubsystemBase implements IGyroscopeLike {
   }
 
   @Override
-  public ChassisSpeeds getVelocity() {
-    return new ChassisSpeeds(0.0, 0.0, pigeon.getAngularVelocityZWorld().getValue().in(Units.RadiansPerSecond));
+  public ChassisVelocities getVelocity() {
+    return new ChassisVelocities(0.0, 0.0, pigeon.getAngularVelocityZWorld().getValue().in(Units.RadiansPerSecond));
   }
 
   @Override
-  public ChassisSpeeds getAcceleration() {
-    return new ChassisSpeeds(0.0, 0.0, 0.0);
+  public ChassisVelocities getAcceleration() {
+    return new ChassisVelocities(0.0, 0.0, 0.0);
   }
 
   @Override
@@ -74,7 +74,7 @@ public class PigeonGyro extends SubsystemBase implements IGyroscopeLike {
 
     var status = pigeon.getConfigurator().apply(config);
     if (!status.isOK()) {
-      DriverStation.reportWarning("Failed to apply Pigeon mount pose: " + status, false);
+      DriverStationErrors.reportWarning("Failed to apply Pigeon mount pose: " + status, false);
     }
   }
 

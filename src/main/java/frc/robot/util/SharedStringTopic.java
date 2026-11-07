@@ -1,7 +1,7 @@
 package frc.robot.util;
 
-import edu.wpi.first.networktables.StringPublisher;
-import edu.wpi.first.networktables.StringSubscriber;
+import org.wpilib.networktables.StringPublisher;
+import org.wpilib.networktables.StringSubscriber;
 import frc.robot.Robot;
 import lombok.Getter;
 

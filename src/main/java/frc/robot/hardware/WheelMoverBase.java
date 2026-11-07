@@ -2,13 +2,13 @@ package frc.robot.hardware;
 
 import org.pwrup.motor.WheelMover;
 
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.kinematics.SwerveModulePosition;
-import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.units.Units;
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.units.measure.LinearVelocity;
+import org.wpilib.math.geometry.Rotation2d;
+import org.wpilib.math.kinematics.SwerveModulePosition;
+import org.wpilib.math.kinematics.SwerveModuleVelocity;
+import org.wpilib.units.Units;
+import org.wpilib.units.measure.Angle;
+import org.wpilib.units.measure.Distance;
+import org.wpilib.units.measure.LinearVelocity;
 
 /**
  * Common base for swerve modules in this project.
@@ -24,7 +24,7 @@ public abstract class WheelMoverBase extends WheelMover {
   public abstract SwerveModulePosition getPosition();
 
   /** Module speed (m/s) + azimuth. */
-  public abstract SwerveModuleState getState();
+  public abstract SwerveModuleVelocity getState();
 
   /** Resets encoders to zero (or equivalent). */
   public abstract void reset();

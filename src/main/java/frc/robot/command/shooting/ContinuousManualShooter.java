@@ -5,11 +5,11 @@ import java.util.function.Supplier;
 
 import org.littletonrobotics.junction.Logger;
 
-import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.units.Units;
-import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj2.command.Command;
+import org.wpilib.math.util.MathUtil;
+import org.wpilib.units.Units;
+import org.wpilib.units.measure.AngularVelocity;
+import org.wpilib.system.Timer;
+import org.wpilib.command2.Command;
 import frc.robot.constant.ShooterConstants;
 import frc.robot.subsystem.IndexSubsystem;
 import frc.robot.subsystem.ShooterSubsystem;
@@ -74,8 +74,8 @@ public class ContinuousManualShooter extends Command {
   public static Supplier<AngularVelocity> GetBaseSpeedSupplier(Supplier<Double> sliderSupplier) {
     return () -> {
       double sliderRaw = sliderSupplier.get();
-      double slider = MathUtil.clamp((sliderRaw + 1.0) / 2.0, 0.0, 1.0);
-      double rps = MathUtil.interpolate(
+      double slider = Math.clamp((sliderRaw + 1.0) / 2.0, 0.0, 1.0);
+      double rps = MathUtil.lerp(
           ShooterConstants.kShooterMinVelocity.in(Units.RotationsPerSecond),
           ShooterConstants.kShooterMaxVelocity.in(Units.RotationsPerSecond),
           slider);
@@ -89,15 +89,15 @@ public class ContinuousManualShooter extends Command {
       AngularVelocity initialSpeed,
       double velocityRateRpmPerSecond) {
     return new Supplier<AngularVelocity>() {
-      private double targetVelocityRpm = MathUtil.clamp(
+      private double targetVelocityRpm = Math.clamp(
           initialSpeed.in(Units.RPM),
           ShooterConstants.kShooterMinVelocity.in(Units.RPM),
           ShooterConstants.kShooterMaxVelocity.in(Units.RPM));
-      private double lastTimestampSeconds = Timer.getFPGATimestamp();
+      private double lastTimestampSeconds = Timer.getTimestamp();
 
       @Override
       public AngularVelocity get() {
-        double currentTimestampSeconds = Timer.getFPGATimestamp();
+        double currentTimestampSeconds = Timer.getTimestamp();
         double deltaTimeSeconds = Math.max(0.0, currentTimestampSeconds - lastTimestampSeconds);
         lastTimestampSeconds = currentTimestampSeconds;
 
@@ -109,7 +109,7 @@ public class ContinuousManualShooter extends Command {
           direction -= 1.0;
         }
 
-        targetVelocityRpm = MathUtil.clamp(
+        targetVelocityRpm = Math.clamp(
             targetVelocityRpm + direction * velocityRateRpmPerSecond * deltaTimeSeconds,
             ShooterConstants.kShooterMinVelocity.in(Units.RPM),
             ShooterConstants.kShooterMaxVelocity.in(Units.RPM));

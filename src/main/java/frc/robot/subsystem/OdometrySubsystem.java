@@ -2,15 +2,15 @@ package frc.robot.subsystem;
 
 import org.littletonrobotics.junction.Logger;
 
-import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.kinematics.SwerveModulePosition;
-import edu.wpi.first.math.numbers.N1;
-import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import org.wpilib.math.linalg.Matrix;
+import org.wpilib.math.estimator.SwerveDrivePoseEstimator;
+import org.wpilib.math.geometry.Pose2d;
+import org.wpilib.math.geometry.Rotation2d;
+import org.wpilib.math.geometry.Rotation3d;
+import org.wpilib.math.kinematics.SwerveModulePosition;
+import org.wpilib.math.numbers.N1;
+import org.wpilib.math.numbers.N3;
+import org.wpilib.command2.SubsystemBase;
 import frc.robot.hardware.UnifiedGyro;
 import pwrup.frc.core.hardware.sensor.IGyroscopeLike;
 
@@ -90,7 +90,7 @@ public class OdometrySubsystem extends SubsystemBase {
     SwerveModulePosition[] copy = new SwerveModulePosition[positions.length];
     for (int i = 0; i < positions.length; i++) {
       copy[i] = new SwerveModulePosition(
-          positions[i].distanceMeters,
+          positions[i].distance,
           positions[i].angle);
     }
     return copy;
@@ -106,7 +106,7 @@ public class OdometrySubsystem extends SubsystemBase {
     timedPositions[1] = poseEstimator.update(gyro.getRotation2d(), positions);
 
     Logger.recordOutput("Odometry/Position", timedPositions[1]);
-    Logger.recordOutput("Odometry/Velocity", swerve.getChassisSpeeds());
+    Logger.recordOutput("Odometry/Velocity", swerve.getChassisVelocities());
     Logger.recordOutput("Odometry/AnchoredToField", anchoredToField);
   }
 }

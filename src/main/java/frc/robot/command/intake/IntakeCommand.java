@@ -1,8 +1,8 @@
 package frc.robot.command.intake;
 
 import java.util.function.Supplier;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj2.command.Command;
+import org.wpilib.system.Timer;
+import org.wpilib.command2.Command;
 import frc.robot.constant.IntakeConstants;
 import frc.robot.constant.IntakeConstants.WristRaiseLocation;
 import frc.robot.subsystem.IntakeSubsystem;
@@ -58,11 +58,11 @@ public class IntakeCommand extends Command {
     boolean isExtake = extakeOverrideSupplier.get();
     if (joystickValue) {
       if (!wasRunningIntake) {
-        intakeCycleStartS = Timer.getFPGATimestamp();
+        intakeCycleStartS = Timer.getTimestamp();
         wasRunningIntake = true;
       }
 
-      double cycleElapsedS = Timer.getFPGATimestamp() - intakeCycleStartS;
+      double cycleElapsedS = Timer.getTimestamp() - intakeCycleStartS;
       boolean shouldPulseExtake = (cycleElapsedS % kExtakePulsePeriodS) < kExtakePulseDurationS;
 
       m_intakeSubsystem.setWristPosition(WristRaiseLocation.BOTTOM);

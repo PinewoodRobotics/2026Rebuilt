@@ -2,12 +2,12 @@ package frc.robot.constant;
 
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.units.Units;
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.AngularAcceleration;
-import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.units.measure.Voltage;
+import org.wpilib.math.geometry.Translation2d;
+import org.wpilib.units.Units;
+import org.wpilib.units.measure.Angle;
+import org.wpilib.units.measure.AngularAcceleration;
+import org.wpilib.units.measure.AngularVelocity;
+import org.wpilib.units.measure.Voltage;
 
 public class TurretConstants {
   public static final int kTurretCanId = 30;

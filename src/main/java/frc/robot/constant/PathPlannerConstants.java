@@ -3,10 +3,10 @@ package frc.robot.constant;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.util.Units;
-import edu.wpi.first.units.measure.Distance;
+import org.wpilib.math.geometry.Pose2d;
+import org.wpilib.math.geometry.Rotation2d;
+import org.wpilib.math.util.Units;
+import org.wpilib.units.measure.Distance;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.path.PathConstraints;
@@ -113,7 +113,7 @@ public class PathPlannerConstants {
   public static final PathConstraints defaultPathfindingConstraints = new PathConstraints(1.0, 1.0,
       Units.degreesToRadians(360), Units.degreesToRadians(720));
 
-  public static final Distance distanceConsideredOffTarget = edu.wpi.first.units.Units.Meters.of(1.0);
+  public static final Distance distanceConsideredOffTarget = org.wpilib.units.Units.Meters.of(1.0);
 
   public static final String kAutoSelectTopic = "PathPlanner/SelectedPath";
 }

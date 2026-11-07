@@ -4,15 +4,16 @@ import java.util.Optional;
 
 import org.littletonrobotics.junction.Logger;
 
-import edu.wpi.first.networktables.BooleanPublisher;
-import edu.wpi.first.networktables.DoublePublisher;
-import edu.wpi.first.networktables.IntegerPublisher;
-import edu.wpi.first.networktables.NetworkTable;
-import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.StringPublisher;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import org.wpilib.networktables.BooleanPublisher;
+import org.wpilib.networktables.DoublePublisher;
+import org.wpilib.networktables.IntegerPublisher;
+import org.wpilib.networktables.NetworkTable;
+import org.wpilib.networktables.NetworkTableInstance;
+import org.wpilib.networktables.StringPublisher;
+import org.wpilib.driverstation.MatchState;
+import org.wpilib.driverstation.RobotState;
+import org.wpilib.system.RobotController;
+import org.wpilib.command2.SubsystemBase;
 import frc.robot.command.shooting.ContinuousShooter;
 import frc.robot.constant.BotConstants;
 import frc.robot.RobotContainer;
@@ -101,14 +102,14 @@ public class MatchStatusSubsystem extends SubsystemBase {
     MatchStatusCalculator.State state = calculator.update(new MatchStatusCalculator.Inputs(
         RobotController.getTime(),
         System.currentTimeMillis(),
-        DriverStation.isDSAttached(),
-        DriverStation.isEnabled(),
-        DriverStation.isAutonomousEnabled(),
-        DriverStation.isTeleopEnabled(),
+        RobotState.isDSAttached(),
+        RobotState.isEnabled(),
+        RobotState.isAutonomousEnabled(),
+        RobotState.isTeleopEnabled(),
         RobotContainer.isShooterArmedForHud(),
         ShooterSubsystem.getIsGpsAssistEnabled(),
         Optional.of(BotConstants.alliance),
-        DriverStation.getGameSpecificMessage(),
+        MatchState.getGameData().orElse(""),
         GlobalPosition.Get(),
         GlobalPosition.getLastUpdateTimeMs()));
 

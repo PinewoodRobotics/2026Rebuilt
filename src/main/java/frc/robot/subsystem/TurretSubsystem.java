@@ -1,5 +1,6 @@
 package frc.robot.subsystem;
 
+import frc.robot.constant.BotConstants;
 import org.littletonrobotics.junction.Logger;
 
 import com.revrobotics.AbsoluteEncoder;
@@ -7,16 +8,16 @@ import com.revrobotics.PersistMode;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.FeedbackSensor;
-import com.revrobotics.spark.SparkBase.ControlType;
+import com.revrobotics.spark.SparkLowLevel.ControlType;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkClosedLoopController.ArbFFUnits;
 import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
-import edu.wpi.first.units.Units;
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import org.wpilib.units.Units;
+import org.wpilib.units.measure.Angle;
+import org.wpilib.units.measure.Voltage;
+import org.wpilib.command2.SubsystemBase;
 
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkFlexConfig;
@@ -56,7 +57,7 @@ public class TurretSubsystem extends SubsystemBase {
   }
 
   private void configureSparkMax(int canId, MotorType motorType) {
-    this.m_turretMotor = new SparkFlex(canId, motorType);
+    this.m_turretMotor = new SparkFlex(BotConstants.kCanPort, canId, motorType);
     this.closedLoopController = m_turretMotor.getClosedLoopController();
 
     SparkFlexConfig config = new SparkFlexConfig();
@@ -126,7 +127,7 @@ public class TurretSubsystem extends SubsystemBase {
   }
 
   public Angle getTurretPosition() {
-    return Units.Rotations.of(absoluteEncoder.getPosition());
+    return Units.Rotations.of(absoluteEncoder.getPosition().get());
   }
 
   private double wrapToUnitRotations(double rotations) {
@@ -141,14 +142,14 @@ public class TurretSubsystem extends SubsystemBase {
   public void periodic() {
     Logger.recordOutput("Turret/PositionRot", getTurretPosition().in(Units.Rotations));
     Logger.recordOutput("Turret/PositionDeg", getTurretPosition().in(Units.Degrees));
-    Logger.recordOutput("Turret/AbsolutePositionRawRot", absoluteEncoder.getPosition());
-    Logger.recordOutput("Turret/Velocity", m_turretMotor.getEncoder().getVelocity());
+    Logger.recordOutput("Turret/AbsolutePositionRawRot", absoluteEncoder.getPosition().get());
+    Logger.recordOutput("Turret/Velocity", m_turretMotor.getEncoder().getVelocity().get());
     Logger.recordOutput("Turret/DesiredOutputRot", lastAimTarget != null ? lastAimTarget.in(Units.Rotations) : 0);
     Logger.recordOutput("Turret/DesiredWrappedOutputRot",
         lastAimTarget != null ? wrapToUnitRotations(lastAimTarget.in(Units.Rotations)) : 0);
-    Logger.recordOutput("Turret/AppliedOutput", m_turretMotor.getAppliedOutput());
-    Logger.recordOutput("Turret/AppliedOutputWant", m_turretMotor.getOutputCurrent());
-    Logger.recordOutput("Turret/BusVoltage", m_turretMotor.getBusVoltage());
+    Logger.recordOutput("Turret/AppliedOutput", m_turretMotor.getAppliedOutput().get());
+    Logger.recordOutput("Turret/AppliedOutputWant", m_turretMotor.getOutputCurrent().get());
+    Logger.recordOutput("Turret/BusVoltage", m_turretMotor.getBusVoltage().get());
     Logger.recordOutput("Turret/TimeTillGoal", getAimTimeLeftMs());
   }
 }

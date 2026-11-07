@@ -1,7 +1,7 @@
 package frc.robot.util;
 
-import edu.wpi.first.networktables.DoublePublisher;
-import edu.wpi.first.networktables.DoubleSubscriber;
+import org.wpilib.networktables.DoublePublisher;
+import org.wpilib.networktables.DoubleSubscriber;
 import frc.robot.Robot;
 
 /**

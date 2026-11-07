@@ -4,14 +4,15 @@ import org.littletonrobotics.junction.Logger;
 
 import com.pathplanner.lib.auto.NamedCommands;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
+import org.wpilib.math.geometry.Pose2d;
+import org.wpilib.math.geometry.Rotation2d;
+import org.wpilib.driverstation.MatchState;
+import org.wpilib.driverstation.RobotState;
+import org.wpilib.driverstation.Alliance;
+import org.wpilib.command2.Command;
+import org.wpilib.command2.Commands;
+import org.wpilib.command2.InstantCommand;
+import org.wpilib.command2.button.Trigger;
 import frc.robot.command.SwerveMoveTeleop;
 import frc.robot.command.intake.IntakeCommand;
 import frc.robot.command.lighting.ShootingLighting;
@@ -114,8 +115,8 @@ public class RobotContainer {
     // Reset gyro rotation everywhere
     m_operatorPanel.blackButton().onTrue(new InstantCommand(() -> {
       var odometry = OdometrySubsystem.GetInstance();
-      boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
-      Rotation2d awayFromDriverStation = isRed ? Rotation2d.k180deg : Rotation2d.kZero;
+      boolean isRed = MatchState.getAlliance().orElse(Alliance.BLUE) == Alliance.RED;
+      Rotation2d awayFromDriverStation = isRed ? Rotation2d.k180deg : Rotation2d.ZERO;
       odometry.resetPose(new Pose2d(odometry.getPose().getTranslation(), awayFromDriverStation));
     }));
   }
@@ -153,7 +154,7 @@ public class RobotContainer {
     IntakeCommand intakeCommand = new IntakeCommand(intakeSubsystem,
         () -> m_operatorPanel.metalSwitchDown().getAsBoolean() || m_rightFlightStick.trigger().getAsBoolean(),
         () -> m_rightFlightStick.B17().getAsBoolean());
-    Trigger teleopEnabled = new Trigger(DriverStation::isTeleopEnabled);
+    Trigger teleopEnabled = new Trigger(RobotState::isTeleopEnabled);
 
     intakeSubsystem
         .setDefaultCommand(intakeCommand);
@@ -192,7 +193,7 @@ public class RobotContainer {
             ShooterConstants.kShooterBaseSpeed,
             40.0),
         indexExtakeOverrideSupplier);
-    Trigger shooterEnabled = m_operatorPanel.metalSwitchDown().and(DriverStation::isTeleopEnabled);
+    Trigger shooterEnabled = m_operatorPanel.metalSwitchDown().and(RobotState::isTeleopEnabled);
 
     // Enable shooter with metal switch down. While up, run motor base speed.
     // When enabled, run indexer only when shooter up to speed.
@@ -202,7 +203,7 @@ public class RobotContainer {
     shooterEnabled.and(() -> !ShooterSubsystem.getIsGpsAssistEnabled()).whileTrue(continuousManualShooter);
     shooterEnabled
         .negate()
-        .and(DriverStation::isTeleopEnabled)
+        .and(RobotState::isTeleopEnabled)
         .onTrue(new InstantCommand(() -> {
           ShooterSubsystem.GetInstance().runMotorBaseSpeed();
         }));

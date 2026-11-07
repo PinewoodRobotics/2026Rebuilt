@@ -4,10 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import org.wpilib.math.geometry.Pose2d;
+import org.wpilib.math.geometry.Rotation2d;
+import org.wpilib.math.geometry.Translation2d;
+import org.wpilib.math.kinematics.ChassisVelocities;
 import frc.robot.command.scoring.ContinuousAimCommand;
 import frc.robot.constant.ShooterConstants;
 
@@ -18,7 +18,7 @@ public class ContinuousShooterTest {
   void CalculateShotSolutionReturnsRawAndCompensatedTargetsWhenStationary() {
     Pose2d selfPose = new Pose2d(new Translation2d(1.0, 2.0), new Rotation2d());
     Translation2d targetGlobal = new Translation2d(4.0, 6.0);
-    ChassisSpeeds robotFieldSpeeds = new ChassisSpeeds();
+    ChassisVelocities robotFieldSpeeds = new ChassisVelocities();
 
     ContinuousShooter.ShotSolution shotSolution = ContinuousShooter.CalculateShotSolution(
         selfPose,
@@ -37,7 +37,7 @@ public class ContinuousShooterTest {
   void CalculateShotSolutionAppliesLeadCompensationForRobotTranslation() {
     Pose2d selfPose = new Pose2d(new Translation2d(), new Rotation2d());
     Translation2d targetGlobal = new Translation2d(3.0, 4.0);
-    ChassisSpeeds robotFieldSpeeds = new ChassisSpeeds(2.0, -1.0, 0.0);
+    ChassisVelocities robotFieldSpeeds = new ChassisVelocities(2.0, -1.0, 0.0);
 
     ContinuousShooter.ShotSolution shotSolution = ContinuousShooter.CalculateShotSolution(
         selfPose,
@@ -61,7 +61,7 @@ public class ContinuousShooterTest {
   void CalculateShotSolutionTransformsFieldVelocityIntoRobotFrame() {
     Pose2d selfPose = new Pose2d(new Translation2d(), Rotation2d.fromDegrees(90.0));
     Translation2d targetGlobal = new Translation2d(0.0, 5.0);
-    ChassisSpeeds robotFieldSpeeds = new ChassisSpeeds(1.0, 0.0, 0.0);
+    ChassisVelocities robotFieldSpeeds = new ChassisVelocities(1.0, 0.0, 0.0);
 
     ContinuousShooter.ShotSolution shotSolution = ContinuousShooter.CalculateShotSolution(
         selfPose,
@@ -85,7 +85,7 @@ public class ContinuousShooterTest {
   void CalculateShotSolutionReturnsZeroVectorsWhenRobotAndTargetCoincideAndStationary() {
     Pose2d selfPose = new Pose2d(new Translation2d(2.0, -1.0), Rotation2d.fromDegrees(30.0));
     Translation2d targetGlobal = new Translation2d(2.0, -1.0);
-    ChassisSpeeds robotFieldSpeeds = new ChassisSpeeds();
+    ChassisVelocities robotFieldSpeeds = new ChassisVelocities();
 
     ContinuousShooter.ShotSolution shotSolution = ContinuousShooter.CalculateShotSolution(
         selfPose,
@@ -104,7 +104,7 @@ public class ContinuousShooterTest {
   void CalculateShotSolutionUsesInterceptFlightTimeWhenTargetIsCoincidentButRobotIsMoving() {
     Pose2d selfPose = new Pose2d(new Translation2d(), new Rotation2d());
     Translation2d targetGlobal = new Translation2d();
-    ChassisSpeeds robotFieldSpeeds = new ChassisSpeeds(1.5, -0.5, 0.0);
+    ChassisVelocities robotFieldSpeeds = new ChassisVelocities(1.5, -0.5, 0.0);
 
     ContinuousShooter.ShotSolution shotSolution = ContinuousShooter.CalculateShotSolution(
         selfPose,
@@ -127,7 +127,7 @@ public class ContinuousShooterTest {
   void CalculateShotSolutionMatchesAimMathForSameInputs() {
     Pose2d selfPose = new Pose2d(new Translation2d(1.0, -2.0), Rotation2d.fromDegrees(30.0));
     Translation2d targetGlobal = new Translation2d(4.0, 3.0);
-    ChassisSpeeds robotFieldSpeeds = new ChassisSpeeds(0.8, -1.2, 0.0);
+    ChassisVelocities robotFieldSpeeds = new ChassisVelocities(0.8, -1.2, 0.0);
 
     ContinuousShooter.ShotSolution shotSolution = ContinuousShooter.CalculateShotSolution(
         selfPose,

@@ -1,5 +1,6 @@
 package frc.robot.hardware;
 
+import frc.robot.constant.BotConstants;
 import org.littletonrobotics.junction.Logger;
 
 import com.ctre.phoenix6.BaseStatusSignal;
@@ -20,13 +21,13 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.kinematics.SwerveModulePosition;
-import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.units.Units;
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.units.measure.LinearVelocity;
+import org.wpilib.math.geometry.Rotation2d;
+import org.wpilib.math.kinematics.SwerveModulePosition;
+import org.wpilib.math.kinematics.SwerveModuleVelocity;
+import org.wpilib.units.Units;
+import org.wpilib.units.measure.Angle;
+import org.wpilib.units.measure.Distance;
+import org.wpilib.units.measure.LinearVelocity;
 import frc.robot.constant.swerve.SwerveConstants;
 
 public class WheelMoverTalonFX extends WheelMoverBase {
@@ -58,10 +59,10 @@ public class WheelMoverTalonFX extends WheelMoverBase {
       double CANCoderMagnetOffset) {
     final var c = SwerveConstants.INSTANCE;
     this.port = driveMotorChannel;
-    m_driveMotor = new TalonFX(driveMotorChannel);
-    m_turnMotor = new TalonFX(turnMotorChannel);
+    m_driveMotor = new TalonFX(driveMotorChannel, BotConstants.kCanBus);
+    m_turnMotor = new TalonFX(turnMotorChannel, BotConstants.kCanBus);
 
-    turnCANcoder = new CANcoder(CANCoderEncoderChannel);
+    turnCANcoder = new CANcoder(CANCoderEncoderChannel, BotConstants.kCanBus);
     CANcoderConfiguration config = new CANcoderConfiguration();
     config.MagnetSensor.MagnetOffset = CANCoderMagnetOffset;
     config.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 0.5;
@@ -238,9 +239,9 @@ public class WheelMoverTalonFX extends WheelMoverBase {
   }
 
   @Override
-  public SwerveModuleState getState() {
+  public SwerveModuleVelocity getState() {
     Logger.recordOutput("Wheels/" + port + "/value", m_driveMotor.getPosition().getValueAsDouble());
-    return new SwerveModuleState(
+    return new SwerveModuleVelocity(
         getSpeed().in(Units.MetersPerSecond),
         getRotation2d());
   }

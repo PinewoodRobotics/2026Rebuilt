@@ -1,6 +1,6 @@
 package frc.robot.command.lighting;
 
-import edu.wpi.first.wpilibj2.command.Command;
+import org.wpilib.command2.Command;
 import frc.robot.subsystem.LightsSubsystem;
 import frc.robot.subsystem.PathPlannerSubsystem;
 import frc.robot.util.lighting.BlendMode;

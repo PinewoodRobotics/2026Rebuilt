@@ -6,19 +6,19 @@ import org.ejml.simple.SimpleMatrix;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
-import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.Vector;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.numbers.N1;
-import edu.wpi.first.math.numbers.N2;
-import edu.wpi.first.units.Units;
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.AngularAcceleration;
-import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.wpilibj2.command.Command;
+import org.wpilib.math.linalg.Matrix;
+import org.wpilib.math.linalg.Vector;
+import org.wpilib.math.geometry.Pose2d;
+import org.wpilib.math.geometry.Rotation2d;
+import org.wpilib.math.geometry.Translation2d;
+import org.wpilib.math.kinematics.ChassisVelocities;
+import org.wpilib.math.numbers.N1;
+import org.wpilib.math.numbers.N2;
+import org.wpilib.units.Units;
+import org.wpilib.units.measure.Angle;
+import org.wpilib.units.measure.AngularAcceleration;
+import org.wpilib.units.measure.AngularVelocity;
+import org.wpilib.command2.Command;
 import frc.robot.constant.ShooterConstants;
 import frc.robot.constant.TurretConstants;
 import frc.robot.subsystem.GlobalPosition;
@@ -56,7 +56,7 @@ public class ContinuousAimCommand extends Command {
   public static AimSolution CalculateAimSolution(
       Pose2d selfPose,
       Translation2d targetGlobal,
-      ChassisSpeeds robotFieldSpeeds) {
+      ChassisVelocities robotFieldSpeeds) {
     Pose2d targetInRobotFramePose = new Pose2d(targetGlobal, new Rotation2d()).relativeTo(selfPose);
     Translation2d targetInRobotFrame = targetInRobotFramePose.getTranslation();
     double distanceToTarget = targetInRobotFrame.getNorm();
@@ -78,10 +78,10 @@ public class ContinuousAimCommand extends Command {
   public void execute() {
     Pose2d selfPose = GlobalPosition.Get();
     Translation2d targetGlobal = targetGlobalPoseSupplier.get();
-    ChassisSpeeds robotFieldSpeeds = GlobalPosition.Velocity(GMFrame.kFieldRelative);
+    ChassisVelocities robotFieldSpeeds = GlobalPosition.Velocity(GMFrame.kFieldRelative);
     AimSolution aimSolution = CalculateAimSolution(selfPose, targetGlobal, robotFieldSpeeds);
 
-    double yawRateRadPerSec = robotFieldSpeeds.omegaRadiansPerSecond;
+    double yawRateRadPerSec = robotFieldSpeeds.omega;
     double ff = yawRateRadPerSec * TurretConstants.kFFCommand;
 
     double trimDeg = aimTrimDeg.get();
@@ -106,16 +106,16 @@ public class ContinuousAimCommand extends Command {
   }
 
   public static Translation2d GetCompensatedSpeed(Pose2d selfPose, Translation2d targetGlobal,
-      ChassisSpeeds robotFieldSpeeds) {
+      ChassisVelocities robotFieldSpeeds) {
     Pose2d targetInRobotFrame = new Pose2d(targetGlobal, new Rotation2d()).relativeTo(selfPose);
     double distanceToTarget = targetInRobotFrame.getTranslation().getNorm();
     double flyTime = ShooterConstants.DistanceFromTargetToTime(distanceToTarget);
 
     double robotTheta = selfPose.getRotation().getRadians();
-    double robotVXRobot = robotFieldSpeeds.vxMetersPerSecond * Math.cos(-robotTheta)
-        - robotFieldSpeeds.vyMetersPerSecond * Math.sin(-robotTheta);
-    double robotVYRobot = robotFieldSpeeds.vxMetersPerSecond * Math.sin(-robotTheta)
-        + robotFieldSpeeds.vyMetersPerSecond * Math.cos(-robotTheta);
+    double robotVXRobot = robotFieldSpeeds.vx * Math.cos(-robotTheta)
+        - robotFieldSpeeds.vy * Math.sin(-robotTheta);
+    double robotVYRobot = robotFieldSpeeds.vx * Math.sin(-robotTheta)
+        + robotFieldSpeeds.vy * Math.cos(-robotTheta);
 
     Translation2d leadCompensation = new Translation2d(-robotVXRobot * flyTime, -robotVYRobot * flyTime);
     return targetInRobotFrame.getTranslation().plus(leadCompensation);

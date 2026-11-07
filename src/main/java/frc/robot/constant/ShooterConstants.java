@@ -2,8 +2,8 @@ package frc.robot.constant;
 
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
-import edu.wpi.first.units.Units;
-import edu.wpi.first.units.measure.AngularVelocity;
+import org.wpilib.units.Units;
+import org.wpilib.units.measure.AngularVelocity;
 
 public class ShooterConstants {
   public static final int kShooterCurrentLimit = 60;
