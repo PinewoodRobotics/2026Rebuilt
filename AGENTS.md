@@ -12,7 +12,7 @@
 
 ## Command notes
 
-- `make build` and `make deploy` use Java 25: the WPILib-bundled JDK at `~/wpilib/2027_alpha7/jdk`, falling back to `/usr/libexec/java_home -v 25`. Override with `make build JAVA_HOME=...`.
+- `make build` and `make deploy` use Java 25: the WPILib-bundled JDK at `~/.wpilib/2027_alpha7/jdk`, falling back to `/usr/libexec/java_home -v 25`. Override with `make build JAVA_HOME=...`.
 - `make deploy` defaults `TEAM_NUMBER=4765` unless overridden.
 - Dynamic vendor dependency builds are intentionally forced every Gradle compile/build cycle (`buildDynamicDeps.outputs.upToDateWhen { false }`).
 
