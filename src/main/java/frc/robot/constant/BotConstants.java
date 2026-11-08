@@ -24,7 +24,7 @@ public class BotConstants {
     BBOT
   }
 
-  public static final RobotVariant robotType = RobotVariant.ABOT;
+  public static final RobotVariant robotType = RobotVariant.BBOT;
   public static Alliance alliance = MatchState.getAlliance().orElse(Alliance.BLUE);
 
   public static enum Mode {
